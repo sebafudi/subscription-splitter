@@ -1,0 +1,25 @@
+=== seed ===
+{"token":"...","user":{"name":"Owner","email":"owner@example.com","emailVerified":false,"image":null,"createdAt":"2026-09-12T12:54:03.292Z","updatedAt":"2026-09-12T12:54:03.292Z","id":"EJ1q2ajV7wm3uRSSbVfABDdIGOwMqyPT"}}
+=== login (correct password) ===
+HTTP/1.1 200 OK
+Content-Length: 266
+Content-Type: application/json
+Set-Cookie: better-auth.session_token=...; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+
+--- body ---
+{"redirect":false,"token":"...","user":{"name":"Owner","email":"owner@example.com","emailVerified":false,"image":null,"createdAt":"2026-09-12T12:54:03.292Z","updatedAt":"2026-09-12T12:54:03.292Z","id":"EJ1q2ajV7wm3uRSSbVfABDdIGOwMqyPT"}}
+=== /me with cookie ===
+{"user":{"name":"Owner","email":"owner@example.com","emailVerified":false,"image":null,"createdAt":"2026-09-12T12:54:03.292Z","updatedAt":"2026-09-12T12:54:03.292Z","id":"EJ1q2ajV7wm3uRSSbVfABDdIGOwMqyPT"}}
+HTTP_STATUS:200
+=== /me without cookie ===
+{"error":"unauthorized"}
+HTTP_STATUS:401
+=== login wrong password ===
+{"message":"Invalid email or password","code":"INVALID_EMAIL_OR_PASSWORD"}
+HTTP_STATUS:401
+=== logout ===
+{"success":true}
+HTTP_STATUS:200
+=== /me after logout ===
+{"error":"unauthorized"}
+HTTP_STATUS:401

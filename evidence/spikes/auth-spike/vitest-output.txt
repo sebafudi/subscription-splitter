@@ -1,0 +1,25 @@
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+APIError: Invalid email or password
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { status: 'UNAUTHORIZED', body: { message: 'Invalid email or password', code: 'INVALID_EMAIL_OR_PASSWORD' }, headers: {}, statusCode: 401, errorStack: 'APIError: \n    at new APIError (/private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/@better-auth/core/dist/error/index.mjs:14:3)\n    at APIError.from (/private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/@better-auth/core/dist/error/index.mjs:20:10)\n    at /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/better-auth/dist/api/routes/sign-in.mjs:334:18\n    at /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/@better-auth/core/dist/api/index.mjs:56:11\n    at internalHandler (/private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/better-call/src/endpoint.ts:626:20)\n    at /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/node_modules/better-auth/dist/api/dispatch.mjs:231:18\n    at Array.<anonymous> (/private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/1fcb8003-5685-4a1b-9ed2-06d63bfe7bb1/scratchpad/auth-spike/src/index.ts:33:17)' }
+This error originated in "test/auth.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "returns 401 for wrong password". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+     Errors  1 error
+   Start at  14:54:21
+   Duration  4.48s (transform 1.70s, setup 3.59s, import 8ms, tests 395ms, environment 0ms)
+
