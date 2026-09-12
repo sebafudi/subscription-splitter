@@ -14,3 +14,8 @@ SEED_REVIEWER_PASSWORD=
 # cookie always carries Secure. Set it to "false" only in local development,
 # and only if a browser refuses the cookie over plain http (Safari does;
 # Chrome and Firefox do not).
+
+# APP_ORIGINS is required: it must resolve to at least one comma-separated
+# origin. The Worker refuses to construct its auth instance, in every
+# environment, if it is left blank - leaving it empty is not a way to widen
+# or disable the origin check.

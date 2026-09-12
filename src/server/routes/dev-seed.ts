@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
-import { betterAuth } from 'better-auth'
 import { APIError } from 'better-auth/api'
+import { createAuth } from '../auth'
 import { isSeedRequestAllowed } from '../seed-gate'
+import { seedRequestSchema } from '../validation/dev-seed'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -18,22 +19,22 @@ app.post('/api/dev/seed', async (c) => {
     return c.json({ error: 'not found' }, 404)
   }
 
-  const body = await c.req.json<{ email: string; password: string; name: string }>()
+  const body = await c.req.json().catch(() => null)
+  const parsed = seedRequestSchema.safeParse(body)
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message ?? 'invalid body', field: parsed.error.issues[0]?.path.join('.') }, 400)
+  }
 
-  const seedingAuth = betterAuth({
-    baseURL: new URL(c.req.url).origin,
-    database: c.env.DB,
-    emailAndPassword: { enabled: true, disableSignUp: false },
-  })
+  const seedingAuth = createAuth(c.env, new URL(c.req.url).origin, { disableSignUp: false })
 
   try {
     const result = await seedingAuth.api.signUpEmail({
-      body: { email: body.email, password: body.password, name: body.name },
+      body: { email: parsed.data.email, password: parsed.data.password, name: parsed.data.name },
     })
     return c.json({ email: result.user.email, created: true })
   } catch (error) {
     if (error instanceof APIError && error.status === 'UNPROCESSABLE_ENTITY') {
-      return c.json({ email: body.email, created: false })
+      return c.json({ email: parsed.data.email, created: false })
     }
     throw error
   }

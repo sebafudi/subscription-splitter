@@ -44,6 +44,28 @@ describe('dev seed route (decision D-005)', () => {
     expect(secondBody.created).toBe(false)
   })
 
+  it('returns 400 with a Zod-shaped error for a non-JSON body behind a valid token, never 500', async () => {
+    const res = await SELF.fetch('http://example.com/api/dev/seed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-seed-token': 'integration-test-seed-token' },
+      body: 'not json at all',
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string; field?: string }>()
+    expect(typeof body.error).toBe('string')
+  })
+
+  it('returns 400 for a JSON body missing a required field, never 500', async () => {
+    const res = await SELF.fetch('http://example.com/api/dev/seed', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-seed-token': 'integration-test-seed-token' },
+      body: JSON.stringify({ email: 'seed-missing-field@example.com', name: 'Owner' }),
+    })
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string; field?: string }>()
+    expect(body.field).toBe('password')
+  })
+
   it('lets the seeded account sign in afterward', async () => {
     await SELF.fetch('http://example.com/api/dev/seed', {
       method: 'POST',
