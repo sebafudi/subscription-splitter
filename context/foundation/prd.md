@@ -158,7 +158,12 @@ of the organizer's.
 - FR-007: Organizer can mark a month as skipped, so the plan costs nothing that month and nobody owes anything for it. Priority: must-have
   > Socratic: Counter-argument considered: "a skipped month is just a price of zero". Resolved: kept as its own concept;
   > a zero price and a skipped month differ in whether standing orders count as received.
-- FR-008: Organizer can change or remove a recorded price entry or a skipped month. Priority: must-have
+- FR-008: Organizer can remove a recorded price entry or a skipped month, and corrects one by removing it and recording it again rather than editing it in place. Removing a price entry that later months depend on is confirmed first, and the confirmation names the months that would be left with no price. Priority: must-have
+  > Shipped: `POST` and `DELETE` on `/api/subscriptions/:id/prices` and `/api/subscriptions/:id/break-months`;
+  > there is no patch for either. The price refusal and the months it names come from
+  > `monthsLosingTheirPrice` in `src/domain/prices.ts`, and `?confirm=true` is how the caller proceeds.
+  > Removing a skipped month has no such gate, because restoring a month to its recorded price cannot
+  > leave a month unpriced.
 
 ### Participants
 
@@ -168,12 +173,20 @@ of the organizer's.
 - FR-010: Organizer can record the month a participant left, and a later month they rejoined, as one participant. Priority: must-have
   > Socratic: Counter-argument considered: "a rejoin is simply a new participant". Resolved: one participant with several
   > active periods; otherwise their payment history splits in two and their balance is meaningless.
-- FR-011: Organizer can mark exactly one participant as the account owner, who pays the plan and is never owed from. Priority: must-have
+- FR-011: Exactly one participant is the account owner, who pays the plan and is never owed from. That participant is created with the subscription itself, active from its first month, so a subscription never exists without an owner. Ownership is not moved to another participant and not removed. Priority: must-have
   > Socratic: Counter-argument considered: "the owner does not need to be a participant record at all". Resolved: kept as
   > a participant; the owner occupies a seat and therefore changes the per-person share.
-- FR-012: Organizer can archive a participant who has payment history rather than deleting them. Priority: must-have
+  > Shipped: decision D-006 settled this. The owner participant and their opening active range are written
+  > in the same batch as the subscription (`create` in `src/server/db/subscriptions.ts`), a database
+  > constraint holds the one-owner rule, a second owner is refused, and the owner participant cannot be
+  > deleted. The organizer therefore never performs a "mark as owner" action; the requirement is met by
+  > construction rather than by a step they take.
+- FR-012: Organizer can archive a participant who has payment history rather than deleting them. An archived participant keeps every liability and every payment they already had; archiving decides only how they are shown. One who is settled up is hidden from the list behind a toggle that says how many are hidden, and one who still owes or is still ahead stays visible. Priority: must-have
   > Socratic: Counter-argument considered: "archiving clutters the list". Resolved: kept; deleting a payer would destroy
   > the record of money that actually changed hands.
+  > Shipped: `archived` on a participant, set through the participant patch and read by `MemberList` in
+  > `src/client/components/`. The calculation ignores it entirely, which is what keeps an archived
+  > participant's balance honest. This answers what was open question 3.
 - FR-013: Organizer can delete a participant who has no payments and no standing order. Priority: must-have
 - FR-014: Organizer can rename a participant and correct the months they were active. Priority: must-have
 
@@ -241,9 +254,15 @@ always balances exactly. Against that liability sits what the participant has pa
 recorded by hand, plus the months covered by a standing order that has elapsed, was not skipped, and was not
 marked as not received. The difference is the balance, negative when they owe, positive when they are ahead.
 
-The organizer meets the rule on the dashboard as five numbers - what is owed to them now, this month's
-per-person share, this month's collected against expected, their own net cost since the plan started, and
-how many participants are active this month - and underneath, the same calculation resolved per participant.
+A charged month in which nobody was active is a defined outcome rather than an error: the share is
+nothing, the month's whole cost falls on the organizer, and the month still counts towards the plan
+total and towards their net cost. Decision D-006 settled this, and it answers what was open question 4.
+
+The organizer meets the rule on the dashboard as five headline numbers - what is owed to them now,
+this month's per-person share, their own share of this month, this month's collected against expected,
+and how many participants are active this month. Their net cost since the plan started, this month's
+cost and the plan's total sit directly under those five, and underneath that the same calculation is
+resolved per participant.
 
 ## Access Control
 
@@ -252,7 +271,8 @@ screen and no password reset flow. Signing out ends the session immediately and 
 reused.
 
 One role. Every signed-in account is an organizer over its own data and has no visibility of any other
-account's data. Account ownership runs through the subscription: every participant, price entry, skipped
+account's data. The second seeded account is not a restricted one: it has the same full control of its
+own records, which is the stricter isolation test and answers what was open question 2. Account ownership runs through the subscription: every participant, price entry, skipped
 month, payment, standing order and exception belongs to exactly one subscription, and that subscription
 belongs to exactly one account. Anything naming a record from another account is answered as though the
 record does not exist, including a record reached through a parent that belongs to someone else. An
@@ -283,14 +303,18 @@ Non-functional:
 
 ## Open Questions
 
-1. **Which sign-in mechanism the seeded accounts use** - resolved by decision D-001. The product
-   requirement is unchanged: seeded accounts only, no sign-up, sessions that end on sign-out. Block: no.
-2. **Whether the second seeded account is read-only or has full control of its own data** - owner: the
-   organizer. Default we will take: full control of its own data, which is a stricter isolation test than a
-   read-only account. Resolve by the first runtime slice.
-3. **Whether archived participants stay in the balance list** - owner: the organizer. Default we will take:
-   hidden from the current-month view, still reachable in history, since an archived participant with an
-   outstanding balance still matters. Resolve by the participants slice.
-4. **How a charged month with no active participants is presented** - owner: the organizer. Default we will
-   take: shown as an ordinary line whose whole cost falls on the organizer, with no warning, since it is a
-   defined outcome rather than an error. Resolve by the participants slice.
+None remain open. All four questions this document opened have been answered by what was built, each
+taking the default it named, and each answer has been folded into the requirement it belongs to:
+
+1. **Which sign-in mechanism the seeded accounts use** - answered by decision D-001. The product
+   requirement is unchanged: seeded accounts only, no sign-up, sessions that end on sign-out. See
+   §Access Control.
+2. **Whether the second seeded account is read-only or has full control of its own data** - full
+   control of its own data. See §Access Control.
+3. **Whether archived participants stay in the balance list** - a settled archived participant is
+   hidden behind a toggle; one with an outstanding balance stays visible. See FR-012.
+4. **How a charged month with no active participants is presented** - an ordinary month whose whole
+   cost falls on the organizer, answered by decision D-006. See §Business Logic.
+
+These are kept as a record of what was decided rather than deleted, because the roadmap and the test
+plan both cite them by number.

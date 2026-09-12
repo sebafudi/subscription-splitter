@@ -18,7 +18,7 @@ Requires Node 22 or newer and npm.
 npm install
 ```
 
-The install approves the `workerd` and `esbuild` build scripts recorded in `package.json`; without them the dev server and the integration test runner cannot start.
+The install approves the `workerd` and `esbuild` build scripts recorded in `package.json`; without them the dev server and the integration test runner cannot start. npm also warns that `fsevents` has an install script that is not approved. Leave it unapproved: it is an optional macOS file-watching helper, nothing here needs it, and every command in this file works without it.
 
 Copy `.dev.vars.example` to `.dev.vars` and fill in the values for local development. `.dev.vars` is ignored by git. Deployment secrets go through `wrangler secret put`, never into source.
 
@@ -58,10 +58,21 @@ Migrations are sequential SQL files in `migrations/`, named `0001_<slug>.sql` up
 First-run setup, against a clean local database:
 
 ```
-npm run db:migrate:local   # applies 0001_auth.sql then 0002_subscriptions.sql
-npm run dev:worker          # or npm run dev, in a separate terminal, so the seed call has a server to reach
+npm run db:migrate:local   # applies every migration in migrations/, in order
+npm run build              # dev:worker serves the built client, so build before starting it
+npm run dev:worker         # in a separate terminal, so the seed call has a server to reach
 npm run seed:local
 ```
+
+The migrate command applies every file in `migrations/` that the target database has not seen yet,
+in filename order. There are currently six, `0001_auth.sql` through `0006_recurring.sql`; a clean
+local database gets all of them from this one call.
+
+The build step is only needed for `npm run dev:worker`. `wrangler.jsonc` leaves `assets.directory`
+for the Vite plugin to fill in at build time, so on a clean clone `wrangler dev` stops with "The
+`assets` property in your configuration is missing the required `directory` property" until `dist/`
+exists. `npm run dev` needs no build, because the plugin serves the client itself; it listens on a
+different port, which is what the `SEED_TARGET_URL` override below is for.
 
 `npm run seed:local` reads `.dev.vars` directly and calls the gated seed route, `POST /api/dev/seed`
 (decision D-005), once for the owner account and once for the reviewer account, against
@@ -69,13 +80,24 @@ npm run seed:local
 elsewhere, for instance `vite dev`'s `http://localhost:5173`). The call is idempotent: running it
 again reports each account as unchanged rather than failing. The same route and the same procedure,
 with `SEED_ENABLED` and `SEED_TOKEN` set on the deployed Worker and then removed once seeding is
-done, is how the remote database is seeded under slice S-04.
+done, is how the remote database was seeded; see Deploy below. Both gates are off on the live
+Worker now, so the route answers 404 there.
 
 ## Deploy
 
 Deployment is a deliberate step and is not wired to merges. Local development uses its own local D1
 database (see Database above); the remote database used by the deployed Worker is entirely separate
 and is provisioned once, the first time this repository is deployed.
+
+**Live instance:** `https://subscription-splitter.sebastianfudalej.workers.dev`. It runs against the
+remote D1 database `subscription-splitter-db`, which shares no data with the local database
+`npm run dev` uses: a record created locally never appears there, and the reverse. That database is
+seeded once, by the one-time seeding procedure below, and seeding is switched off again afterwards.
+
+The seed route creates accounts and nothing else. It cannot produce a subscription, a participant, a
+price or a payment, so demo data on the live instance is created the same way any other data is,
+through the product's own screens and routes. See decision D-010 in `context/decisions/` for what the
+deployed instance is expected to hold and which account a reviewer is given.
 
 **One-time remote setup**, before the first deploy:
 
@@ -138,7 +160,8 @@ even with the old token before considering the deployment done.
 ## Layout
 
 - `src/domain/` money calculation, no D1 import
-- `src/server/` Hono app, routes, and later the repositories that own all SQL
+- `src/server/` Hono app, auth, routes and validation schemas; `src/server/db/` holds the
+  repositories, which own all SQL
 - `src/client/` React client built by Vite
 - `migrations/` wrangler SQL migrations
 - `tests/integration/` tests against a local D1

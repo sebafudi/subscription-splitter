@@ -2,7 +2,10 @@
 
 Subscription Splitter records one shared monthly subscription, its participants and their payments,
 and reports what each owes. TypeScript throughout: a Hono API and a React client in one Cloudflare
-Worker over D1. Only the scaffold exists so far.
+Worker over D1. Four slices have shipped: sessions over two seeded accounts, subscriptions,
+participants with inclusive active ranges, effective-dated prices, break months, payments, standing
+orders with per-month exceptions, and the summary that derives every balance from them. What remains
+is the release itself, tracked as roadmap S-04.
 
 ## Hard rules
 
@@ -27,7 +30,7 @@ Worker over D1. Only the scaffold exists so far.
 - `migrations/` holds sequential wrangler migrations (`0001_...`) and `tests/` integration against a
   local D1.
 - Foundation docs: @context/foundation/prd.md, @context/foundation/roadmap.md,
-  @context/foundation/test-plan.md. State: @context/STATUS.md. Decisions:
+  @context/foundation/test-plan.md, @context/foundation/infrastructure.md. State: @context/STATUS.md. Decisions:
   `context/decisions/D-NNN-<slug>.md`. Evidence: @evidence/index.md.
 
 ## Build, test and dev commands

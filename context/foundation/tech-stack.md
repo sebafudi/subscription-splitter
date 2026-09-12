@@ -18,7 +18,7 @@ hints:
     docs_current: true
     can_judge_agent: true
   has_auth: true
-  has_payments: false
+  has_payments: true
   has_realtime: false
   has_ai: false
   has_background_jobs: false
@@ -40,3 +40,11 @@ all SQL. Sign-in is settled by decision D-001: Better Auth on the same Worker an
 binding, public sign-up disabled, proven by a compatibility spike. CI on GitHub Actions runs
 typecheck and tests, while deploying stays a deliberate step rather than an automatic consequence of
 merging.
+
+Two notes for a later reader. The `hints` block above is the bootstrapper's scaffold-time record, not
+a living description of the product; `context/foundation/bootstrap-verification.md` holds that
+hand-off in full, and `has_payments` is the one flag the shipped product has since contradicted and
+the one corrected here. And `has_ai: false` is a claim about the product, which calls no model: the
+reviewer package in `tools/reviewer/` does, but it is a separate package with its own dependencies
+that the product never imports and the root suite never runs. What runs where, and what is
+deliberately absent from the deployment, is in `context/foundation/infrastructure.md`.
