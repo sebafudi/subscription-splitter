@@ -623,6 +623,13 @@ those two files.
 
 - The workflow run on the pull request is green
 
+  Note: the workflow ran green on the push to `main` that landed this slice, twice
+  (`https://github.com/sebafudi/subscription-splitter/actions/runs/34698878084` and
+  `https://github.com/sebafudi/subscription-splitter/actions/runs/34698829080`; see
+  `evidence/runs/ci-main-first-run.md`). A pull-request-triggered run specifically is covered by the
+  `ai-review-pipeline` change's workflow, which runs on the same trigger. This row is left unchecked
+  because no pull request was opened against this slice itself.
+
 ---
 
 ## Testing strategy
