@@ -109,50 +109,74 @@ re-reads the stored record.
 ## Verdict and threshold rule
 
 The model returns a structured object: five criteria, each with `score`, `rationale` and `findings[]`;
-a `summary`; and an `overall` verdict. The verdict is recomputed locally from the scores and findings
-rather than trusted from the model, so the gate cannot be talked out of a failure.
+a `summary`; and an optional `overall` verdict. The verdict is recomputed locally from the scores and
+findings rather than trusted from the model, so the gate cannot be talked out of a failure. `overall`
+is nullable in the schema for exactly that reason: nothing depends on it, so a model that omits it
+must still produce a usable review rather than an error.
 
 - Any criterion scoring below 6 gives `fail`.
 - Any finding marked `blocking`, at any score, gives `fail`.
 - Otherwise `pass`.
 
-An outcome that is neither is `error`: the provider failed after its retry, or the output did not
-validate against the schema. An `error` is reported as a failure with its own wording and never as a
-pass. The `error` case is distinguishable from `fail` in the comment, the label and the exit code.
+An outcome that is neither is `error`, carrying a reason: `missing_credential` when the credential is
+absent, empty or rejected at request time; `no_object_generated` when the model produced no parsable
+object; `schema_invalid` when it produced one that failed validation; `provider_error` for anything
+else. An `error` is reported as a failure with its own wording and never as a pass, and it is
+distinguishable from `fail` in the comment, the label and the exit code.
 
 ## Expected side effects
 
 - One pull request comment carrying the summary, the five scores and the findings. The comment is
   identified by a hidden marker and updated in place on later pushes rather than appended, so a long
-  pull request does not accumulate one comment per commit.
-- Exactly one of the labels `ai-cr:passed` or `ai-cr:failed` on the pull request, the other removed.
+  pull request does not accumulate one comment per commit. The marker search walks every page of
+  comments, because a single page holds thirty and the long pull request is the one this exists for.
+- Exactly one of the three verdict labels `ai-cr:passed`, `ai-cr:failed` or `ai-cr:error` on the pull
+  request, the other two removed. The three are mutually exclusive. `ai-cr:error` exists so that a
+  broken pipeline and a rejected change do not look identical in the pull request list; a provider
+  hiccup is the most likely non-pass outcome in normal operation.
 - A truncated diff is stated in the comment, with the byte count shown against the byte count
   received, so a partial review is never read as a complete one.
 
 ## Expected behaviour
 
 - A push to the pull request re-runs the review and updates the same comment.
-- Adding the label `ai-cr:review` re-runs the review on demand without a new commit. The label is
-  removed by the workflow once the run starts, so re-adding it triggers again.
+- Adding the label `ai-cr:review` re-runs the review on demand without a new commit. The workflow
+  removes the label in a step that runs before the reviewer, so a user who re-adds it during a run
+  triggers a fresh one.
 - The verdict does not block the merge. `context/foundation/test-plan.md` §7 records the position:
   this pipeline's output quality is evaluated by its own suite and never gates a product change. The
   workflow job therefore exits successfully for `pass`, `fail` and `error` alike, and the verdict is
-  carried by the label and the comment. A genuine pipeline breakage, such as a failed install, still
-  fails the job. Re-evaluate if the comments ever start blocking merges.
-- The reviewer's own command-line exit code does distinguish the outcomes (0 for `pass`, 1 for `fail`,
-  2 for `error`), so it can become a required check later without a code change.
+  carried by the label and the comment. Re-evaluate if the comments ever start blocking merges.
+- Configuration failure is the exception, and it is not a verdict. On a same-repository pull request a
+  missing, empty or rejected `OPENROUTER_API_KEY` fails the job with an explicit message naming the
+  secret, because it is an operator defect rather than a review result and it is the single most
+  likely misconfiguration of this pipeline. A failed install or checkout still fails the job too.
+- On a fork pull request the review job is skipped rather than failed, and a notice step records why.
+  A fork receives no secret by construction, so there is nothing to misconfigure.
+- The reviewer's own command-line exit code distinguishes the outcomes: 0 for `pass`, 1 for `fail`,
+  2 for an `error` the reviewer could not have avoided, and 3 for an `error` whose reason is
+  `missing_credential`. The workflow maps 0, 1 and 2 to a green job and 3 to a failed one, and the
+  codes let the gate become a required check later without a code change.
 
 ## Security constraints
 
 - The pull request title, body and diff are untrusted input. They are passed to the model as data
-  inside a delimited block, never concatenated into an instruction, and the system prompt states that
-  instructions found inside the diff are content to review rather than directions to follow.
+  inside delimited blocks, never concatenated into an instruction, and the system prompt states that
+  instructions found inside them are content to review rather than directions to follow.
+- Each block's delimiter carries a per-call random nonce, the system prompt names that nonce as the
+  only valid terminator, and any occurrence of the nonce inside the content is stripped. Without this,
+  a body containing the literal closing delimiter would close its own block and promote the rest of
+  itself to instruction level, defeating the guardrail without having to defeat the model's judgement.
 - No shell ever interpolates the title or body directly; values reach a step through an intermediate
   environment variable.
 - Nothing from the pull request is executed. The workflow installs the reviewer package's own
   dependencies and runs the reviewer; it never runs the pull request's build, tests or scripts.
-- Workflow permissions are `contents: read`, `pull-requests: write` and `issues: write`, and nothing
-  else. `issues: write` is what the labels need; comments on a pull request go through the issues API.
+- Workflow permissions are `contents: read` and `pull-requests: write`, and nothing else. GitHub's
+  permissions reference lists the comment and label endpoints under both the Issues and the Pull
+  requests repository permissions, and the target here is always a pull request, so `issues: write` is
+  not granted. That would additionally let the token act on real issues, which is broader than this
+  job needs. This is the one permission claim not yet confirmed by a run: if the first run returns 403
+  on a comment or label call, `issues: write` is added back and the criterion is updated to match.
 - The trigger is `pull_request`, not `pull_request_target`. A pull request from a fork therefore
   receives a read-only token and no secrets, and the review job is skipped rather than failing.
 - `OPENROUTER_API_KEY` is read from the repository secret into the reviewer process environment only.

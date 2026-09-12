@@ -141,6 +141,17 @@ list `tools`. The two model identifiers named in the course prompt, `z-ai/glm-5.
   pagination), `context`, `core`, `getOctokit`, and the `glob`, `io` and `exec` packages.
 - The comment upsert pattern is `github.rest.issues.listComments` to find a prior comment matching a
   marker, then `github.rest.issues.updateComment` if found or `createComment` if not.
+  `listComments` returns one page, thirty comments by default, so the marker search has to go through
+  `github.paginate` with `per_page: 100` or it silently misses a marker on a long pull request.
+- GitHub's "Permissions required for GitHub Apps" reference lists
+  `POST /repos/{owner}/{repo}/issues/{issue_number}/labels`,
+  `DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}`,
+  `POST /repos/{owner}/{repo}/issues/{issue_number}/comments` and
+  `PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}` under the Issues repository permission at
+  write level. The same endpoints also appear under the Pull requests permission section, which is why
+  a job acting only on pull requests is expected to work with `pull-requests: write` alone. The page
+  does not state the inheritance explicitly, so this is the one permission claim to confirm by
+  observing the first run rather than by reading.
 - Current release tags for the other actions in play: `actions/checkout` `v7.0.1`, `actions/setup-node`
   `v7.0.0`.
 
@@ -201,9 +212,13 @@ Open items, each with the default to take if it is still unresolved when the wor
   testable without the credential. Default: keep the schema shallow, mark optional fields
   `.nullable()` per the SDK guidance, and treat a model that cannot produce it as an evaluation result
   rather than a bug.
-- **Whether promptfoo's `cost` assertion reports the OpenRouter charge or its own estimate.** Default:
-  record both, taking the provider's own `usage.cost` from the reviewer's result as authoritative and
-  promptfoo's number as a cross-check.
+- **Whether promptfoo's `cost` assertion reports the OpenRouter charge or its own estimate.** Resolved
+  by design rather than by investigation: the spend ceiling no longer rests on the assertion. The
+  custom provider sets `tokenUsage` and `cost` from `result.providerMetadata.openrouter.usage.cost`,
+  that figure is the authoritative one recorded in `evidence/champion/eval-results.md` and
+  cross-checked against the OpenRouter activity page, and the assertion is kept only as a tripwire.
+  The ceiling itself is enforced by bounded input, a 2,000 token output cap, one retry and a fixed
+  fixture count.
 - **Whether `@openrouter/ai-sdk-provider`'s `response-healing` plugin is worth enabling.** It would
   mask exactly the malformed-output path the unit tests exist to cover. Default: leave it off, and
   reconsider only if a model that is otherwise good fails purely on JSON formatting.

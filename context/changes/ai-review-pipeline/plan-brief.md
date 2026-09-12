@@ -15,7 +15,9 @@ know that a foreign child identifier must answer 404 or that the owner absorbs t
 
 ## Starting point
 
-No application code, no `package.json`, no `.github/`. What does exist is the written knowledge the
+The application scaffold and its root `package.json` exist; `.github/` does not. `tools/reviewer/` is
+a separate package invoked from its own directory, and neither root `npm test` nor root
+`npm run typecheck` reaches it, which is deliberate. What also exists is the written knowledge the
 criteria are made of: `AGENTS.md`, `context/foundation/prd.md` with the worked rounding example, and
 `context/foundation/test-plan.md` with its six-risk map. Decision D-003 fixed the route and the
 provider strategy; `OPENROUTER_API_KEY` is the single missing input.
@@ -23,9 +25,9 @@ provider strategy; `OPENROUTER_API_KEY` is the single missing input.
 ## Desired end state
 
 A pull request into `main` gets one comment with five scores, rationales and file-level findings, plus
-one label saying pass or fail. The same package runs under promptfoo against three models on four
-fixed fixtures and produces a pass-or-fail table with cost and latency. `npm test` inside
-`tools/reviewer` passes offline with no credential.
+one of three verdict labels. The same package runs under promptfoo against three models on seven fixed
+fixtures, one per criterion plus a clean control and an injection probe, and produces a pass-or-fail
+table with cost and latency. `npm test` inside `tools/reviewer` passes offline with no credential.
 
 ## Key decisions taken
 
@@ -36,16 +38,21 @@ fixed fixtures and produces a pass-or-fail table with cost and latency. `npm tes
 | Verdict | Recomputed in code from the scores, not read from the model | A model cannot talk the gate out of a failure, and the rule becomes a pure unit test | Plan |
 | Threshold | Fail if any criterion is below 6, or any finding is `blocking`; otherwise pass | Two arithmetic rules, both trivially testable | Plan |
 | Failure handling | Provider failure or invalid output is a third outcome, `error`, never a pass | The gate must not report success because the model broke | Requirements |
+| Error visibility | A third label, `ai-cr:error`, alongside `ai-cr:passed` and `ai-cr:failed` | A broken pipeline and a rejected change must not look the same in the pull request list | Review |
 | Gating | The verdict never blocks a merge; the job exits 0 for every verdict | `test-plan.md` §7 already recorded this position | Requirements |
+| Configuration failure | A missing credential on a same-repository pull request fails the job, via CLI exit code 3 | It is an operator defect rather than a review result, and the likeliest misconfiguration here | Review |
+| Injection defence | Untrusted blocks are delimited by a per-call random nonce named in the system prompt | Otherwise a body carrying the literal delimiter closes its own block | Review |
+| Permissions | `contents: read` and `pull-requests: write` only, with `issues: write` withheld | GitHub lists the comment and label endpoints under the Pull requests permission too, and the target is always a pull request | Review |
 | Trigger | `pull_request`, never `pull_request_target` | GitHub withholds secrets from fork pull requests on this trigger, which settles fork safety by construction | Research |
 | Evaluation models | `deepseek/deepseek-v3.2`, `openai/gpt-5-mini`, `anthropic/claude-sonnet-4.6` | Cheap, mid and strong; all three confirmed present with structured output support | Research |
 | Test boundary | Model injected into `reviewDiff()`; unit tests use a mock model | Every path including the error paths is covered offline, with no credential | Plan |
 
 ## Scope
 
-**In scope:** the `tools/reviewer` package with its schema, threshold rule, prompt and CLI; four
-synthetic diff fixtures; a promptfoo matrix over three models; the `ai-review.yml` workflow with
-comment upsert, verdict labels and fork handling; the Champion evidence capture.
+**In scope:** the `tools/reviewer` package with its schema, threshold rule, prompt and CLI; seven
+synthetic diff fixtures covering all five criteria plus a clean control and an injection probe; a
+promptfoo matrix over three models; the `ai-review.yml` workflow with paginated comment upsert,
+verdict labels and fork handling; the Champion evidence capture.
 
 **Out of scope:** the application's own CI workflow; tools or an agentic loop for the reviewer;
 committing anything back to a branch; making the verdict a required check; reviewing pull requests
@@ -66,7 +73,7 @@ to two `actions/github-script` steps for the comment upsert and the label.
 |---|---|---|
 | 1. Skeleton, schema, threshold | The package, the Zod schema, the verdict rule, diff bounding, all unit tested | Getting the schema shape wrong late, after the prompt depends on it |
 | 2. Prompt and reviewDiff() | The reusable function with every error path covered by a mock model | A failure path that throws instead of returning `error`, which would break CI loudly |
-| 3. Evaluation harness | promptfoo configuration, four fixtures, assertions, results capture | A fixture whose seeded defect is ambiguous, making the matrix unreadable |
+| 3. Evaluation harness | promptfoo configuration, seven fixtures, assertions, results capture | A fixture whose seeded defect is ambiguous, making the matrix unreadable |
 | 4. Workflow | The pipeline, comment upsert, labels, fork handling | Interpolating untrusted pull request text into a shell step |
 | 5. Live run and evidence | The model comparison, a real pull request run, the screenshots | Blocked entirely on the credential |
 
@@ -91,6 +98,7 @@ provide.
 - A real pull request carries one review comment with five scored criteria and one verdict label, from
   a workflow run whose URL is recorded as evidence.
 - The model comparison table settles the cheap-versus-expensive question on numbers, for under two
-  dollars of total spend.
+  dollars of total spend measured from the provider's own reported cost. The spend is bounded by fixed
+  fixtures, a 2,000 token output cap and one retry, not by an assertion that might pass trivially.
 - `npm test` inside `tools/reviewer` passes with no network and no credential, covering the threshold
   rule and every failure path.
