@@ -62,6 +62,19 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-04 | verification-and-release | use the certified flow on a deployed instance | S-03 | US-01, US-02, US-03, US-04, US-05, MS-02 | done |
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | in-progress |
 
+| S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | ready |
+
+## S-06: Visual redesign
+
+- **Change ID:** `visual-redesign`
+- **Status:** ready
+- **Prerequisites:** S-04
+- **Source:** explicit user request; `context/foundation/visual-redesign-brief.md`.
+- **Outcome:** a cohesive, polished responsive app with fully specified interactions and motion, preserving the verified product flow.
+- **Design owner:** Fable 5.1 using `frontend-design`; no design decisions delegated to lower models.
+- **Implementation:** explicitly selected Opus/Sonnet subagents after complete design and independent plan review.
+- **Done when:** course change flow complete, Fable accepts the implemented visuals, regression/browser checks pass, updated release deployed and certification screenshots refreshed.
+
 ## Streams
 
 Navigation aid - groups items that share a prerequisite chain. The canonical order is the dependency

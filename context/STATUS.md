@@ -11,7 +11,7 @@ Resumable state for this repository. Update at every completed block.
 ## Current SHA
 
 - `git rev-parse --short HEAD` at time of writing: `8c8c5e5`. Advances with every commit; treat the live value as authoritative. Since the previous checkpoint at `0a5f98f`, S-04 finished: `e3ab6e5` walked the release in a browser and captured it (Phase 4) with `a5ab2b4` recording its Progress rows, and `2d9de6a` ran the course `mvp-check`, added the cold re-read, the evidence index rows and this hand-off (Phase 5) with `8c8c5e5` recording its rows. Every Progress row in `context/archive/verification-and-release/plan.md` is now checked and carries a commit, and `change.md` reads `implemented` with `archived_at` still null. The slice is **not** archived and no implementation review has been run on it yet.
-- Working tree: clean at this checkpoint. Other agents push to `main` concurrently, so stage by explicit path rather than with `git add -A`, and pull with `--rebase` before every push.
+- Working tree: clean at this checkpoint; S-05 phase 5 and S-06 visual-redesign are in progress by other agents and will add commits. Other agents push to `main` concurrently, so stage by explicit path rather than with `git add -A`, and pull with `--rebase` before every push.
 
 ## Active change / phase
 
@@ -86,3 +86,15 @@ Resumable state for this repository. Update at every completed block.
 ## Architect track
 
 - A01 to A14 complete. Report: `evidence/architect/architect-report.pdf`.
+
+## Newly requested work
+
+S-06 `visual-redesign` is ready, not implemented. Fable 5.1 owns every design decision using frontend-design; Opus/Sonnet implement only the complete specification. Read `context/foundation/visual-redesign-brief.md`. This is the explicit design-only exception to coordination-only orchestration. Complete V01–V06 in parent GOALS.md before final package readiness.
+
+## OpenRouter configuration update
+
+The user reports supplying the OpenRouter key in the workspace root `.env`: `/Users/sebastian.f/Projects/10xDevs/.env`. The file exists; its contents have not been inspected in this update. Do not print, commit or copy its contents into evidence. Have the assigned Opus/Sonnet implementation agent load it securely into the reviewer process; the reviewer currently reads process environment, so file presence alone does not establish authentication. Configure the GitHub `OPENROUTER_API_KEY` secret through secure tooling under the standing GitHub authorization, without logging the value. Do not require the user to provide the key again unless validation proves it absent or invalid.
+
+Preferred reviewer model: `z-ai/glm-5.3-flash`. Alternative: `deepseek/deepseek-v4-flash-0731`. Use these two as the course's 2-model promptfoo comparison on the same fixtures. Verify exact IDs, availability, structured-output compatibility and current pricing before live execution; do not assume the alternative is cheaper without checking. Set `REVIEWER_MODEL` consistently for local runs and CI, and align evaluation configuration, tests and documentation through the existing researched/reviewed change flow. Select between them using actual rubric pass/fail, cost and latency results. Do not silently switch to a more expensive model if either fails; record the failure and use the supported preferred alternative where possible.
+
+These are models for the Champion reviewer/evaluations only. Fable 5.1 remains the designer/orchestrator, and implementation subagents remain Opus/Sonnet. Retain existing spending limits; use bounded fixtures and avoid unbounded retries. This update does not claim a successful API call, provisioned GitHub secret or hosted review run. Complete and checkpoint those steps with real evidence.
