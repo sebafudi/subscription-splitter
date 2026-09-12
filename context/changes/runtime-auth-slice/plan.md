@@ -716,15 +716,15 @@ means re-reading its core table definitions in the installed package and editing
 
 #### Automated
 
-- [x] 3.1 Integration tests pass, including the refused seed call
-- [x] 3.2 Typecheck passes
-- [x] 3.5 All four seeding cases from the decision record pass
-- [x] 3.6 seed:local performs the documented seed and no stale README line remains
+- [x] 3.1 Integration tests pass, including the refused seed call — dbe3b2e
+- [x] 3.2 Typecheck passes — dbe3b2e
+- [x] 3.5 All four seeding cases from the decision record pass — dbe3b2e
+- [x] 3.6 seed:local performs the documented seed and no stale README line remains — dbe3b2e
 
 #### Manual
 
-- [x] 3.3 Documented setup produces two accounts that can sign in
-- [x] 3.4 Seed path returns 404 with the gate off
+- [x] 3.3 Documented setup produces two accounts that can sign in — dbe3b2e
+- [x] 3.4 Seed path returns 404 with the gate off — dbe3b2e
 
 ### Phase 4: The first screens
 
