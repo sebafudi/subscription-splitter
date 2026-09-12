@@ -566,10 +566,16 @@ effective-dated price change; mark one break month. Every value is synthetic and
 in the release summary as an offset from the plan's start month.
 
 Separately, and only for the CRUD cycle below, add a third non-owner participant named so its purpose
-is obvious. The payment, price-entry and schedule rows the transcript creates hang off it, and it is
+is obvious. The payment and schedule rows the transcript creates hang off it, and it is
 removed before the phase closes, in dependency order: the payment by the cycle's own delete, then the
 schedule, then the participant itself, whose delete succeeds once `hasDependents` is false. Nothing
 the transcript creates to demonstrate a verb is left behind.
+
+A price entry is deliberately not part of that set. `price_history` is keyed on the subscription and
+carries no member id, so a price entry cannot hang off a participant and deleting the participant
+would not take one with it; a price entry created for the cycle would survive on the demo plan and
+move the balances phase 4 captures. The price verbs the transcript exercises are therefore the demo
+plan's own price and price change from the paragraph above, which are meant to stay.
 
 What cannot be removed is stated here rather than discovered later: the demo subscription and its
 owner member are permanent, because the product exposes no `DELETE /api/subscriptions/:id` and answers
@@ -803,7 +809,10 @@ repository rather than a command that can be invoked.
 
 **Contract**: The prompt is followed as written and its report produced in the structure it specifies:
 a checklist with an explicit pass or fail marker for each of its five criteria, a percentage line, and
-prioritized improvements for anything that fails. The report is written in English, with the five
+prioritized improvements for anything that fails. The marker is the literal word `PASS` or `FAIL`,
+pinned here so the criterion below can grep for a token that is decided rather than guessed; the
+prompt's own format uses tick and cross marks, and the same reasoning that writes the report in
+English writes its markers as words. The report is written in English, with the five
 criteria named in English, because its audience is the evidence index and a reviewer reading this
 repository; the prompt itself is in Polish and names its sections there, and following its structure
 rather than its language is the deliberate choice. Every pass cites a file path or a function name
@@ -903,12 +912,16 @@ writer by naming the evidence paths; this slice does not edit `GOALS.md`.
 
 - Typecheck passes: `npm run typecheck`
 - The whole suite passes: `npm test`
-- The report names each of the five criteria exactly once, by name rather than by counting digits:
-  `rg -c -e "CRUD operations" -e "Business logic" -e "Tests addressing a defined risk" -e "User-linked
-  authentication" -e "Documentation" context/changes/verification-and-release/mvp-check.md`, with each
-  pattern matching once
-- The report carries a pass or fail marker for each criterion and a percentage line:
-  `rg -c "^\s*[0-9]\. .*(PASS|FAIL)" ...` finds five, and a line matching `[0-9]+%` exists
+- The report names each of the five criteria, checked one pattern at a time rather than by a single
+  line count over alternatives: five separate `rg --count-matches "<one criterion name>"
+  context/changes/verification-and-release/mvp-check.md` runs, each returning at least one. A single
+  `rg -c` over five `-e` alternatives cannot express this, because it counts matching lines rather
+  than matches per pattern, and a word like "Documentation" recurs in the improvements section by
+  design
+- The report carries a pass or fail marker against each of the five criteria and a percentage line.
+  The marker token is whatever phase 5 change 1 pins, and the check greps for that token rather than
+  assuming one: the prompt's own format uses tick and cross marks, so a check written against `PASS`
+  or `FAIL` would pass or fail for the wrong reason. A line matching `[0-9]+%` exists
 - The cold re-read returns the same balances: the summary read in a fresh session equals the figures
   phase 4 recorded
 - The evidence index names the release artifacts: the transcript, the summary, the screenshot prefix
