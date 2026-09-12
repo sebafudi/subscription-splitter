@@ -1073,18 +1073,18 @@ with every child table added after this one.
 
 #### Automated
 
-- [x] 2.1 Integration tests pass
-- [x] 2.2 Unit tests pass
-- [x] 2.3 Typecheck passes
-- [x] 2.4 All three migrations apply in order to a clean local database
-- [x] 2.5 Every new route answers 401 without a cookie
-- [x] 2.8 A created subscription comes back with exactly one owner member starting at its start month
-- [x] 2.9 A subscription PATCH carrying start_month is refused with 400 and changes nothing
+- [x] 2.1 Integration tests pass — a304b6d
+- [x] 2.2 Unit tests pass — a304b6d
+- [x] 2.3 Typecheck passes — a304b6d
+- [x] 2.4 All three migrations apply in order to a clean local database — a304b6d
+- [x] 2.5 Every new route answers 401 without a cookie — a304b6d
+- [x] 2.8 A created subscription comes back with exactly one owner member starting at its start month — a304b6d
+- [x] 2.9 A subscription PATCH carrying start_month is refused with 400 and changes nothing — a304b6d
 
 #### Manual
 
-- [x] 2.6 The ownership cases failed first for the right reason
-- [x] 2.7 A second owner produced 409 rather than a 500
+- [x] 2.6 The ownership cases failed first for the right reason — a304b6d
+- [x] 2.7 A second owner produced 409 rather than a 500 — a304b6d
 
 #### Notes
 
