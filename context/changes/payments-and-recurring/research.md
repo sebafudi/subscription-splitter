@@ -39,13 +39,15 @@ follow those rules without changing any of them.
 The one genuinely new thing is the assumed-receipt rule, and it is new only in that it becomes
 reachable. S-02 writes `recurringReceived` and unit tests it against a literal state; nothing can
 store a schedule or an exception until this slice, so the stored half of test-plan risk 4 is open by
-design and this slice closes it. The rule has five conditions and each one, dropped on its own,
+design and this slice closes it. The rule has six conditions and each one, dropped on its own,
 overstates what has been collected: at or after the schedule's start month, at or before its end
-month when it has one, not a break month, covered by one of the member's active ranges, and not
-listed as an exception for that schedule and month. A sixth condition, not after the current month,
-is not in the function at all: it holds because `computeSummary` enumerates only up to the current
-month and never asks about a later one. That is correct and it is also the condition most likely to
-be lost by a future caller, so it is pinned at the summary level rather than assumed.
+month when it has one, at or before the current month whether or not the schedule has an end month,
+not a break month, covered by one of the member's active ranges, and not listed as an exception for
+that schedule and month. The third of those was moved into the rule by S-02's own revision, as an
+explicit current-month argument, precisely because the test plan names the not-yet-elapsed boundary
+as its own failure mode. What is left to lose is the threading of that argument, so this slice
+asserts the bound against the rule and again through the summary, where the current month is derived
+once from the subscription's time zone.
 
 The prototype answers every one of those boundaries the same way this project wants, so the
 departures here are not about the rule. They are about what the requirements ask for that the
@@ -70,12 +72,14 @@ authoritative and every item below is a contract this slice consumes rather than
   `{ id, memberId, date, amount, note, kind: 'manual' | 'annual' }`, `RecurringSchedule` is
   `{ id, memberId, amount, startMonth, endMonth: MonthStr | null }` and `RecurringException` is
   `{ recurringId, month }`. This slice fills the three arrays and changes no type.
-- **The received-month rule is already written.** `recurringReceived(state, member, months)` sums a
-  schedule's amount for each month satisfying the five conditions above.
-  `balanceForMember(state, member, months)` returns owed, paid and balance where paid is recorded
-  payments plus `recurringReceived`. `computeSummary(state, current)` defines `collectedThisMonth`
-  as payments dated in the current month plus recurring received for it. None of the three changes
-  shape here.
+- **The received-month rule is already written.**
+  `recurringReceived(state, member, months, current)` sums a schedule's amount for each month
+  satisfying the six conditions above, with the current month an explicit argument rather than a
+  property of the month list. `balanceForMember(state, member, months, current)` returns owed, paid
+  and balance where paid is recorded payments plus `recurringReceived`.
+  `computeSummary(state, current)` derives that month once from the subscription's time zone and
+  defines `collectedThisMonth` as payments dated in the current month plus recurring received for it.
+  None of the three changes shape here, and this slice adds no new caller of any of them.
 - **`loadState(db, subscriptionId, userId)` is the single assembly point.** S-02 returns the three
   ledger arrays empty with a note that S-03 fills them. **Inference:** this slice adds three reads to
   one function and touches no route's assembly logic, which is exactly why S-02 typed the arrays
@@ -98,10 +102,17 @@ authoritative and every item below is a contract this slice consumes rather than
   `start_month` and `time_zone` in bodies while returning `startMonth` and `timeZone`; S-02's routes
   use `:memberId` and `:priceId`. **Inference:** a `memberId` query filter and a `:paymentId` path
   parameter are consistent with that split, and body keys stay snake_case.
-- **`hasDependents(db, memberId)` already exists as the named seam.** S-02 puts it in
-  `src/server/db/members.ts` and has it answer `false`, with a note saying S-03 adds its clauses
-  there rather than in the route. The member DELETE 409 branch is therefore already routed; this
+- **`hasDependents(db, subscriptionId, memberId, userId)` already exists as the named seam.** S-02
+  puts it in `src/server/db/members.ts`, gives it the same ownership predicate as its siblings even
+  though the route calls it after a scoped read, and has it answer `false`, with a note saying S-03
+  adds its clauses there rather than in the route. The member DELETE 409 branch is therefore already routed; this
   slice only makes it reachable.
+- **One question is handed here explicitly.** S-02's plan leaves `ownerResidualForMonth` with no
+  caller, notes that its `activeCount - 1` expression assumes the owner is always active and is
+  therefore inert rather than wrong, and says whether to delete it is settled by this slice, where
+  payments make the question concrete. **Inference:** payments give it no caller either, since the
+  owner's share of a month is produced inside `computeSummary`, so the answer is to remove it rather
+  than to widen it, with a search as the precondition in case S-02 landed a caller after all.
 - **Validation modules are one file per resource under `src/server/validation/`,** exporting a
   strict create schema with defaults and a partial strict patch schema refusing an empty body, plus
   the inferred input types the repository functions accept. Invariants that need more than the
@@ -118,7 +129,7 @@ authoritative and every item below is a contract this slice consumes rather than
 | Schedule shape | `{ memberId, amount, startMonth, endMonth \| null }`, several segments per member, all summed independently | Same shape, but overlapping segments for one member are refused |
 | Months a schedule contributes | At or after `startMonth`, at or before `endMonth` when set, and only months the caller enumerated | Same |
 | End month inclusivity | `endMonth` is inclusive; a null end means "still running" | Same |
-| The current-month bound | Falls out of the caller enumerating only to the current month; there is no clamp inside the function | Same, and unlike the prototype it is pinned by a test at the summary level |
+| The current-month bound | Falls out of the caller enumerating only to the current month; there is no clamp inside the function | **Changed**: an explicit argument to the rule, so the bound is stated rather than implied, and it is tested at both levels |
 | Break months | Zero the contribution for that month for every member, whatever the schedule says | Same |
 | Member's active range | A month outside every range of the member contributes nothing, silently | Same |
 | Exception | Keyed by schedule and month together, removes that month's whole contribution, affects no other month and no other schedule | Same |
@@ -138,8 +149,9 @@ its anti-pattern as "testing a single mid-range month and never the four boundar
 rule hard". Read against the prototype's suite and the requirements, the boundaries are:
 
 1. **Not yet elapsed.** A schedule with no end month, or with an end month in the future, must
-   contribute nothing for months after the current one. The guard is the enumeration, not the rule,
-   which is why it needs its own test.
+   contribute nothing for months after the current one. S-02's revision makes this an argument to the
+   rule rather than a property of the caller's month list, so the remaining way to lose it is to
+   thread the wrong month, which is why it is asserted both against the rule and through the summary.
 2. **Outside the member's active range.** A member who left in July and rejoined in October has a
    schedule that may span the gap. The gap months contribute nothing. **Inference:** this is the
    boundary most likely to be missed, because the schedule and the range are edited on different
@@ -302,6 +314,11 @@ Specified by S-02 and consumed here, not yet on disk:
    Settled here as yes: the domain type from S-02 says `kind`, the column is `tag`, and the
    repository maps between them at the boundary exactly as it maps `start_month` to `startMonth`.
    Blocks nothing.
-5. **Which recurring unit cases S-02's suite already pins.** Unknown until S-02 lands. This slice
+5. **Whether `ownerResidualForMonth` survives.** Settled here as no: S-02 hands the question to this
+   slice, payments give the helper no caller, and a dead export encoding a false assumption is a trap
+   for the first person who needs a residual. The removal is conditional on a search finding no
+   importer; if one exists, the helper stays and gains the charged-count argument D-006 describes.
+   Blocks nothing.
+6. **Which recurring unit cases S-02's suite already pins.** Unknown until S-02 lands. This slice
    extends those files rather than duplicating cases, and phase 1 begins by reading them. Blocks
    phase 1 only, and for one read.

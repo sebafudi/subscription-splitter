@@ -63,10 +63,11 @@ account asking for any of the new records, by any route and any verb, is told th
 - S-02's `SubscriptionState` already carries `payments`, `recurring` and `recurringExceptions`, and
   `loadState` already returns them empty with a note naming this slice. Filling them is three reads in
   one function, and no calculation signature changes. This is why S-02 typed them early.
-- The current-month bound on assumed receipts is not inside `recurringReceived`. It holds because
-  `computeSummary` enumerates from the subscription's start month to the current month and never asks
-  the function about a later one. That is correct and invisible, so it is pinned by a test at the
-  summary level rather than left to the reader.
+- S-02's revision makes the current month an explicit fourth argument to `recurringReceived` and to
+  `balanceForMember`, so the not-yet-elapsed bound is the sixth condition inside the rule rather than a
+  property of whatever month list a caller happens to pass. What is left to lose is the threading: this
+  slice adds no new caller of either function, and asserts the bound twice, once against the rule and
+  once through `computeSummary`, because those two can only disagree if the argument is passed wrongly.
 - A schedule overlap cannot be an index. SQLite has no exclusion constraint, so unlike S-02's
   one-owner partial unique index this rule is a read-then-check in the route. The consequence is a
   race between two concurrent writes for one member, which at one organizer per subscription is not
@@ -140,11 +141,14 @@ adjusted in place if they moved:
 
 ## Critical implementation details
 
-**The current-month bound lives in the caller, not in the rule.** `recurringReceived` counts any
-month it is handed that satisfies its five conditions. It is `computeSummary` enumerating only as far
-as the current month that stops an open-ended schedule from claiming next year. A future caller that
-enumerates further would silently inflate collected money, so the bound is asserted at the summary
-level, with a schedule whose end month is well beyond the current one.
+**The current month is threaded, never inferred a second time.** S-02 makes it an explicit argument
+to `recurringReceived` and `balanceForMember`, and `computeSummary` derives it once from the
+subscription's own time zone. This slice adds no new caller of any of the three: the summary route
+stays the only entry point into the calculation, no payment or standing-order route computes a month
+of its own, and the screen takes the current month from the summary response rather than from the
+browser. A second source would let an open-ended arrangement claim a month that has not arrived, in a
+way no test of the rule itself would see, and `AGENTS.md` already forbids the derivation that
+produces it.
 
 **Every new route module registers its own session middleware.** Routers are mounted at `'/'` and own
 their absolute paths, so middleware does not cascade between them. Both new modules register
@@ -231,7 +235,24 @@ current month, inclusive, and empty when the arrangement has not started. This i
 draws an unpaid toggle for, and it is in the domain rather than in the client so the screen and the
 rule cannot disagree about which months an arrangement covers.
 
-#### 4. Unit tests
+#### 4. The residual helper S-02 left behind
+
+**File**: `src/domain/money.ts`
+
+**Purpose**: Answer the question S-02 hands to this slice. Its plan leaves `ownerResidualForMonth`
+with no caller and with an `activeCount - 1` expression that assumes the owner is always one of the
+active members, wrong for any month the owner sits out and inert only for as long as nothing calls
+it, and says explicitly that whether to delete it is settled here.
+
+**Contract**: Remove `ownerResidualForMonth` and its unit cases. The owner's share of a month is
+produced inside `computeSummary`, which is the value the screen renders and the tests assert, so the
+helper has no caller to gain and payments give it none. A dead export in a pure module that encodes a
+false assumption is a trap for the first person who needs a residual and reaches for the one that is
+already there. The precondition is a search: if S-02 landed a caller after all, the helper stays, it
+gains the charged-count argument D-006 describes, and this change becomes that instead. That search
+is the first thing phase 1 does to this file.
+
+#### 5. Unit tests
 
 **Files**: `src/domain/months.test.ts`, `src/domain/payments.test.ts`,
 `src/domain/recurring.test.ts`, `src/domain/calc.test.ts`
@@ -261,8 +282,10 @@ a case S-02 already pins is not repeated.
   month outside every active range of the member removes it; the end month itself counts and the
   month after it does not
 - an exception for one schedule leaves another schedule's same month untouched
-- through `computeSummary`, an open-ended schedule and a schedule ending well after the current month
-  both contribute for elapsed months only, and nothing for any later month
+- the not-yet-elapsed bound: an open-ended schedule and one ending well after the current month both
+  contribute for elapsed months only, asserted directly against `recurringReceived` with the current
+  month passed as its own argument, and again through `computeSummary`, so an argument threaded
+  wrongly cannot pass unnoticed
 - drift: a schedule paying more than the member's share each month produces a growing positive
   balance, and is not clamped to the share
 - a payment dated in the current month and a payment dated years ahead both count in `paid` now, and
@@ -285,6 +308,8 @@ a case S-02 already pins is not repeated.
 - Typecheck passes: `npm run typecheck`
 - Integration tests still pass: `npm run test:integration`
 - Nothing under `src/domain/` imports from `src/server/`, `hono` or a D1 type
+- A search for `ownerResidualForMonth` across `src/` returns nothing, or it returns the caller that
+  kept it alive and the helper carries its charged-count argument
 
 #### Manual verification:
 
@@ -383,10 +408,12 @@ column name escapes the module.
 **Purpose**: Make S-02's 409 branch reachable. A member with recorded payments is archived, never
 hard-deleted, which is FR-012 and the `AGENTS.md` rule.
 
-**Contract**: `hasDependents(db, memberId)` answers true when any payment names the member. The
-function keeps its signature and its place; S-02 left it answering false for exactly this. The check
-stays in the repository rather than the route because the cascade on `payments.member_id` means a
-delete that reaches SQL has already destroyed the history.
+**Contract**: `hasDependents(db, subscriptionId, memberId, userId)` answers true when any payment
+names the member. The function keeps the signature and the module-wide ownership predicate S-02 gave
+it, joining `subscriptions` and filtering `s.id = ?` and `s.user_id = ?` alongside the member, and it
+keeps its place: S-02 left it answering false for exactly this clause. The check stays in the
+repository rather than in the route because the cascade on `payments.member_id` means a delete that
+reaches SQL has already destroyed the history.
 
 #### 5. The state loader reads payments
 
@@ -572,8 +599,9 @@ toggle.
 
 **Purpose**: Close FR-012 and FR-013 completely.
 
-**Contract**: `hasDependents(db, memberId)` answers true when any payment or any recurring schedule
-names the member. With this clause the function is complete and the 409 branch covers everything the
+**Contract**: `hasDependents(db, subscriptionId, memberId, userId)` answers true when any payment or
+any recurring schedule names the member, both reached through the same ownership predicate as its
+first clause. With this clause the function is complete and the 409 branch covers everything the
 requirements call history.
 
 #### 5. The state loader reads schedules and exceptions
@@ -743,8 +771,9 @@ it, and never let assumed money read as confirmed money.
 **Contract**: One block per participant with an arrangement, showing the amount, the month it started
 and the month it ends or that it is still running. A form adds an arrangement and edits one, including
 ending it by setting an end month and reopening it by clearing one. Under each arrangement, the
-elapsed months from the domain's `scheduleMonths`, each with a control that marks it unpaid and
-unmarks it, writing and deleting the exception. A month that is marked shows as not received and is
+elapsed months from the domain's `scheduleMonths`, called with the current month taken from the
+summary response and never computed in the browser, each with a control that marks the month unpaid
+and unmarks it, writing and deleting the exception. A month that is marked shows as not received and is
 visibly different from one that is counted. Every counted month is labelled assumed received, and the
 label appears wherever an assumed amount is totalled, never only once at the top of the section.
 
@@ -834,7 +863,8 @@ covered, and one work-log entry. Append only; never rewrite either file.
 
 **Contract**: Set rollout phase 3's Status and Change folder in the table in section 3, and add the
 short note section 6.5 invites, saying what this phase taught about the assumed-receipt rule: that
-four of its five conditions are in the function and the fifth is in the caller. Leave every other
+its six conditions are cheapest to test as pairs against one state, so the only difference between a
+counted month and a skipped one is the single condition under test. Leave every other
 section untouched, including the cookbook entries 6.1, 6.2 and 6.3, which belong to other rollout
 phases.
 
@@ -865,7 +895,8 @@ phases.
 - The elapsed months of an arrangement, bounded by the current month and by the end month
 - The assumed-receipt rule, one paired test per disqualifying condition, plus the end month itself and
   the month after it
-- The current-month bound asserted through `computeSummary` rather than through the rule
+- The not-yet-elapsed bound asserted twice: against the rule with the current month as its own
+  argument, and through `computeSummary`
 - Drift: a standing order larger than the share accumulates credit and is never clamped
 - Payments in balances: future-dated counted now, `annual` counted as ordinary, edit and delete
   recomputed from inputs
@@ -905,7 +936,8 @@ phases.
 
 | Test-plan risk | Covered by | Phase |
 |---|---|---|
-| 4, a standing order counted for a month it should not cover | the paired unit cases in `src/domain/recurring.test.ts` and `calc.test.ts`, one per disqualifying condition, the current-month bound asserted through `computeSummary`, and the stored half in `tests/integration/recurring.test.ts` and `summary.test.ts`. This closes the half S-02 left open | 1, 3 |
+| 4, a standing order counted for a month it should not cover | the paired unit cases in `src/domain/recurring.test.ts` and `calc.test.ts`, one per disqualifying condition, the not-yet-elapsed bound asserted against the rule and again through `computeSummary`, and the
+stored half in `tests/integration/recurring.test.ts` and `summary.test.ts`. This closes the half S-02 left open | 1, 3 |
 | 3, a record lost or half-applied | the create-then-refetch cases for both tables, the edit and delete cases, the narrowed-range exception cleanup, the member delete refusal, and all six migrations applying in order | 2, 3 |
 | 2, a record reached across accounts | ownership and 401 cases in `tests/integration/payments.test.ts` and `recurring.test.ts`, including a child reached through a foreign member, through a foreign parent, and through a member filter naming another account's member | 2, 3 |
 | 1, a balance wrong by rounding, by a month or by a price | the acceptance example with a payment asserted in the domain and read back through the summary route; the rest of risk 1 is S-02's and is not re-proven here | 1, 3 |
@@ -961,11 +993,12 @@ intended consequence, not a regression.
 - [ ] 1.2 Typecheck passes
 - [ ] 1.3 Integration tests still pass
 - [ ] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
+- [ ] 1.5 A search for ownerResidualForMonth returns nothing, or returns the caller that kept it alive
 
 #### Manual
 
-- [ ] 1.5 Each new unit test failed first for the stated reason
-- [ ] 1.6 The acceptance example was computed by hand before the assertion was written
+- [ ] 1.6 Each new unit test failed first for the stated reason
+- [ ] 1.7 The acceptance example was computed by hand before the assertion was written
 
 ### Phase 2: Payments
 

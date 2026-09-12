@@ -17,8 +17,9 @@ S-01 is on main: sessions, two seeded accounts, subscriptions and the ownership 
 SQL. S-02 is planned and not yet on disk; it brings the calculation, members and their active ranges,
 prices, break months, the state loader, the summary route and the detail screen. It already declares
 the payment, schedule and exception types, already writes the received-month rule against them,
-already leaves `hasDependents` as the seam a delete rule asks, and already returns the three ledger
-arrays empty with a note naming this slice. Nothing can store a payment or a standing order, so the
+already leaves `hasDependents` as the seam a delete rule asks, already makes the current month an
+explicit argument to the rule, and already returns the three ledger arrays empty with a note naming
+this slice. Nothing can store a payment or a standing order, so the
 assumed-receipt rule is proven only against a literal state.
 
 ## Desired end state
@@ -37,7 +38,8 @@ account reaches none of it.
 | Decision | Choice | Why | Source |
 |---|---|---|---|
 | Assumed receipts | A standing order counts its elapsed months automatically, corrected by per-month exceptions | Zero entry in the common case, action only on a real miss, and the balance still shows any drift | Decision D-007 |
-| The fifth condition | The current-month bound lives in `computeSummary`, not in `recurringReceived` | It is correct and invisible, so it is pinned by a test at the summary level | Plan |
+| The not-yet-elapsed bound | An explicit current-month argument to the rule, asserted against the rule and again through the summary | S-02's revision moves the bound inside the rule, so the only remaining failure is threading the argument wrongly | Research |
+| The residual helper S-02 left behind | Removed, once a search confirms no importer | S-02 hands the question here, payments give it no caller, and a dead export with a false assumption is a trap | Plan |
 | An overlapping standing order | Refused with 409 naming the rule | The body is well formed; the conflict is with rows already stored, like a second owner or a duplicate price month | Decision D-007 |
 | Two arrangements that touch in one month | An overlap, not a continuation | The month is the unit of account, the same reason S-02 gives for active ranges | Research |
 | A payment or schedule naming the owner | Refused with 400 naming the member field | The owner is never owed from and is not in the per-member list, so the money would be counted nowhere | Decision D-007 |
@@ -77,7 +79,7 @@ status code. The state loader gains three reads and the calculation gains nothin
 
 | Phase | What it delivers | Key risk |
 |---|---|---|
-| 1. The ledger rules | Real-date, payment-date, overlap and schedule-month predicates, and the unit cases pinning the assumed-receipt rule | The current-month bound is not in the rule, so a test that only exercises the rule would miss it entirely |
+| 1. The ledger rules | Real-date, payment-date, overlap and schedule-month predicates, and the unit cases pinning the assumed-receipt rule | Six conditions decide whether a month counts, and a test that moves more than one at a time proves nothing about either |
 | 2. Payments | The payments table, repository, five routes, and the first clause of the member delete refusal | A payment is two levels below the account, so an ownership join that stops at the member leaks across subscriptions |
 | 3. Standing orders | The schedule and exception tables, repository, seven routes, and the state loader filled | The overlap rule cannot be an index, so it is the one invariant a route has to remember |
 | 4. The two sections | Payment list, form, inline edit and delete, per-participant arrangements and their month toggles | Showing assumed money next to recorded money without labelling it is the one way this product can mislead its user |

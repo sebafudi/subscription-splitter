@@ -4,13 +4,15 @@
   changes. First, a standing order is **assumed received**: once the organizer records that a
   participant sends a fixed amount every month from a given month, optionally until a given month,
   every month of that arrangement counts automatically, and a month stops counting only when one of
-  five conditions fails. The month must be at or after the arrangement's start month, at or before its
-  end month when it has one, not a break month, covered by one of the participant's active ranges, and
-  not listed as an exception for that arrangement and that month. A sixth condition, that the month
-  has elapsed, is not inside the rule: it holds because the summary enumerates only from the
-  subscription's first month to the current month in the subscription's own time zone and never asks
-  the rule about a later one. That bound is asserted by its own test at the summary level, because it
-  is correct and invisible. The exception is the whole correction mechanism: it records one month of
+  six conditions fails. The month must be at or after the arrangement's start month, at or before its
+  end month when it has one, at or before the current month whether or not the arrangement has an end
+  month, not a break month, covered by one of the participant's active ranges, and not listed as an
+  exception for that arrangement and that month. The elapsed-month condition is an explicit argument
+  to the rule rather than a property of whatever month list a caller passes, because the test plan
+  names the not-yet-elapsed boundary as its own failure mode and ties it to the subscription's time
+  zone. That leaves the threading of the argument as the only way the bound can still be lost, so it
+  is asserted twice, against the rule and through the summary, and the summary stays the one place
+  that asks what month it is. The exception is the whole correction mechanism: it records one month of
   one arrangement, leaves every other month and every other arrangement untouched, and is written and
   removed by the two ends of one idempotent toggle. Second, a payment dated in the future is accepted
   and counts as credit immediately, while a payment whose month precedes the subscription's first
@@ -79,10 +81,11 @@
   be stored, counted nowhere and shown nowhere. The refusal is reversible in one route if the
   organizer ever wants to record money they paid themselves.
 - **Affected tests:** Unit tests in `src/domain/`: the assumed-receipt rule counts a month inside the
-  range and stops counting it for each of the four disqualifying conditions, each written as a pair
+  range and stops counting it for each of the five disqualifying conditions, each written as a pair
   against the same state so the difference is the condition alone; the end month itself counts and the
-  month after it does not; through `computeSummary`, an open-ended arrangement and one ending after
-  the current month both contribute for elapsed months only; a standing order larger than the
+  month after it does not; an open-ended arrangement and one ending after the current month both
+  contribute for elapsed months only, asserted against the rule with the current month as its own
+  argument and again through `computeSummary`; a standing order larger than the
   participant's share accumulates credit and is never clamped; a future-dated payment counts now while
   a payment dated before the plan's first month is refused by the date rule; a payment with the yearly
   label counts exactly as an ordinary one; `collectedThisMonth` adds a manual payment in the current
