@@ -1,6 +1,7 @@
 import type { SubscriptionState } from '../../domain/types'
 import { list as listBreakMonths } from './break-months'
 import { list as listMembers } from './members'
+import { list as listPayments } from './payments'
 import { list as listPrices } from './prices'
 import { get as getSubscription } from './subscriptions'
 
@@ -10,9 +11,9 @@ import { get as getSubscription } from './subscriptions'
  * missing or foreign; every read below carries the same ownership predicate,
  * so a partial answer is not reachable.
  *
- * Recurring schedules, their exceptions and payments are empty here: S-03 adds
- * three reads and changes nothing else, because the domain is already written
- * against the full shape.
+ * Recurring schedules and their exceptions are still empty here: S-03 phase 3
+ * adds those two reads and changes nothing else, because the domain is already
+ * written against the full shape.
  */
 export async function loadState(
   db: D1Database,
@@ -22,10 +23,11 @@ export async function loadState(
   const subscription = await getSubscription(db, subscriptionId, userId)
   if (!subscription) return null
 
-  const [members, priceHistory, breakMonths] = await Promise.all([
+  const [members, priceHistory, breakMonths, payments] = await Promise.all([
     listMembers(db, subscriptionId, userId),
     listPrices(db, subscriptionId, userId),
     listBreakMonths(db, subscriptionId, userId),
+    listPayments(db, subscriptionId, userId),
   ])
 
   return {
@@ -40,6 +42,6 @@ export async function loadState(
     members,
     recurring: [],
     recurringExceptions: [],
-    payments: [],
+    payments,
   }
 }

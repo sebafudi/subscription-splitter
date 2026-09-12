@@ -1,4 +1,5 @@
 import type { ActiveRange, Member } from '../../domain/types'
+import { existsForMember as paymentExistsForMember } from './payments'
 import type { CreateMemberInput, PatchMemberInput } from '../validation/members'
 
 type MemberRow = {
@@ -217,17 +218,16 @@ export async function remove(
 
 /**
  * Whether anything else in the subscription would lose its parent if this
- * member were deleted. Nothing references a member yet; S-03's payments and
- * recurring schedules are what attach here, and they inherit the subscription
- * id and session user this signature already carries rather than growing a
- * second, narrower ownership rule beside the one every other statement in this
- * module uses. Parameters are named for that arrival and unused until then.
+ * member were deleted. Recorded payments are the first clause; S-03 phase 3
+ * adds recurring schedules beside it. The check lives here rather than in the
+ * route because `payments.member_id` cascades on delete, so a member delete
+ * that reaches SQL has already destroyed the history it was meant to protect.
  */
 export async function hasDependents(
-  _db: D1Database,
-  _subscriptionId: string,
-  _memberId: string,
-  _userId: string,
+  db: D1Database,
+  subscriptionId: string,
+  memberId: string,
+  userId: string,
 ): Promise<boolean> {
-  return false
+  return paymentExistsForMember(db, subscriptionId, memberId, userId)
 }

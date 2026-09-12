@@ -4,6 +4,7 @@ import subscriptionsRoutes from './routes/subscriptions'
 import membersRoutes from './routes/members'
 import pricesRoutes from './routes/prices'
 import breakMonthsRoutes from './routes/break-months'
+import paymentsRoutes from './routes/payments'
 import summaryRoutes from './routes/summary'
 import devSeedRoutes from './routes/dev-seed'
 
@@ -15,6 +16,7 @@ app.route('/', subscriptionsRoutes)
 app.route('/', membersRoutes)
 app.route('/', pricesRoutes)
 app.route('/', breakMonthsRoutes)
+app.route('/', paymentsRoutes)
 app.route('/', summaryRoutes)
 app.route('/', devSeedRoutes)
 

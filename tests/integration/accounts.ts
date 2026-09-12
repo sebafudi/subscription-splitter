@@ -11,8 +11,10 @@ import { betterAuth } from 'better-auth'
  * would put them all in one bucket and the failure would read as a flaky
  * sign-in rather than a throttle. Assignments in use:
  * `10.0.0.x` auth.test.ts, `10.1.0.x` subscriptions.test.ts,
- * `10.2.0.x` dev-seed.test.ts, `10.3.0.x` members.test.ts, with `10.4.0.x`
- * and `10.5.0.x` held for the two files phase 3 adds.
+ * `10.2.0.x` dev-seed.test.ts, `10.3.0.x` members.test.ts,
+ * `10.4.0.x` prices.test.ts, `10.5.0.x` summary.test.ts,
+ * `10.6.0.x` payments.test.ts, with `10.7.0.x` held for the standing-orders
+ * file S-03 phase 3 adds.
  */
 
 export const TEST_PASSWORD = 'correct horse battery staple'
