@@ -1094,24 +1094,24 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 
 #### Automated
 
-- [ ] 3.1 Every migration is applied remotely and nothing is left unapplied
-- [ ] 3.2 The deploy returns a new version id and the live URL responds 200
-- [ ] 3.3 The live API is the new build, proven by a successful summary request
-- [ ] 3.4 Unauthenticated access is refused
-- [ ] 3.5 The seed route answers 404 with and without a token
-- [ ] 3.6 A payment survives create, re-read, patch, re-read, delete and a final 404
-- [ ] 3.7 The transcript contains no credential
-- [ ] 3.12 The demo plan has an owner member and the stray subscription's repair succeeded or is recorded as refused
-- [ ] 3.13 The transcript's own participant is gone and the owner's members are the demo participants
+- [x] 3.1 Every migration is applied remotely and nothing is left unapplied
+- [x] 3.2 The deploy returns a new version id and the live URL responds 200
+- [x] 3.3 The live API is the new build, proven by a successful summary request
+- [x] 3.4 Unauthenticated access is refused
+- [x] 3.5 The seed route answers 404 with and without a token
+- [x] 3.6 A payment survives create, re-read, patch, re-read, delete and a final 404
+- [x] 3.7 The transcript contains no credential
+- [x] 3.12 The demo plan has an owner member and the stray subscription's repair succeeded or is recorded as refused
+- [x] 3.13 The transcript's own participant is gone and the owner's members are the demo participants
 
 #### Manual
 
-- [ ] 3.8 The live balance matches a hand calculation made before the request
-- [ ] 3.9 The transcript was read end to end for redaction before staging
-- [ ] 3.10 Sign-out invalidated the session, proven by replaying the cookie
-- [ ] 3.11 What was not exercised live is stated rather than left to inference
-- [ ] 3.14 The owner's subscription list ends the phase with exactly two rows and no demonstration residue
-- [ ] 3.15 What the live pass created that cannot be removed is recorded with the reason
+- [x] 3.8 The live balance matches a hand calculation made before the request
+- [x] 3.9 The transcript was read end to end for redaction before staging
+- [x] 3.10 Sign-out invalidated the session, proven by replaying the cookie
+- [x] 3.11 What was not exercised live is stated rather than left to inference
+- [x] 3.14 The owner's subscription list ends the phase with exactly two rows and no demonstration residue
+- [x] 3.15 What the live pass created that cannot be removed is recorded with the reason
 
 ### Phase 4: Acceptance walkthrough and the final-release screenshots
 

@@ -1,0 +1,447 @@
+Live verification transcript, release version 8e4fa506-cd63-412c-88f2-0101b6348bdb
+Release commit SHA: 8ed342278443e371819c1be58a8042b94c507254
+Target: https://subscription-splitter.sebastianfudalej.workers.dev
+Remote D1 subscription-splitter-db (03067638-dc95-4b5c-9a8a-86f2921e0414), migrations 0001 to 0006 applied.
+Session tokens, passwords and the seed token are redacted, and response timestamps are elided as
+'...', following evidence/runs/deploy-1-live-smoke.txt. Every name and amount is synthetic.
+Amounts are integer minor units. S is the demo plan's start month; months are written as offsets from it.
+
+=============== 1. The build, and access without a session ===============
+
+Root serves the client shell
+GET /
+status=200
+body: <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Subscription Splitter</title>
+    <script type="module" crossorigin src="/assets/index-oPGzvZYd.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BFW1IKbP.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
+Health endpoint
+GET /api/health
+status=200
+body: {"ok":true}
+
+Session probe with no cookie
+GET /api/me
+status=401
+body: {"error":"unauthorized"}
+
+=============== 2. Sign-in surface ===============
+
+Cross-origin sign-in attempt (Origin: https://evil.example)
+POST /api/auth/sign-in/email
+status=403
+body: {"message":"Invalid origin","code":"INVALID_ORIGIN"}
+
+Sign-up endpoint still disabled
+POST /api/auth/sign-up/email
+status=400
+body: {"message":"Email and password sign up is not enabled","code":"EMAIL_PASSWORD_SIGN_UP_DISABLED"}
+
+Sign-in as owner
+POST /api/auth/sign-in/email
+status=200
+Set-Cookie: __Secure-better-auth.session_token=<redacted>; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+
+Session probe with the owner cookie
+GET /api/me
+status=200
+body: {"user":{"name":"Owner","email":"owner@example.com","emailVerified":false,"image":null,"createdAt":"...","updatedAt":"...","id":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq"}}
+
+=============== 3. Sign-out invalidates the session ===============
+
+Sign out
+POST /api/auth/sign-out
+status=200
+body: {"success":true}
+
+Replay the pre-sign-out session cookie (the same token, verbatim)
+GET /api/me
+status=401
+body: {"error":"unauthorized"}
+
+Sign in as owner again (fresh session for the rest of the pass)
+POST /api/auth/sign-in/email
+status=200
+
+=============== 4. The demo plan, built through the product (decision D-010) ===============
+Start month S = 2026-03. Values below are recorded as offsets from S so the state can be recreated.
+
+Create the demo subscription (owner member and its opening range are created in the same batch)
+POST /api/subscriptions
+status=201
+body: {"id":"e519c712-6d1f-489f-889a-1479b70659f3","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"Family music plan","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-03","createdAt":"..."}
+  -> demo subscription id captured; referred to below as <demo>
+
+Owner member created automatically: list members of <demo>
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=200
+body: [{"id":"bbcdf08d-6120-4767-ae37-7487f2e564fc","name":"Alex","isOwner":true,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]}]
+
+Add participant Blake, active from S with no leave month (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=201
+body: {"id":"5db27f94-74c3-4a41-92a0-cd1a659fb5e8","name":"Blake","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]}
+
+Add participant Casey, active S to S+3 so a departure is visible (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=201
+body: {"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-06"}]}
+
+Record the opening price, 10000 minor from S (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/prices
+status=201
+body: {"id":"65355a61-596f-47bf-955d-9c5f7068b06f","effectiveFrom":"2026-03","amount":10000}
+
+Record the price change, 12000 minor from S+4 (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/prices
+status=201
+body: {"id":"72ebb241-574b-4bba-9bd1-7676daecc75b","effectiveFrom":"2026-07","amount":12000}
+
+Mark S+2 as a break month (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/break-months
+status=201
+body: {"month":"2026-05"}
+
+=============== 5. The summary against a hand calculation ===============
+The hand calculation was written down before this request was made. Expected:
+  currentMonthly 12000, currentActiveCount 2, currentPerPersonShare 6000,
+  expectedThisMonth 6000, ownerShareThisMonth 6000, totalPlanCost 66000,
+  owedToYouNow 37998, totalCollected 0, ownerNetCost 66000,
+  Blake owed 27999 balance -27999, Casey owed 9999 balance -9999.
+
+Read the summary of <demo>
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 2, "currentPerPersonShare": 6000, "ownerShareThisMonth": 6000, "owedToYouNow": 37998, "creditOutstanding": 0, "expectedThisMonth": 6000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 6000, "owed": 27999, "paid": 0, "balance": -27999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+
+=============== 6. The transcript's own participant, and the payment cycle ===============
+Everything in this section hangs off a participant created only to demonstrate the verbs,
+and removed again before the phase closes. A price entry is deliberately not part of it:
+price_history is keyed on the subscription and carries no member id, so it could not be
+cleaned up by removing the participant.
+
+Add the throwaway participant Dana, active in the current month only (subscription <demo>)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=201
+body: {"id":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","name":"Dana (transcript cycle, to be removed)","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-09","leftMonth":"2026-09"}]}
+
+Summary of <demo> with Dana present, before any payment
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 3, "currentPerPersonShare": 4000, "ownerShareThisMonth": 4000, "owedToYouNow": 39998, "creditOutstanding": 0, "expectedThisMonth": 8000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+        {"memberId": "0190d7b8-124c-4a60-bca1-04aea5bb88cf", "name": "Dana (transcript cycle, to be removed)", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 4000, "paid": 0, "balance": -4000}
+
+Create a payment of 2500 minor from Dana (subscription <demo>, member Dana)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments
+status=201
+body: {"id":"da9f49eb-56f0-4cc8-9ba5-4214ffe99de9","memberId":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","date":"2026-09-05","amount":2500,"note":"transcript cycle","kind":"manual"}
+
+Re-read that payment in a separate later request (subscription <demo>, member Dana)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments/da9f49eb-56f0-4cc8-9ba5-4214ffe99de9
+status=200
+body: {"id":"da9f49eb-56f0-4cc8-9ba5-4214ffe99de9","memberId":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","date":"2026-09-05","amount":2500,"note":"transcript cycle","kind":"manual"}
+
+Summary after the payment (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 3, "currentPerPersonShare": 4000, "ownerShareThisMonth": 4000, "owedToYouNow": 37498, "creditOutstanding": 0, "expectedThisMonth": 8000, "collectedThisMonth": 2500, "totalPlanCost": 66000, "totalCollected": 2500, "ownerNetCost": 63500}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+        {"memberId": "0190d7b8-124c-4a60-bca1-04aea5bb88cf", "name": "Dana (transcript cycle, to be removed)", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 4000, "paid": 2500, "balance": -1500}
+
+Patch the payment to 3000 minor (subscription <demo>, member Dana)
+PATCH /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments/da9f49eb-56f0-4cc8-9ba5-4214ffe99de9
+status=200
+body: {"id":"da9f49eb-56f0-4cc8-9ba5-4214ffe99de9","memberId":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","date":"2026-09-05","amount":3000,"note":"transcript cycle, corrected","kind":"manual"}
+
+Re-read the patched payment (subscription <demo>, member Dana)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments/da9f49eb-56f0-4cc8-9ba5-4214ffe99de9
+status=200
+body: {"id":"da9f49eb-56f0-4cc8-9ba5-4214ffe99de9","memberId":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","date":"2026-09-05","amount":3000,"note":"transcript cycle, corrected","kind":"manual"}
+
+Summary after the correction (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 3, "currentPerPersonShare": 4000, "ownerShareThisMonth": 4000, "owedToYouNow": 36998, "creditOutstanding": 0, "expectedThisMonth": 8000, "collectedThisMonth": 3000, "totalPlanCost": 66000, "totalCollected": 3000, "ownerNetCost": 63000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+        {"memberId": "0190d7b8-124c-4a60-bca1-04aea5bb88cf", "name": "Dana (transcript cycle, to be removed)", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 4000, "paid": 3000, "balance": -1000}
+
+--- A standing order on the same participant, and one month marked not received ---
+
+Create a standing order of 1000 minor for the current month (subscription <demo>, member Dana)
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/schedules
+status=201
+body: {"id":"ccbdbc05-160a-4865-aca2-4d08563192bf","memberId":"0190d7b8-124c-4a60-bca1-04aea5bb88cf","amount":1000,"startMonth":"2026-09","endMonth":"2026-09","exceptionMonths":[]}
+
+Summary with the standing order counted (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 3, "currentPerPersonShare": 4000, "ownerShareThisMonth": 4000, "owedToYouNow": 35998, "creditOutstanding": 0, "expectedThisMonth": 8000, "collectedThisMonth": 4000, "totalPlanCost": 66000, "totalCollected": 4000, "ownerNetCost": 62000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+        {"memberId": "0190d7b8-124c-4a60-bca1-04aea5bb88cf", "name": "Dana (transcript cycle, to be removed)", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 4000, "paid": 4000, "balance": 0}
+
+Mark the current month of that standing order as not received (subscription <demo>, member Dana)
+PUT /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/schedules/ccbdbc05-160a-4865-aca2-4d08563192bf/exceptions/2026-09
+status=204
+
+Summary with that month excepted (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 3, "currentPerPersonShare": 4000, "ownerShareThisMonth": 4000, "owedToYouNow": 36998, "creditOutstanding": 0, "expectedThisMonth": 8000, "collectedThisMonth": 3000, "totalPlanCost": 66000, "totalCollected": 3000, "ownerNetCost": 63000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+        {"memberId": "0190d7b8-124c-4a60-bca1-04aea5bb88cf", "name": "Dana (transcript cycle, to be removed)", "archived": false, "activeThisMonth": true, "currentShare": 4000, "owed": 4000, "paid": 3000, "balance": -1000}
+
+--- Cleanup, in dependency order: payment, then schedule, then the participant ---
+
+Delete the payment (subscription <demo>, member Dana)
+DELETE /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments/da9f49eb-56f0-4cc8-9ba5-4214ffe99de9
+status=204
+
+The deleted payment is gone (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments/da9f49eb-56f0-4cc8-9ba5-4214ffe99de9
+status=404
+body: {"error":"not found"}
+
+Delete the standing order, which cascades its exception (subscription <demo>, member Dana)
+DELETE /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/schedules/ccbdbc05-160a-4865-aca2-4d08563192bf
+status=204
+
+Delete the throwaway participant, now that it has no dependents (subscription <demo>)
+DELETE /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/0190d7b8-124c-4a60-bca1-04aea5bb88cf
+status=204
+
+Members of <demo> after cleanup: Dana is gone
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=200
+body: [{"id":"bbcdf08d-6120-4767-ae37-7487f2e564fc","name":"Alex","isOwner":true,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]},{"id":"5db27f94-74c3-4a41-92a0-cd1a659fb5e8","name":"Blake","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]},{"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-06"}]}]
+
+Summary of <demo> after cleanup, which must equal the hand-calculated baseline again
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 2, "currentPerPersonShare": 6000, "ownerShareThisMonth": 6000, "owedToYouNow": 37998, "creditOutstanding": 0, "expectedThisMonth": 6000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 6000, "owed": 27999, "paid": 0, "balance": -27999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+
+=============== 7. A member edit and a price guard, moving the same numbers ===============
+
+Rename Casey (subscription <demo>, member Casey)
+PATCH /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/6c68c636-313b-45fe-a63f-df6a77617b94
+status=200
+body: {"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey R.","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-06"}]}
+
+Summary after the rename: a rename moves no money (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 2, "currentPerPersonShare": 6000, "ownerShareThisMonth": 6000, "owedToYouNow": 37998, "creditOutstanding": 0, "expectedThisMonth": 6000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 6000, "owed": 27999, "paid": 0, "balance": -27999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey R.", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+
+Correct Casey's leave month from S+3 to S+4 (subscription <demo>, member Casey)
+PATCH /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/6c68c636-313b-45fe-a63f-df6a77617b94
+status=200
+body: {"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey R.","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-07"}]}
+
+Summary after the range correction: one more charged month, and S+4 now splits three ways (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 2, "currentPerPersonShare": 6000, "ownerShareThisMonth": 6000, "owedToYouNow": 39998, "creditOutstanding": 0, "expectedThisMonth": 6000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 6000, "owed": 25999, "paid": 0, "balance": -25999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey R.", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 13999, "paid": 0, "balance": -13999}
+
+Put Casey's leave month back to S+3 (subscription <demo>, member Casey)
+PATCH /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/6c68c636-313b-45fe-a63f-df6a77617b94
+status=200
+body: {"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey R.","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-06"}]}
+
+Summary back at the baseline (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=200
+body: {"currentMonth": "2026-09", "currency": "PLN", "locale": "pl-PL", "currentMonthly": 12000, "currentActiveCount": 2, "currentPerPersonShare": 6000, "ownerShareThisMonth": 6000, "owedToYouNow": 37998, "creditOutstanding": 0, "expectedThisMonth": 6000, "collectedThisMonth": 0, "totalPlanCost": 66000, "totalCollected": 0, "ownerNetCost": 66000}
+      members:
+        {"memberId": "5db27f94-74c3-4a41-92a0-cd1a659fb5e8", "name": "Blake", "archived": false, "activeThisMonth": true, "currentShare": 6000, "owed": 27999, "paid": 0, "balance": -27999}
+        {"memberId": "6c68c636-313b-45fe-a63f-df6a77617b94", "name": "Casey R.", "archived": false, "activeThisMonth": false, "currentShare": 0, "owed": 9999, "paid": 0, "balance": -9999}
+
+--- Deleting the opening price entry is refused until it is confirmed ---
+Requested without confirm=true on purpose, and deliberately NOT repeated with it:
+the point is the guard, and the demo plan keeps its price history.
+
+Delete the opening price entry, unconfirmed (subscription <demo>)
+DELETE /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/prices/65355a61-596f-47bf-955d-9c5f7068b06f
+status=409
+body: {"error":"deleting this entry leaves 3 month(s) with no price: 2026-03, 2026-04, 2026-06. Repeat the request with confirm=true to go ahead.","months":["2026-03","2026-04","2026-06"]}
+
+Price history is untouched by the refusal (subscription <demo>)
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/prices
+status=200
+body: [{"id":"65355a61-596f-47bf-955d-9c5f7068b06f","effectiveFrom":"2026-03","amount":10000},{"id":"72ebb241-574b-4bba-9bd1-7676daecc75b","effectiveFrom":"2026-07","amount":12000}]
+
+=============== 8. The first deployment's artefact, repaired and relabelled ===============
+This subscription was created by the first deployment's smoke run, before 0003_members.sql
+was applied remotely, so it carries no members row and the shipped build can no longer
+produce that state. It cannot be deleted: the product exposes no DELETE for a subscription.
+
+List the owner's subscriptions
+GET /api/subscriptions
+status=200
+body: [{"id":"67568051-9a6f-4488-b41e-c2173d629119","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"Deploy smoke test","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-09","createdAt":"..."},{"id":"e519c712-6d1f-489f-889a-1479b70659f3","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"Family music plan","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-03","createdAt":"..."}]
+  -> the artefact is referred to below as <stray>; its own start month is 2026-09
+
+Members of <stray> before the repair: none, which is the degraded state
+GET /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119/members
+status=200
+body: []
+
+Give <stray> an owner member opening at its own start month
+POST /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119/members
+status=201
+body: {"id":"59fcdc8b-222d-4ff3-8091-a670daf7ef87","name":"Alex","isOwner":true,"archived":false,"activeRanges":[{"joinedMonth":"2026-09","leftMonth":null}]}
+
+Members of <stray> after the repair
+GET /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119/members
+status=200
+body: [{"id":"59fcdc8b-222d-4ff3-8091-a670daf7ef87","name":"Alex","isOwner":true,"archived":false,"activeRanges":[{"joinedMonth":"2026-09","leftMonth":null}]}]
+
+Relabel <stray> so a reviewer knows what it is
+PATCH /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119
+status=200
+body: {"id":"67568051-9a6f-4488-b41e-c2173d629119","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"First deployment artefact (not the demo plan)","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-09","createdAt":"..."}
+
+Summary of <stray>: an ordinary empty plan now, not the no-owner screen
+GET /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119/summary
+status=200
+body: {"currentMonth":"2026-09","currency":"PLN","locale":"pl-PL","currentMonthly":0,"currentActiveCount":1,"currentPerPersonShare":0,"ownerShareThisMonth":0,"owedToYouNow":0,"creditOutstanding":0,"expectedThisMonth":0,"collectedThisMonth":0,"totalPlanCost":0,"totalCollected":0,"ownerNetCost":0,"members":[]}
+
+=============== 9. The second account reaches nothing of the first ===============
+
+Sign in as the reviewer account
+POST /api/auth/sign-in/email
+status=200
+
+Reviewer lists their own subscriptions: empty, which is the isolation demonstration
+GET /api/subscriptions
+status=200
+body: []
+
+Reviewer names the owner's demo plan by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's summary by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/summary
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's members by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's participant Blake by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/5db27f94-74c3-4a41-92a0-cd1a659fb5e8
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's prices by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/prices
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's schedules by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/schedules
+status=404
+body: {"error":"not found"}
+
+Reviewer names the owner's break months by id
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/break-months
+status=404
+body: {"error":"not found"}
+
+Reviewer tries to write to the owner's plan
+POST /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=404
+body: {"error":"not found"}
+
+Reviewer tries to delete the owner's participant
+DELETE /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members/5db27f94-74c3-4a41-92a0-cd1a659fb5e8
+status=404
+body: {"error":"not found"}
+
+Reviewer tries to patch the owner's subscription
+PATCH /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3
+status=404
+body: {"error":"not found"}
+
+--- A child record reached through the wrong parent, inside the owner's own account ---
+The owner owns both <demo> and <stray>. Naming <demo>'s participant through <stray>'s id
+must be absent, not merely unauthorised: this is the case a repository passes by keeping
+the user predicate and dropping the subscription predicate.
+
+Owner names <demo>'s participant Blake through <stray>'s id
+GET /api/subscriptions/67568051-9a6f-4488-b41e-c2173d629119/members/5db27f94-74c3-4a41-92a0-cd1a659fb5e8
+status=404
+body: {"error":"not found"}
+
+=============== 10. The seed route is closed ===============
+
+Seed route with no token
+POST /api/dev/seed
+status=404
+body: {"error":"not found"}
+
+Seed route with an arbitrary token
+POST /api/dev/seed
+status=404
+body: {"error":"not found"}
+
+=============== 11. The state this pass leaves behind ===============
+
+Owner's subscription list at the end of the phase
+GET /api/subscriptions
+status=200
+body: [{"id":"67568051-9a6f-4488-b41e-c2173d629119","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"First deployment artefact (not the demo plan)","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-09","createdAt":"..."},{"id":"e519c712-6d1f-489f-889a-1479b70659f3","userId":"i6LJDKhuJF03pFUASLUyrDUhiFtdNRGq","name":"Family music plan","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-03","createdAt":"..."}]
+
+Participants of <demo> at the end of the phase
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/members
+status=200
+body: [{"id":"bbcdf08d-6120-4767-ae37-7487f2e564fc","name":"Alex","isOwner":true,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]},{"id":"5db27f94-74c3-4a41-92a0-cd1a659fb5e8","name":"Blake","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]},{"id":"6c68c636-313b-45fe-a63f-df6a77617b94","name":"Casey R.","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":"2026-06"}]}]
+
+Payments of <demo> at the end of the phase
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/payments
+status=200
+body: []
+
+Standing orders of <demo> at the end of the phase
+GET /api/subscriptions/e519c712-6d1f-489f-889a-1479b70659f3/schedules
+status=200
+body: []
+
+Ends here. Nothing below this line was exercised at the API level in this phase;
+the browser walkthrough is phase 4.
