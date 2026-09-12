@@ -1346,23 +1346,23 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [x] 4.1 Typecheck passes across all three projects
-- [x] 4.2 Production build succeeds
-- [x] 4.3 The whole suite passes
+- [x] 4.1 Typecheck passes across all three projects — 979d0cf
+- [x] 4.2 Production build succeeds — 979d0cf
+- [x] 4.3 The whole suite passes — 979d0cf
 
 #### Manual
 
-- [x] 4.4 A recorded payment moves the balance and the headline cards by its amount
-- [x] 4.5 An edit moves the balance and a delete returns it to where it started
-- [x] 4.6 A payment before the plan's first month is refused with a message naming the date
-- [x] 4.7 A future-dated payment counts as credit now
-- [x] 4.8 A standing order's elapsed months are counted and labelled assumed received
-- [x] 4.9 Marking one month as not received stops that month alone from counting
-- [x] 4.10 A recorded receipt and an assumed one are told apart without reading the amounts
-- [x] 4.11 Deleting a participant with history is refused
-- [x] 4.12 The reviewer account reaches none of the payments or standing orders
-- [x] 4.13 The layout is usable at a narrow phone width
-- [x] 4.14 A break month and a departure inside a standing order are drawn as not counted with the reason named
+- [x] 4.4 A recorded payment moves the balance and the headline cards by its amount — 979d0cf
+- [x] 4.5 An edit moves the balance and a delete returns it to where it started — 979d0cf
+- [x] 4.6 A payment before the plan's first month is refused with a message naming the date — 979d0cf
+- [x] 4.7 A future-dated payment counts as credit now — 979d0cf
+- [x] 4.8 A standing order's elapsed months are counted and labelled assumed received — 979d0cf
+- [x] 4.9 Marking one month as not received stops that month alone from counting — 979d0cf
+- [x] 4.10 A recorded receipt and an assumed one are told apart without reading the amounts — 979d0cf
+- [x] 4.11 Deleting a participant with history is refused — 979d0cf
+- [x] 4.12 The reviewer account reaches none of the payments or standing orders — 979d0cf
+- [x] 4.13 The layout is usable at a narrow phone width — 979d0cf
+- [x] 4.14 A break month and a departure inside a standing order are drawn as not counted with the reason named — 979d0cf
 
 ### Phase 5: Evidence
 
