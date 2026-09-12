@@ -32,16 +32,19 @@ subscription is told it does not exist, for reads and for writes alike.
 | Where ownership is enforced | In the repository's SQL, filtered by `user_id` | A route cannot forget a check it never makes | Plan |
 | Foreign record response | 404, identical to a missing record | Absent and not-yours must be indistinguishable | Research |
 | Rate-limit storage | The database, with its own table | The installed library defaults to per-isolate memory, which Workers does not keep | Research |
-| Origin protection | Routes pass the raw request headers into the library | Validation returns early without them, so the spike's route had none | Research |
+| Sign-in and sign-out | The library's own mounted endpoints, with no thin wrapper routes | Throttling, origin checking and CSRF live in the router, which only the mounted handler reaches | Review |
+| Sign-in throttling numbers | A custom rule for the sign-in path | A built-in rule silently governs sign-in at three attempts in ten seconds and would make any assertion wrong | Review |
+| Client address for throttling | Read from the runtime's own client-address header | Otherwise nothing resolves and every caller shares one bucket, so a few failures from anyone lock out both accounts | Review |
+| Secure cookie control | One environment variable driving the per-cookie attribute | Per-cookie attributes override everything else, and the library-level switch also renames the cookie | Review |
 | Auth schema | Hand-written migration, copied from the spike | The library's generator needs a live connection D1 cannot give a Node process | Decision |
-| Account creation | A gated, idempotent seed route, off unless two variables are set | No permanent route and no credentials in source | Plan |
+| Account creation | An always-registered seed route that answers 404 unless a flag and a token both match | A route cannot be registered conditionally on a variable in this runtime, and 404 gives no oracle | Review |
 | Test order | Test-first for identity and for ownership | Both risks fail silently, so the test has to fail first for the right reason | Plan |
 
 ## Scope
 
-**In scope:** the two migrations, the auth module, session middleware, sign-in, sign-out and identity
-routes, the subscriptions repository and its four routes with validation, the gated seed path, the
-login and home screens with a create form, and the continuous integration workflow.
+**In scope:** the two migrations, the auth module, session middleware, the mounted auth endpoints and
+one identity route, the subscriptions repository and its four routes with validation, the gated seed
+path, the login and home screens with a create form, and the continuous integration workflow.
 
 **Out of scope:** members, prices, break months, payments, recurring schedules, any money
 calculation, a multi-subscription interface, subscription deletion, password reset, email
@@ -52,18 +55,19 @@ verification, self-service sign-up, deployment, remote seeding, and the browser 
 One Worker, four layers with one direction of travel. Routes validate input and translate results into
 status codes; the repository owns every SQL statement and filters each one by `user_id`; the auth
 module builds a request-scoped library instance because a D1 binding only exists inside a request;
-the client holds no session state of its own and asks the identity route who is signed in, because the
-cookie is not readable from script. The ownership rule has exactly one enforcement point, so a leak
+sign-in and sign-out are the library's own mounted endpoints, so throttling and origin checking are
+structural rather than remembered; the client holds no session state of its own and asks the identity
+route who is signed in, because the cookie is not readable from script. The ownership rule has exactly one enforcement point, so a leak
 would have to be a bug in one file rather than an omission in any of several.
 
 ## Phases at a glance
 
 | Phase | What it delivers | Key risk |
 |---|---|---|
-| 1. Identity | Migrations, auth module, session middleware, sign-in and sign-out, tested first | The origin check may not engage from a thin route; the test is what proves it |
+| 1. Identity | Migrations, auth module, session middleware, the mounted auth endpoints and an identity route, tested first | Throttling counters persist in a database no test resets, so test ordering and per-test client addresses matter |
 | 2. The owned resource | Subscriptions table, repository, four routes, validation, ownership tested first | A leak that only shows up through a child path or a wrong status code |
 | 3. Seeding the accounts | Gated idempotent seed route, decision D-005, documented setup | A seeding path is an account-creation hole if the gate is weak |
-| 4. The first screens | Login, home, create form, sign-out, manual checklist | The Secure cookie over local http is unproven in a real browser |
+| 4. The first screens | Login, home, create form, sign-out, manual checklist | Safari refuses a Secure cookie over local http, so the environment variable exists and the checklist looks for it |
 | 5. The gate | Continuous integration on push and pull request, evidence captured | The install must succeed non-interactively on a clean runner |
 
 **Prerequisites:** the scaffold as committed, decision D-001, and a local `.dev.vars` carrying the auth
@@ -72,15 +76,18 @@ this repository does not record time estimates.
 
 ## Open risks and assumptions
 
-- Passing request headers may not be enough to make the library's origin check engage on a thin route.
-  If it is not, the browser's login moves onto the library's own mounted endpoint and the thin route
-  stays as a test convenience.
-- A browser may refuse a `Secure` cookie over `http://localhost`. If it does, the secure attribute
-  becomes environment-driven so local development omits it and every deployed environment keeps it.
-- The rate limit may prove awkward to trip through the test pool. The configuration stays either way;
-  the assertion moves to a direct call against the auth instance.
-- The test pool documents storage isolation in one line with no stated granularity, so cross-account
-  assertions live inside a single test block rather than relying on state between blocks.
+- The suite shares one database with no isolation between tests, and the one reset helper would delete
+  the tables because the local database is itself a durable object. Tests therefore use per-test
+  account emails and per-test client addresses, and the throttling case runs last. A test that ignores
+  this will fail in a way that reads like an ownership bug.
+- Throttling is proven by the tests as a mechanism but not as per-caller keying, because the test pool
+  supplies no client-address header of its own. Whether the deployed runtime always populates that
+  header has not been exercised here.
+- Safari refuses a `Secure` cookie over plain http even on localhost, while Chrome and Firefox accept
+  it. The environment variable exists so local development can opt out; every deployed environment
+  leaves it unset and keeps the attribute.
+- The sign-in response body is the library's shape rather than one this project chose, which is the
+  price of getting the router's protections by construction.
 
 ## Success criteria
 

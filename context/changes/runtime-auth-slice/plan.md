@@ -31,10 +31,33 @@ walkthrough recorded in the evidence directory.
 
 ### Key findings
 
-- Better Auth's origin and CSRF check returns immediately when the call carries no request headers
-  (`node_modules/better-auth/dist/api/middlewares/origin-check.mjs:97-98`). The spike's thin login
-  route passed only a body, so it had no origin protection. Routes in this slice pass the raw request
-  through, and the cross-origin test is what proves it.
+- Rate limiting, origin checking and CSRF all live in one place: the router's request hook, reached
+  only through `auth.handler(...)` (`node_modules/better-auth/dist/api/index.mjs:172` calling
+  `onRequestRateLimit`). A direct `auth.api.signInEmail(...)` call dispatches through
+  `to-auth-endpoints.mjs` and never touches the router, so it is neither throttled nor origin-checked.
+  Sign-in and sign-out therefore go to the mounted endpoints, and the protections apply by
+  construction rather than by remembering to pass something.
+- Even on a direct call, the origin guard needs the request object, not the headers.
+  `better-call` populates `ctx.request` from an explicitly passed `request` property
+  (`node_modules/better-call/dist/context.mjs:23`), and both guards return early without it
+  (`node_modules/better-auth/dist/api/middlewares/origin-check.mjs:96-98`). `signOut` carries no
+  middleware array at all (`node_modules/better-auth/dist/api/routes/sign-out.mjs:15`), so a thin
+  logout route could never have an origin check whatever it passed.
+- A built-in special rule overrides the configured window and maximum for every path starting with
+  `/sign-in`, `/sign-up`, `/change-password` or `/change-email`, setting them to three attempts in ten
+  seconds (`node_modules/better-auth/dist/api/rate-limiter/index.mjs:301-306`). Entries in
+  `rateLimit.customRules` are applied after it (same file, lines 259-275), so a custom rule for the
+  sign-in path is what decides the numbers a test can assert.
+- The limiter keys on a resolved client IP, read only from the headers named in
+  `advanced.ipAddress.ipAddressHeaders`, which defaults to `["x-forwarded-for"]`
+  (`node_modules/@better-auth/core/dist/utils/ip.mjs:196,206`). When nothing resolves it falls back to
+  the single shared key `no-trusted-ip` per path (`rate-limiter/index.mjs:233,245`), which would let
+  three failures from anyone lock out every account. On this runtime the trustworthy header is
+  `cf-connecting-ip`.
+- Per-cookie attributes win over everything: `advanced.cookies[name].attributes` is spread last in
+  `createCookieGetter` (`node_modules/better-auth/dist/cookies/index.mjs:32-44`), after the `secure`
+  value derived from `useSecureCookies`. `useSecureCookies` also drives the `__Secure-` name prefix on
+  line 23, so flipping it renames the cookie. The per-cookie `secure` attribute is the only safe lever.
 - The rate-limit table only exists when `rateLimit.storage === "database"`
   (`node_modules/@better-auth/core/dist/db/get-tables.mjs:33`). The spike left storage at its default,
   so its limiter was per-isolate memory. This slice sets storage to the database and creates the table.
@@ -43,8 +66,15 @@ walkthrough recorded in the evidence directory.
   installed, and is copied forward unchanged.
 - Cookies are not carried between `SELF.fetch` calls in the test pool. Tests extract `set-cookie` and
   send it back as a `cookie` header, as the spike's helper does.
-- The test pool documents isolated storage in one README line with no configuration flag and no stated
-  granularity. Cross-account assertions therefore seed both accounts inside a single test block.
+- The test pool advertises isolated per-test storage in its README, but version 0.22.0 exposes no
+  `isolatedStorage` option and carries no isolation machinery in its distributed code, so state written
+  by one test is visible to the next. The one escape hatch is worse than the problem: `reset()` is
+  `deleteAllDurableObjects()` (`node_modules/@cloudflare/vitest-pool-workers/dist/worker/lib/cloudflare/test-internal.mjs:826`)
+  and miniflare's local D1 is itself a Durable Object
+  (`node_modules/miniflare/dist/src/workers/d1/database.worker.js:146`), so calling it drops the tables
+  the setup file created. Tests never call `reset()`. They use account emails unique per test so
+  seeding cannot collide, and a `cf-connecting-ip` header unique per test so one test's rate-limit
+  counter cannot answer another test with a 429.
 - D1 has no interactive transactions; atomicity comes from `batch()`. Nothing in this slice needs a
   multi-statement write.
 
@@ -79,15 +109,23 @@ use them, then the gate that keeps them working.
 
 ## Critical implementation details
 
-**Origin checking depends on what the route passes.** `auth.api.*` calls only perform origin and CSRF
-validation when they receive the request headers. Every thin route in this slice passes
-`headers: c.req.raw.headers` and, where the signature accepts it, the request itself. Phase 1 proves
-this with a test rather than assuming it; if passing headers does not produce a rejection, the
-fallback named in the plan is to move the browser's login onto the mounted Better Auth endpoint and
-keep the thin route as a test convenience.
+**Protections live in the router, so sign-in and sign-out use the mounted endpoints.** Rate limiting,
+origin validation and CSRF are applied by the router hook that only `auth.handler(...)` reaches. This
+slice therefore builds no thin `POST /api/login` or `POST /api/logout`: the client and the tests call
+`POST /api/auth/sign-in/email`, `POST /api/auth/sign-out` and, where convenient,
+`GET /api/auth/get-session`. The cost is that the sign-in response body is the library's shape rather
+than one this project chooses, which the client and the Phase 1 assertions are written against.
+`GET /api/me` remains as a read-only convenience for the client, built on `getSession` with both
+`headers` and `request` passed, so the guards that do apply to a direct call can run.
 
 **The auth instance is built per request.** A D1 binding only exists inside a request's `env` in
-Workers, so nothing auth-related can be captured at module scope.
+Workers, so nothing auth-related can be captured at module scope, and no route can be registered
+conditionally on the value of an environment variable. Gates are evaluated inside handlers.
+
+**The suite shares one database and must never reset it.** There is no per-test isolation and
+`reset()` would delete the tables. Every test that creates an account uses an email unique to that
+test, and every test that signs in sends a `cf-connecting-ip` header unique to that test so the
+rate-limit counters stay separate.
 
 ---
 
@@ -95,8 +133,9 @@ Workers, so nothing auth-related can be captured at module scope.
 
 ### Overview
 
-Sign-in, sign-out and session reading work against local D1, with the origin check and the rate limit
-actually enforced. Written test-first.
+Sign-in, sign-out and session reading work against local D1 through the library's own mounted
+endpoints, so the origin check and the rate limit are enforced by the router rather than by a route
+remembering to ask for them. Written test-first.
 
 ### Required changes:
 
@@ -139,10 +178,26 @@ storage.
 **Contract**: `createAuth(env: Env, origin: string)` returning a `betterAuth` instance. Options:
 `baseURL` set to the passed origin; `secret` from `env.BETTER_AUTH_SECRET`; `database: env.DB`;
 `emailAndPassword: { enabled: true, disableSignUp: true }`; `trustedOrigins` parsed from
-`env.APP_ORIGINS`, a comma-separated list, trimmed, empty entries dropped; `rateLimit: { enabled:
-true, window: 60, max: 10, storage: "database" }`; `advanced.cookies.session_token.attributes` set to
-`httpOnly: true`, `secure: true`, `sameSite: "lax"`. A missing `BETTER_AUTH_SECRET` throws at
-construction rather than starting with a default secret.
+`env.APP_ORIGINS`, a comma-separated list, trimmed, empty entries dropped.
+
+Rate limiting: `enabled: true`, `window: 60`, `max: 10`, `storage: "database"`, plus
+`customRules` carrying an entry for the sign-in path, `"/sign-in/email": { window: 60, max: 10 }`.
+The custom entry is not decoration: without it the library's built-in special rule silently governs
+sign-in at three attempts in ten seconds, and every assertion written against the configured numbers
+would be wrong. Paths in `customRules` are matched after the base path is stripped, so the key is
+`/sign-in/email`, not `/api/auth/sign-in/email`.
+
+Client address: `advanced.ipAddress.ipAddressHeaders: ["cf-connecting-ip"]`, the header this runtime
+populates. Without it nothing resolves and every caller shares one bucket per path, which would let a
+handful of failures from anyone lock out both accounts. The test pool supplies no such header by
+itself, so the suite sets one per test and thereby exercises the keying as well as the mechanism.
+
+Cookies: `advanced.cookies.session_token.attributes` set to `httpOnly: true`, `sameSite: "lax"` and
+`secure: env.COOKIE_SECURE !== "false"`, defaulting to secure whenever the variable is unset. Nothing
+else in the factory sets `secure`, and `useSecureCookies` is left alone, because it also drives the
+`__Secure-` name prefix and flipping it would rename the cookie rather than change one attribute.
+
+A missing `BETTER_AUTH_SECRET` throws at construction rather than starting with a default secret.
 
 #### 3. Session middleware
 
@@ -160,15 +215,22 @@ variable.
 
 **File**: `src/server/routes/auth.ts`
 
-**Purpose**: Expose sign-in, sign-out and the identity readout the client needs, while letting the
-library own everything under its own path.
+**Purpose**: Let the library own sign-in and sign-out entirely, and add only the one read the client
+cannot get any other way.
 
-**Contract**: Mount `app.on(["POST", "GET"], "/api/auth/*", ...)` delegating to `auth.handler(c.req.raw)`.
-Add `POST /api/login` calling `auth.api.signInEmail`, `POST /api/logout` calling `auth.api.signOut`,
-and `GET /api/me` calling `auth.api.getSession` and returning the user or 401. Every call passes the
-request headers so the origin check runs. `signInEmail` and `signOut` are wrapped in the try/catch
-that translates a Better Auth `APIError` into a JSON response carrying the error's own status code,
-rethrowing anything else, exactly as `evidence/spikes/auth-spike/src/index.ts:29-44` does.
+**Contract**: Mount `app.on(["POST", "GET"], "/api/auth/*", ...)` delegating to
+`auth.handler(c.req.raw)`. That is the whole of sign-in and sign-out: the client and the tests call
+`POST /api/auth/sign-in/email` and `POST /api/auth/sign-out`, so rate limiting, origin validation and
+CSRF apply by construction. This slice deliberately builds no thin `POST /api/login` or
+`POST /api/logout`; the spike's versions are not carried forward, because a direct `auth.api` call
+bypasses the router and therefore every one of those protections.
+
+Add `GET /api/me` as a read-only convenience, calling `auth.api.getSession` with both
+`headers: c.req.raw.headers` and `request: c.req.raw`, returning the user or 401. It is wrapped in the
+try/catch that translates a Better Auth `APIError` into a JSON response carrying the error's own status
+code and rethrows anything else, following
+`evidence/spikes/auth-spike/src/index.ts:29-44`. The library's own `GET /api/auth/get-session` remains
+available and equivalent; `/api/me` exists so the client has one shape to read.
 
 #### 5. Binding declarations
 
@@ -177,8 +239,8 @@ rethrowing anything else, exactly as `evidence/spikes/auth-spike/src/index.ts:29
 **Purpose**: Keep the hand-maintained binding declarations in step with what the Worker now reads, or
 the worker TypeScript project stops typechecking.
 
-**Contract**: Add `BETTER_AUTH_SECRET: string`, `APP_ORIGINS: string`, `SEED_ENABLED: string` and
-`SEED_TOKEN: string` to `Cloudflare.Env` alongside `DB`.
+**Contract**: Add `BETTER_AUTH_SECRET: string`, `APP_ORIGINS: string`, `COOKIE_SECURE: string`,
+`SEED_ENABLED: string` and `SEED_TOKEN: string` to `Cloudflare.Env` alongside `DB`.
 
 #### 6. Auth integration tests
 
@@ -188,13 +250,28 @@ the worker TypeScript project stops typechecking.
 code in this phase, per test-plan risk 6.
 
 **Contract**: Seeding uses a second Better Auth instance built against `env.DB` with
-`disableSignUp: false`, as the spike does. A local helper extracts `set-cookie` and returns the first
-`;`-delimited pair for reuse as a `cookie` header. Cases, each named for the risk it covers:
-sign-in returns 200 and sets a session cookie; `GET /api/me` with that cookie returns the user;
-`GET /api/me` without a cookie returns 401; a wrong password returns 401; after `POST /api/logout`
-the same cookie returns 401 from `/api/me`; the public sign-up endpoint under `/api/auth/` is refused
-while seeding still works; a `POST /api/login` carrying an `Origin` header not in `APP_ORIGINS` is
-refused; repeated failed sign-ins trip the limit and the response says so.
+`disableSignUp: false`, as the spike does. Two local helpers: one extracts `set-cookie` and returns the
+first `;`-delimited pair for reuse as a `cookie` header; one builds the headers for a request, giving
+every test a `cf-connecting-ip` value unique to that test so rate-limit counters never cross tests.
+Account emails are likewise unique per test. The suite never calls `reset()`.
+
+Cases, all exercised through the mounted endpoints:
+
+- `POST /api/auth/sign-in/email` returns 200 and sets a session cookie
+- `GET /api/me` with that cookie returns the user, and `GET /api/auth/get-session` agrees
+- `GET /api/me` without a cookie returns 401
+- a wrong password returns 401
+- after `POST /api/auth/sign-out`, the same cookie returns 401 from `/api/me`
+- a session whose stored `expiresAt` is moved into the past returns 401 from `/api/me`, written by
+  updating the `session` row directly through `env.DB` rather than waiting
+- the public sign-up endpoint under `/api/auth/` is refused while server-side seeding still works
+- a sign-in carrying an `Origin` header not in `APP_ORIGINS` is refused
+- eleven failed sign-ins from one `cf-connecting-ip` inside the window trip the configured limit and
+  the response says so; the numbers asserted are the ones the custom rule sets, not the library's
+  built-in sign-in rule
+
+The rate-limit case goes last in the file, or in its own file, because a tripped counter persists for
+the length of the window in a database no test resets.
 
 ### Success criteria:
 
@@ -223,19 +300,48 @@ and a validation contract that rejects bad input before it reaches storage. Writ
 
 ### Required changes:
 
-#### 1. Subscriptions migration
+#### 1. Validation dependency
+
+**File**: `package.json`, `package-lock.json`
+
+**Purpose**: Make the validation library a declared dependency of this project before anything imports
+it.
+
+**Contract**: Add `zod` to `dependencies` at the exact version `4.6.2`, matching the repository rule
+that every dependency is pinned exactly. It is not declared today, and an import would resolve only by
+accident, through a hoisted copy that a test-only transitive dependency happens to provide. The
+lockfile change lands in the same step.
+
+#### 2. Unit runner scope
+
+**Files**: `vitest.unit.config.ts`, `AGENTS.md`, `README.md`
+
+**Purpose**: Make the unit runner actually run the validation test this phase adds.
+
+**Contract**: Widen the unit include from `src/domain/**/*.test.ts` to `src/**/*.test.ts`, which picks
+up `src/server/validation/` while leaving the integration suite under `tests/` to its own runner and
+config. Update the one-line description of unit-test scope in both `AGENTS.md` and `README.md` in the
+same step, so the config and the two documents agree rather than drifting.
+
+#### 3. Subscriptions migration
 
 **File**: `migrations/0002_subscriptions.sql`
 
 **Purpose**: The first table this project owns, and the root every later record hangs from.
 
-**Contract**: `subscriptions(id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES "user"("id"), name
-TEXT NOT NULL, currency TEXT NOT NULL, locale TEXT NOT NULL, time_zone TEXT NOT NULL, start_month TEXT
-NOT NULL CHECK (start_month GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]'), created_at TEXT NOT NULL)` plus
-`CREATE INDEX subscriptions_user_id_idx ON subscriptions(user_id)`. Identifiers are generated
-server-side with `crypto.randomUUID()`, never supplied by the client.
+**Contract**: `subscriptions(id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES "user"("id") ON
+DELETE CASCADE, name TEXT NOT NULL, currency TEXT NOT NULL, locale TEXT NOT NULL, time_zone TEXT NOT
+NULL, start_month TEXT NOT NULL CHECK (start_month GLOB '[0-9][0-9][0-9][0-9]-[01][0-9]'), created_at
+TEXT NOT NULL)` plus `CREATE INDEX subscriptions_user_id_idx ON subscriptions(user_id)`. Identifiers
+are generated server-side with `crypto.randomUUID()`, never supplied by the client.
 
-#### 2. Validation contract
+Two details are deliberate. The cascade matches every auth table carried over from the spike and
+settles, once, what happens to a subscription when its account is removed; every child table in later
+slices inherits that answer rather than an omission. The month pattern is as tight as SQLite's `GLOB`
+can express, `[01][0-9]` rather than `[0-1][0-9]`, and the remaining gap, a stored `00` or `13` to
+`19`, is closed by the range rule in the validation schema that every write passes through.
+
+#### 4. Validation contract
 
 **File**: `src/server/validation/subscriptions.ts`
 
@@ -248,7 +354,7 @@ three-letter uppercase ISO code; `locale` a BCP-47 tag; `time_zone` an IANA zone
 currency to `PLN`, locale to `pl-PL` and time zone to `Europe/Warsaw`. Patch accepts a subset and
 rejects an empty object. Unknown keys are rejected rather than ignored.
 
-#### 3. Repository
+#### 5. Repository
 
 **File**: `src/server/db/subscriptions.ts`
 
@@ -261,7 +367,7 @@ return `null` when nothing matched, without distinguishing absent from someone e
 generates the id and the created-at stamp. Rows are mapped to a camel-cased shape at this boundary so
 no column name escapes the repository.
 
-#### 4. Subscription routes
+#### 6. Subscription routes
 
 **File**: `src/server/routes/subscriptions.ts`
 
@@ -273,7 +379,7 @@ validates the body and returns 201 with the created row. `GET /api/subscriptions
 body that fails validation and a message naming the field at fault, 404 for an id that is missing or
 belongs to another account.
 
-#### 5. Composition
+#### 7. Composition
 
 **File**: `src/server/index.ts`
 
@@ -283,20 +389,22 @@ belongs to another account.
 any other `/api/*` path with a JSON 404 rather than falling through to the client shell. Non-API paths
 continue to be served by the assets binding.
 
-#### 6. Ownership and validation tests
+#### 8. Ownership and validation tests
 
 **Files**: `tests/integration/subscriptions.test.ts`, `src/server/validation/subscriptions.test.ts`
 
 **Purpose**: Prove test-plan risk 2 directly, and risk 3 for this resource's round trip. Written
 before the code in this phase.
 
-**Contract**: The integration test seeds two accounts and signs both in inside one test block, because
-the pool does not document storage isolation between blocks. Cases: a subscription created by account A
-is listed for A and absent from B's list; `GET` and `PATCH` from B against A's id both return 404; a
-create followed by a fresh request returns the same row, proving it persisted rather than being held
-in memory; every route returns 401 without a cookie; invalid bodies return 400, covering a bad month,
-a bad time zone, an empty name and an unknown key. The unit test covers the schema's month format and
-its defaults without touching a binding.
+**Contract**: The integration test seeds two accounts with emails unique to the test and signs both in
+inside one test block, since there is no storage isolation between blocks and no safe way to reset.
+Each sign-in carries the test's own `cf-connecting-ip`. Cases: a subscription created by account A is
+listed for A and absent from B's list; `GET` and `PATCH` from B against A's id both return 404; a
+create followed by a fresh request returns the same row, proving it persisted rather than being held in
+memory; every route returns 401 without a cookie; invalid bodies return 400, covering a bad month, a
+bad time zone, an empty name and an unknown key. The unit test covers the schema's month format,
+including the values the database pattern alone would admit, and its defaults, without touching a
+binding.
 
 ### Success criteria:
 
@@ -306,6 +414,8 @@ its defaults without touching a binding.
 - Unit tests pass: `npm run test:unit`
 - Typecheck passes: `npm run typecheck`
 - Both migrations apply in order to a clean local database: `npm run db:migrate:local`
+- Zod is declared in `dependencies` at an exact version, and the lockfile records it
+- The validation unit test is picked up by the unit runner, visible in its reported file count
 
 #### Manual verification:
 
@@ -331,9 +441,12 @@ credentials in source, and without leaving a hole in a deployed environment.
 **Purpose**: Create the two accounts through the library's own API while public sign-up stays closed.
 This is the only supported way to make an account exist.
 
-**Contract**: `POST /api/dev/seed`, mounted only when `env.SEED_ENABLED === "true"`, and answering 404
-otherwise so its existence is not detectable. Requires header `x-seed-token` equal to `env.SEED_TOKEN`,
-compared with a length-safe comparison, returning 404 on mismatch rather than 401. The body carries
+**Contract**: `POST /api/dev/seed`, registered unconditionally, because a route cannot be registered
+conditionally on an environment variable in this runtime: bindings and variables exist only inside a
+request. Both gates are evaluated inside the handler. When `env.SEED_ENABLED !== "true"` the handler
+answers 404. When the `x-seed-token` header is missing or does not equal `env.SEED_TOKEN`, compared
+with a length-safe comparison, the handler also answers 404, so the response is never an oracle for
+either the route's existence or the token's correctness. With both gates satisfied, the body carries
 the accounts to create as email, password and name; nothing is read from source. Creation goes through
 a second Better Auth instance with `disableSignUp: false` against the same binding. Idempotent: an
 email that already exists is reported as unchanged rather than failing the call. The response never
@@ -343,13 +456,12 @@ echoes a password.
 
 **File**: `context/decisions/D-005-account-seeding.md`
 
-**Purpose**: Record why seeding works this way, in the format D-001 to D-004 use.
+**Purpose**: Keep the record in step with the route as built. The record already exists and was
+committed with this plan; this phase edits it rather than writing it.
 
-**Contract**: ID, decision, rationale, rejected alternative, review objection and resolution, affected
-tests, commit. The rejected alternative is a permanent seed route or credentials checked into source.
-The objection to answer is that any seeding path is an account-creation hole, resolved by the double
-gate, the 404 response and the documented remote procedure of setting the variables, calling once and
-unsetting them again.
+**Contract**: The only edits are the commit field, filled in when the slice lands, and the wording of
+the gate, which now says the route is registered unconditionally and answers 404 from inside the
+handler when either gate fails. Everything else in the record stands.
 
 #### 3. Local variable names
 
@@ -357,18 +469,24 @@ unsetting them again.
 
 **Purpose**: Tell a developer which variables to set without telling anyone the values.
 
-**Contract**: Names only, no values: `BETTER_AUTH_SECRET`, `APP_ORIGINS`, `SEED_ENABLED`, `SEED_TOKEN`,
-and the seeded account emails. The real `.dev.vars` stays ignored by git.
+**Contract**: Names only, no values: `BETTER_AUTH_SECRET`, `APP_ORIGINS`, `COOKIE_SECURE`,
+`SEED_ENABLED`, `SEED_TOKEN`, and the seeded account emails. A comment records that `COOKIE_SECURE` is
+left unset in every deployed environment and set to `false` only in local development if a browser
+refuses the cookie over plain http. The real `.dev.vars` stays ignored by git.
 
-#### 4. Setup documentation
+#### 4. Setup documentation and the placeholders it replaces
 
-**File**: `README.md`
+**Files**: `README.md`, `package.json`
 
-**Purpose**: Make first-run reproducible.
+**Purpose**: Make first-run reproducible, and clear the two artifacts that still describe this slice as
+unfinished.
 
 **Contract**: Extend the setup section with the variables to set, the order to run migrations and the
 seed call, and a note that remote seeding follows the same procedure under S-04 with the variables set
-and then removed.
+and then removed. Replace the `seed:local` script, which currently exits 1 with a message saying
+seeding lands with this slice, so that it performs the documented local seed call. Remove the two
+stale README lines, the one saying sign-in is not yet wired up and the one calling `seed:local` a
+placeholder.
 
 ### Success criteria:
 
@@ -376,6 +494,11 @@ and then removed.
 
 - Integration tests pass, including a seed call refused when the gate is off: `npm run test:integration`
 - Typecheck passes: `npm run typecheck`
+- All four cases the decision record names pass: gate off returns 404, gate on with a wrong token
+  returns 404, gate on with the right token creates both accounts, and an identical second call
+  reports them unchanged
+- `npm run seed:local` performs the documented seed rather than exiting with a placeholder message,
+  and no README line still describes this slice as unfinished
 
 #### Manual verification:
 
@@ -403,7 +526,11 @@ out.
 
 **Contract**: A wrapper over `fetch` that sends `credentials: "include"`, sets the JSON content type on
 bodies, parses JSON responses, and turns a 401 into a signed-out state the application reacts to by
-showing the login screen. Non-401 failures surface the server's message.
+showing the login screen. Non-401 failures surface the server's message. Sign-in posts to
+`/api/auth/sign-in/email` and sign-out to `/api/auth/sign-out`, the library's own endpoints, so both
+carry the router's protections; the response bodies are the library's shapes and the client reads them
+as such. Identity is read from `/api/me`. A 429 from sign-in is surfaced as its own message rather than
+as a failed password.
 
 #### 2. Screens
 
@@ -414,7 +541,8 @@ showing the login screen. Non-401 failures surface the server's message.
 
 **Contract**: `App` asks `GET /api/me` once on load and renders the login screen or the home screen on
 the answer. Login takes an email and a password, shows the server's error message on failure without
-guessing which field was wrong, and disables submission while in flight. Home shows the account email,
+guessing which field was wrong, distinguishes a throttled response from a rejected password, and
+disables submission while in flight. Home shows the account email,
 the list of subscriptions, the create form and a sign-out button. The form takes a name, a currency
 defaulting to PLN, a locale defaulting to pl-PL, a time zone defaulting to Europe/Warsaw and a start
 month, and shows field-level messages from a 400. Signing out returns to the login screen.
@@ -444,6 +572,10 @@ visible focus states. No design system, no icon font, no external stylesheet.
 - Sign out, confirm the login screen returns and the browser back button does not restore the data
 - Sign in as the reviewer account and confirm none of the owner's subscriptions are listed
 - The layout is usable at a narrow phone width
+- The session cookie is accepted by the browser over local http. Safari refuses a `Secure` cookie on
+  plain http even on localhost while Chrome and Firefox accept it, so if sign-in appears to succeed and
+  the next request is unauthenticated, set `COOKIE_SECURE=false` in `.dev.vars` and repeat. Deployed
+  environments leave the variable unset and keep the attribute.
 
 **Implementation note**: Stop for human confirmation before the next phase.
 
@@ -503,10 +635,13 @@ those two files.
 
 ### Integration tests:
 
-- Session lifecycle against local D1: sign in, read, wrong password, sign out invalidates.
+- Session lifecycle against local D1: sign in, read, wrong password, sign out invalidates, and a
+  session whose stored expiry has passed is refused.
 - Sign-up refused while server-side seeding still works.
 - Cross-origin sign-in refused.
-- Rate limit trips after the configured number of failures.
+- Rate limit trips after the configured number of failures, asserted against the custom rule's numbers
+  and placed last so its counter cannot answer a later test.
+- The four seeding cases: gate off, wrong token, first call, identical second call.
 - Ownership: list, read and patch across two accounts in one test block.
 - Persistence: a created subscription is returned by a later, separate request.
 - Validation: 400 responses for each named bad input.
@@ -516,7 +651,7 @@ those two files.
 | Test-plan risk | Covered by | Phase |
 |---|---|---|
 | 2, leaked data across accounts | ownership and 401 cases in `tests/integration/subscriptions.test.ts` | 2 |
-| 6, session lifecycle | `tests/integration/auth.test.ts`, all cases | 1 |
+| 6, session lifecycle | `tests/integration/auth.test.ts`: sign-in, sign-out invalidation, an expired session, cross-origin refusal and the throttling case. The throttling case proves the mechanism but not the keying, because the test pool supplies no client-address header of its own and the suite sets one per test | 1 |
 | 3, lost or inconsistent persistence | the create-then-refetch case, and both migrations applying in order | 2 |
 | 1, 4, 5 | not reachable in this slice; no money, members or schedules exist yet | - |
 
@@ -570,6 +705,8 @@ means re-reading its core table definitions in the installed package and editing
 - [ ] 2.2 Unit tests pass
 - [ ] 2.3 Typecheck passes
 - [ ] 2.4 Both migrations apply in order to a clean local database
+- [ ] 2.6 Zod is declared at an exact version and recorded in the lockfile
+- [ ] 2.7 The validation unit test is picked up by the unit runner
 
 #### Manual
 
@@ -581,6 +718,8 @@ means re-reading its core table definitions in the installed package and editing
 
 - [ ] 3.1 Integration tests pass, including the refused seed call
 - [ ] 3.2 Typecheck passes
+- [ ] 3.5 All four seeding cases from the decision record pass
+- [ ] 3.6 seed:local performs the documented seed and no stale README line remains
 
 #### Manual
 
@@ -603,6 +742,7 @@ means re-reading its core table definitions in the installed package and editing
 - [ ] 4.7 Sign out returns to login and leaves nothing reachable
 - [ ] 4.8 The reviewer account sees none of the owner's subscriptions
 - [ ] 4.9 The layout is usable at a narrow phone width
+- [ ] 4.10 The session cookie is accepted by the browser over local http
 
 ### Phase 5: The gate
 

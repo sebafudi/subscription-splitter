@@ -138,20 +138,54 @@ From the vendor documentation, with references:
   `cookiePrefix`, and `useSecureCookies` which forces the `Secure` attribute in every environment.
   Same source.
 
-### The origin check and the thin login route (Evidence, then Inference)
+### Where the protections actually live (Evidence, corrected during plan review)
 
-Evidence: `validateOrigin` returns immediately when the call has no `ctx.request` or headers.
+An earlier reading of this file said the origin check runs whenever a call carries the request
+headers. That was wrong twice over, and the corrected reading changed the plan's shape.
 
-Inference: the spike's `POST /login` calls `auth.api.signInEmail({ body, asResponse: true })` and
-passes no headers and no request, so no origin or CSRF validation runs on that route at all. The
-protection the spike reported as built in applies to requests that reach the mounted
-`/api/auth/*` handler, which does carry the raw request. A login route that keeps the thin shape has
-to pass the request through, and the cross-origin test the team lead asked for is exactly what proves
-whether it does.
+Evidence, first correction: the guard needs the request object, not the headers. `better-call` builds
+the endpoint context with `request: context?.request`
+(`node_modules/better-call/dist/context.mjs:23`), so passing only `headers` leaves `ctx.request`
+undefined and both guards return at their first line
+(`node_modules/better-auth/dist/api/middlewares/origin-check.mjs:96-98`). `signOut` declares no
+middleware array at all (`node_modules/better-auth/dist/api/routes/sign-out.mjs:15`), so no thin
+logout route could have an origin check whatever it passed.
 
-Default we will take if passing headers does not produce a rejection: move the browser's login call
-onto Better Auth's own mounted endpoint and keep the thin route only as a convenience wrapper for
-tests. This is a fallback the plan names rather than an assumption it relies on.
+Evidence, second and larger correction: rate limiting is applied only by the router's request hook
+(`node_modules/better-auth/dist/api/index.mjs:172`, calling `onRequestRateLimit` from
+`api/rate-limiter/index.mjs`). That hook belongs to the router, which only `auth.handler(...)`
+reaches. A direct `auth.api.signInEmail(...)` dispatches through `to-auth-endpoints.mjs` and is never
+throttled. A thin login route built on `auth.api` would therefore ship with no throttling at all,
+which is exactly what the requirements forbid and what D-001 records as covered.
+
+Resolution taken: this slice builds no thin login or logout route. The client and the tests use the
+mounted endpoints, `POST /api/auth/sign-in/email` and `POST /api/auth/sign-out`, so all three
+protections apply by construction. `GET /api/me` survives as a read-only convenience and passes both
+`headers` and `request`.
+
+### Throttling numbers and keying (Evidence)
+
+- A built-in special rule overrides the configured window and maximum for any path starting with
+  `/sign-in`, `/sign-up`, `/change-password` or `/change-email`, setting three attempts per ten
+  seconds (`node_modules/better-auth/dist/api/rate-limiter/index.mjs:301-306`). Entries in
+  `rateLimit.customRules` are consulted after it (same file, 259-275), so a custom rule is the only way
+  to set numbers a test can assert. The path is matched after the base path is stripped, so the key is
+  `/sign-in/email`.
+- The limiter keys on a client address resolved only from the headers named in
+  `advanced.ipAddress.ipAddressHeaders`, defaulting to `["x-forwarded-for"]`
+  (`node_modules/@better-auth/core/dist/utils/ip.mjs:196,206`). With nothing resolvable it logs a
+  warning and falls back to the shared key `no-trusted-ip` per path (`rate-limiter/index.mjs:233,245`).
+  On this runtime the trustworthy header is `cf-connecting-ip`, and the option name above is the one
+  the installed version reads.
+
+### Cookie attribute precedence (Evidence)
+
+`createCookieGetter` composes attributes with `advanced.cookies[name].attributes` spread last
+(`node_modules/better-auth/dist/cookies/index.mjs:32-44`), after `defaultCookieAttributes` and after
+the `secure` value derived from `useSecureCookies`. A hardcoded `secure: true` there therefore wins in
+every environment. `useSecureCookies` additionally drives the `__Secure-` name prefix (line 23), so
+using it as the lever renames the cookie rather than changing one attribute. The per-cookie `secure`
+attribute, driven from an environment variable, is the only safe control.
 
 ### D1 (Evidence)
 
@@ -185,10 +219,15 @@ tests. This is a fallback the plan names rather than an assumption it relies on.
   helper does.
 - An `Origin` header is set through the ordinary `RequestInit`; there is no pool-specific helper.
 
-Inference, flowing from the storage-isolation gap: a test that has to prove account B cannot read
-account A's row should seed both accounts and make the assertion inside one test block, rather than
-relying on state surviving or being cleared between blocks. If a block needs a clean database,
-call `reset()` explicitly.
+Corrected during plan review, and now Evidence rather than inference: version 0.22.0 exposes no
+`isolatedStorage` option and ships no isolation machinery, so state written by one test is visible to
+the next. `reset()` must never be called: it is `deleteAllDurableObjects()`
+(`node_modules/@cloudflare/vitest-pool-workers/dist/worker/lib/cloudflare/test-internal.mjs:826`) and
+miniflare's local D1 is itself a durable object
+(`node_modules/miniflare/dist/src/workers/d1/database.worker.js:146`), so it would drop the tables the
+setup file created along with the migration bookkeeping. The consequences the plan carries: seed with
+account emails unique per test, send a client-address header unique per test so throttling counters
+stay separate, make cross-account assertions inside one block, and run the throttling case last.
 
 ### Development origins and cookies (Inference and Unknown)
 
@@ -254,14 +293,19 @@ call `reset()` explicitly.
 
 ## Open Questions
 
-1. **Does passing the raw request into `auth.api.signInEmail` produce an origin rejection?** Settled
-   by the cross-origin test in phase 1. Default if not: move the browser's login onto the mounted
-   Better Auth endpoint.
-2. **Does a browser accept the `Secure` session cookie over `http://localhost`?** Settled by the
-   manual browser checklist. Default if not: drive `advanced.useSecureCookies` from an environment
-   flag.
-3. **Does the rate limit trip reliably under the test pool once storage is the database?** Settled by
-   the rate-limit test. Default if the limit proves flaky in tests: keep the configuration, move the
-   assertion to a direct call against the auth instance rather than through `SELF.fetch`.
-4. **Is `reset()` needed between integration test blocks?** Settled by writing the isolation test as
-   a single block first. Default: no `reset()` unless a block proves it needs one.
+1. **Resolved during plan review.** The question was whether passing the raw request makes the origin
+   check engage on a thin route. It does, but throttling still would not, so the thin routes were
+   dropped and both the client and the tests use the mounted endpoints.
+2. **Does a browser accept the `Secure` session cookie over `http://localhost`?** Open. Settled by the
+   manual browser checklist. Safari is known to refuse it while Chrome and Firefox accept it, so the
+   plan builds the `COOKIE_SECURE` variable as a step rather than naming it as a fallback, and the
+   checklist says what to do when the symptom appears.
+3. **Resolved during plan review.** The earlier fallback, asserting the limit against a direct call to
+   the auth instance, pointed at the one call path that has no limiter. The throttling case runs
+   through the mounted endpoint, asserts the custom rule's numbers, and runs last.
+4. **Resolved during plan review.** `reset()` is never called, because it would delete the tables. No
+   isolation exists between tests, so tests are written not to need it.
+5. **Does the deployed runtime always populate `cf-connecting-ip` for this Worker?** Open, and not
+   exercisable here. The tests prove the throttling mechanism but set the header themselves, so they do
+   not prove the keying. Default: trust the runtime's documented behaviour and re-check during the
+   deployment slice, S-04.
