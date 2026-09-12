@@ -58,19 +58,26 @@
   another form.
 - **Review objection + Resolution:** Independent plan review raised this as the slice's one critical
   finding: the plan opened with "the slice adds no new kind of problem", and that assumption is what
-  let phase 4 ship with three automated criteria that are a typecheck, a build and the existing suite,
-  for the section the plan itself calls the one way this product can mislead its user. The objection is
-  accepted in full. The plan no longer claims the slice adds no new kind of problem; it names what is
-  new, which is that the screen shows a number the domain derives rather than one the server hands it.
-  The reviewer's recommended fix is taken with two changes. The helper takes values rather than a
-  `SubscriptionState`, for the reason above. And `recurringReceived` consumes it too, rather than only
-  the screen, so there is one implementation of the six conditions rather than two that happen to
-  agree. Between the review and this record, D-009 landed `memberMonthStatus` and moved three of the
-  six there, which makes the fix smaller than the review specified: this slice adds one condition and
-  one reason on top of a module that already exists. A second objection, that the screen must then have break months and the member's ranges in
-  hand, is answered by phase 4's first act: S-02's detail screen already has a members section and a
-  break-months section, so both reads exist, and if either is missing phase 4 adds it through the
-  client module.
+  let phase 4 ship with three automated criteria that are a typecheck, a build and the existing
+  suite, for the section the plan itself calls the one way this product can mislead its user. The
+  objection is accepted in full. The plan no longer claims the slice adds no new kind of problem; it
+  names what is new, which is that the screen shows a number the domain derives rather than one the
+  server hands it. The reviewer's recommended fix is taken with two changes. The helper takes values
+  rather than a `SubscriptionState`, for the reason above. And `recurringReceived` consumes it too,
+  rather than only the screen, so there is one implementation of the six conditions rather than two
+  that happen to agree. Between the review and this record, D-009 landed `memberMonthStatus` and
+  moved three of the six there, which makes the fix smaller than the review specified: this slice
+  adds one condition and one reason on top of a module that already exists. D-009 leaves one
+  question open in its own resolution, that `src/domain/` would hold two month-classification
+  helpers once this one lands, and answers it with composition provided `scheduleMonthStatuses`
+  applies `memberMonthStatus` for the member-month half rather than repeating the break month and
+  the active range. This record closes that question in the affirmative: it does apply it, and the
+  mechanism is the narrowed first parameter, which is what lets one function serve a caller holding
+  a `SubscriptionState` and a caller holding two fields. The two helpers are one rule in two shapes,
+  member-month and schedule-month, and neither restates the other. A second objection, that the
+  screen must then have break months and the member's ranges in hand, is answered by phase 4's first
+  act: S-02's detail screen already has a members section and a break-months section, so both reads
+  exist, and if either is missing phase 4 adds it through the client module.
 - **Affected tests:** Unit tests in `src/domain/`: `scheduleMonthStatuses` returns rows for the elapsed
   months only, stopping at the current month for an open-ended arrangement and at the end month when
   that is earlier, empty when the arrangement starts next month and one row long when it starts and

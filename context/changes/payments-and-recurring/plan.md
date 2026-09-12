@@ -362,13 +362,16 @@ at `POST` and at `PATCH`. The reasons a row can actually carry are `break-month`
 `outside-active-range` and `excepted`, which are exactly the three the screen renders in words.
 
 `inputs` is the same first argument `memberMonthStatus` takes, and phase 1 narrows that parameter's
-type from `SubscriptionState` to `Pick<SubscriptionState, 'settings' | 'breakMonths'>`, which is all
-either function reads. `SubscriptionState` satisfies it structurally, so every caller in the
-calculation compiles unchanged and nothing about the server path moves. The reason is the browser: the
-detail screen has the subscription's settings and its break months, and it has no price history and no
-payment list, so a parameter typed as the whole state would have forced it to synthesise one with
-fabricated empty fields, and the fabrication would keep compiling on the day someone adds a condition
-that reads one of them.
+type from `SubscriptionState` to `Pick<SubscriptionState, 'settings' | 'breakMonths'>`, which is
+everything that function reads and everything this one adds. `SubscriptionState` satisfies it
+structurally, so every caller in the calculation compiles unchanged and nothing about the server path
+moves. `chargedMonthStatus` beside it keeps the whole state, because `priceForMonth` needs the price
+history: only the member-month half narrows, which is the half D-009 keeps separate by name.
+
+The reason for narrowing at all is the browser: the detail screen has the subscription's settings and
+its break months, and it has no price history and no payment list, so a parameter typed as the whole
+state would have forced it to synthesise one with fabricated empty fields, and the fabrication
+would keep compiling on the day someone adds a condition that reads one of them.
 
 #### 4. The calculation reads the month status, and stops counting owner money as collected
 
