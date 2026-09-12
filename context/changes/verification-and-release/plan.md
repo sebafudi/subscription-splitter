@@ -1037,19 +1037,19 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 
 #### Automated
 
-- [x] 1.1 Typecheck passes
-- [x] 1.2 The whole suite passes
-- [x] 1.3 AGENTS.md no longer claims only the scaffold exists
-- [x] 1.4 The README first-run recipe no longer enumerates only two migrations
-- [x] 1.5 context/foundation/infrastructure.md exists and names the Worker, the database id and the secrets by name
-- [x] 1.6 No calendar date was introduced into any authored file
-- [x] 1.7 No secret value appears in any changed file
+- [x] 1.1 Typecheck passes — 9a7fa17
+- [x] 1.2 The whole suite passes — 9a7fa17
+- [x] 1.3 AGENTS.md no longer claims only the scaffold exists — 9a7fa17
+- [x] 1.4 The README first-run recipe no longer enumerates only two migrations — 9a7fa17
+- [x] 1.5 context/foundation/infrastructure.md exists and names the Worker, the database id and the secrets by name — 9a7fa17
+- [x] 1.6 No calendar date was introduced into any authored file — 9a7fa17
+- [x] 1.7 No secret value appears in any changed file — 9a7fa17
 
 #### Manual
 
-- [x] 1.8 A reader following the README from a clean clone reaches a running app and a seeded account
-- [x] 1.9 Every corrected FR names the shipped route or domain function that implements it
-- [x] 1.10 The infrastructure document and the README Deploy section agree on every command and secret name
+- [x] 1.8 A reader following the README from a clean clone reaches a running app and a seeded account — 9a7fa17
+- [x] 1.9 Every corrected FR names the shipped route or domain function that implements it — 9a7fa17
+- [x] 1.10 The infrastructure document and the README Deploy section agree on every command and secret name — 9a7fa17
 
 ### Phase 2: Release preparation and the rollback that makes it safe
 
