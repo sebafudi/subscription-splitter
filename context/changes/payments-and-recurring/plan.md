@@ -1313,17 +1313,17 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [x] 2.1 Integration tests pass
-- [x] 2.2 Unit tests pass
-- [x] 2.3 Typecheck passes
-- [x] 2.4 All five migrations apply in order to a clean local database
-- [x] 2.5 Every new route answers 401 without a cookie
-- [x] 2.6 A payment is read back by a separate later request with every field intact
+- [x] 2.1 Integration tests pass — 24f315b
+- [x] 2.2 Unit tests pass — 24f315b
+- [x] 2.3 Typecheck passes — 24f315b
+- [x] 2.4 All five migrations apply in order to a clean local database — 24f315b
+- [x] 2.5 Every new route answers 401 without a cookie — 24f315b
+- [x] 2.6 A payment is read back by a separate later request with every field intact — 24f315b
 
 #### Manual
 
-- [x] 2.7 The ownership cases failed first for the right reason
-- [x] 2.8 A payment before the plan's first month produced 400 naming the date, with nothing stored
+- [x] 2.7 The ownership cases failed first for the right reason — 24f315b
+- [x] 2.8 A payment before the plan's first month produced 400 naming the date, with nothing stored — 24f315b
 
 ### Phase 3: Standing orders and their exceptions
 
