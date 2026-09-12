@@ -49,8 +49,20 @@ month series, none of which the requirements ask for.
 One contract in this repository is narrower than the domain needs. `ownerResidualForMonth(price,
 activeCount)` assumes the owner is one of the active members, computing the residual as `price -
 share * (activeCount - 1)`. The owner has active ranges like anyone else and can sit a month out, in
-which case every active member is charged and the subtraction is wrong by one share. This slice
-widens the helper rather than working around it.
+which case every active member is charged and the subtraction is wrong by one share. Widening the
+helper was the first answer and was dropped after review: nothing would have called it, so the suite
+would have proved one expression while the screen showed another. The owner's share of a month is
+produced once inside `computeSummary`, as `currentMonthly` less `expectedThisMonth`, and that single
+value is what the screen renders and what the tests assert. The helper is left exactly as S-01
+shipped it, with no caller in this slice.
+
+Two further departures from the prototype are named here rather than discovered later. Its R3 states
+the standing-order rule as bounded by `[startMonth, endMonth ?? currentMonth]`, with elapsed-ness
+inside the rule; this project makes the current month an explicit argument instead of a property of
+whichever month list the caller passes, because the test plan names the not-yet-elapsed boundary as
+its own failure mode. Its R4 requires a warning before deleting the earliest price entry when doing so
+would leave priced months unpriced; an API has no dialogue, so the same rule becomes a 409 the caller
+can override with an explicit confirmation flag.
 
 ## Detailed Findings
 
@@ -89,6 +101,25 @@ widens the helper rather than working around it.
   `ON DELETE CASCADE` on every foreign key, and a `GLOB '[0-9][0-9][0-9][0-9]-[01][0-9]'` CHECK on a
   month column with the residual gap (`00`, `13` to `19`) closed by the Zod range rule that every
   write passes through. `migrations/0002_subscriptions.sql` is the worked example.
+- **`start_month` is patchable today.** `patchSubscriptionSchema` carries it
+  (`src/server/validation/subscriptions.ts:42`) and `update` writes it. **Inference:** once member
+  ranges are validated against the subscription's first month, moving that month later leaves every
+  earlier stored range in violation of the rule the write path enforces, so a member becomes
+  uneditable through the API while the summary quietly drops the truncated months from
+  `totalPlanCost`. No landed test asserts that such a patch succeeds, and the route already refuses
+  `id` and `user_id` in a patch body, so removing the field costs nothing green and reuses an
+  established refusal.
+- **The client landed.** `src/client/api.ts` exports `request`, `SignedOutError`, `ApiError` carrying
+  a `field`, `getMe`, `signIn`, `signOut`, `listSubscriptions` and `createSubscription`, and
+  `src/client/screens/` holds `Login.tsx`, `Home.tsx` and `SubscriptionForm.tsx`. `Home` renders each
+  subscription as a plain list item with no selection affordance, so a detail screen needs it to gain
+  one rather than being reachable today.
+- **The rate limiter is shared across test files.** `src/server/auth.ts:26-33` enables it at ten
+  requests per sixty seconds per client address with database storage, and the database is shared and
+  never reset, so the three landed files keep apart by address prefix: `10.0.0.x`, `10.1.0.x` and
+  `10.2.0.1`. **Inference:** a shared helper that hands out one fixed prefix would put every file in
+  one bucket, and the failure would arrive as an intermittent 429 during sign-in that reads like a
+  flaky auth test.
 - **The unit runner covers `src/**/*.test.ts`** after S-01 widened it, so a test placed beside the
   module it exercises runs. The integration runner covers `tests/integration/**/*.test.ts` only and
   applies the migrations directory as a `TEST_MIGRATIONS` binding in a setup file.
@@ -111,7 +142,11 @@ prototype. The residual is not. **Inference:** `activeCount - 1` encodes "exactl
 members is the owner". The owner is a member with active ranges like anyone else, and the
 requirements allow a month in which the owner is not active while others are; in that month every
 active member is charged and the residual must subtract every one of their shares, not all but one.
-The helper needs the number of charged members as an explicit input rather than deriving it.
+The resolution is not to widen the helper but to stop needing it: `computeSummary` returns the
+owner's share of the current month as a named field, computed once from the price and what the
+charged members carry, so the assumption has no path into the shipped number. The helper keeps no
+caller here, which makes its assumption inert rather than wrong; whether to delete it is a question
+for S-03, when payments make the answer concrete.
 
 ### The prototype's monthly accounting, rule by rule (Evidence, read-only prototype)
 
@@ -128,7 +163,9 @@ The helper needs the number of charged members as an explicit input rather than 
 | Owner's own share | Always `0`, checked before anything else | Same |
 | Zero active members, non-zero price | `perPersonShare` returns the **whole undivided price** | **Changed**: returns `0`, the owner absorbs the whole month. See D-006 |
 | Owner net cost | `totalPlanCost - totalCollected`, with the rounding residual never itemised | Same for the headline, and the per-month residual becomes its own tested helper |
-| Recurring received | Counts a month only when it is at or after the start, at or before the end, not a break month, covered by one of the member's ranges, and not excepted | Type shape only in this slice; the rule lands with S-03 |
+| Recurring received | Counts a month only when it is at or after the start, at or before the end, not a break month, covered by one of the member's ranges, and not excepted | Same, and the rule is implemented here even though nothing can store a schedule until S-03 |
+| Recurring elapsed bound | The rule reads as `[startMonth, endMonth ?? currentMonth]`, so elapsed-ness rides on the caller's month list | **Changed**: the current month is an explicit argument, so the bound holds for any caller |
+| Deleting the earliest price entry | Warn before deleting it when that would leave priced months unpriced | Same rule, expressed as a 409 the caller overrides with a confirmation flag, since an API has no dialogue |
 | Member list order | Ascending by balance, so the most-owing member is first | Same |
 | Validation of ranges | Non-empty, every `joinedMonth` at or after the subscription start, no overlap after sorting, and an open-ended range may not be followed by another | Same |
 
@@ -221,8 +258,10 @@ exactly the value this project is changing. Both gaps are closed by tests in thi
    default taken here, and recorded as D-006: the share is zero, nobody owes, the month's whole cost
    lands in the plan total and in the owner's net cost, and the interface shows it as an ordinary line
    with no warning. Blocks nothing.
-3. **Whether S-01 phase 4 lands the client shapes this slice's screen builds on.** `src/client/api.ts`
-   and `src/client/screens/Home.tsx` are specified in the S-01 plan but not yet on disk. The default
-   taken here: the detail screen adapts to whatever S-01 lands rather than rewriting it, and if S-01
-   phase 4 has not landed when phase 4 of this slice starts, this slice builds the minimum client
-   surface it needs against the same API contract. Blocks phase 4 only.
+3. **Whether the first month should stay editable.** Resolved during plan review: it does not.
+   `start_month` leaves the patch schema, because a moved first month invalidates every stored range,
+   price entry and break month validated against it, and a guard would have to be kept in step with
+   every child table added later. Recorded in D-006 and in the plan's migration notes. Blocks nothing.
+
+(The question of whether S-01's client files would land in time was resolved by their landing.
+`src/client/api.ts` and all three screens are on disk, and this slice extends them.)
