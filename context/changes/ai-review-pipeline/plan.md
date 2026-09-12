@@ -807,19 +807,19 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Automated
 
-- [x] 2.1 Type check passes in tools/reviewer
-- [x] 2.2 Unit tests pass with no OPENROUTER_API_KEY set
-- [x] 2.3 Mock model success path yields pass and fail matching the threshold rule
-- [x] 2.4 Unparseable model output yields status error without throwing
-- [x] 2.5 Schema-violating model output yields status error
-- [x] 2.6 Provider rejection yields status error
-- [x] 2.7 resolveModel throws a named error when the credential is absent
-- [x] 2.8 renderComment emits the hidden marker for every outcome kind
-- [x] 2.9 CLI exits 0, 1 and 2 for pass, fail and error
-- [x] 2.12 Absent credential yields an error outcome with reason missing_credential without throwing
-- [x] 2.13 A null overall yields a derived verdict rather than an error
-- [x] 2.14 A body containing the literal delimiter cannot terminate its own block
-- [x] 2.15 CLI exits 3 when the error reason is missing_credential
+- [x] 2.1 Type check passes in tools/reviewer - 104a32c
+- [x] 2.2 Unit tests pass with no OPENROUTER_API_KEY set - 104a32c
+- [x] 2.3 Mock model success path yields pass and fail matching the threshold rule - 104a32c
+- [x] 2.4 Unparseable model output yields status error without throwing - 104a32c
+- [x] 2.5 Schema-violating model output yields status error - 104a32c
+- [x] 2.6 Provider rejection yields status error - 104a32c
+- [x] 2.7 resolveModel throws a named error when the credential is absent - 104a32c
+- [x] 2.8 renderComment emits the hidden marker for every outcome kind - 104a32c
+- [x] 2.9 CLI exits 0, 1 and 2 for pass, fail and error - 104a32c
+- [x] 2.12 Absent credential yields an error outcome with reason missing_credential without throwing - 104a32c
+- [x] 2.13 A null overall yields a derived verdict rather than an error - 104a32c
+- [x] 2.14 A body containing the literal delimiter cannot terminate its own block - 104a32c
+- [x] 2.15 CLI exits 3 when the error reason is missing_credential - 104a32c
 
 #### Manual
 
