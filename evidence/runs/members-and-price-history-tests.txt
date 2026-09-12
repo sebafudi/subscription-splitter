@@ -1,17 +1,31 @@
 members-and-price-history: captured verification run
 ====================================================
 
-Commit:   e5f0116 (docs(members-and-price-history): record phase 4 evidence and commit sha)
-Phases:   1 to 4 of context/changes/members-and-price-history/plan.md
-Tree:     a clean worktree checked out at that commit, so the counts belong to
-          this slice alone. Later commits on main belong to the next slice
-          (payments-and-recurring) and are deliberately not included here.
-Runner:   the three commands below, in one run, from a clean worktree.
+Commit:   09b763b (fix(members-and-price-history): apply implementation review findings)
+Phases:   1 to 5 of context/changes/members-and-price-history/plan.md, plus the
+          three required fixes from reviews/impl-review.md (F1, F2, F3)
+Tree:     a clean worktree checked out at that commit.
+
+A note on what these counts include. The earlier capture in this file was taken
+at e5f0116, this slice's last commit before any other work landed, so its
+numbers were the slice's alone: typecheck clean, 11 unit files / 111 tests, 7
+integration files / 52 tests. The independent implementation review measured the
+same three numbers at that commit. By the time the review's findings were fixed,
+the next slice (payments-and-recurring) had landed on main, so a worktree at
+09b763b necessarily carries its tests too and the counts below are
+repository-wide rather than slice-only. They are recorded as measured.
 
 Counts, for reading at a glance:
   typecheck          clean across tsconfig.worker.json, tsconfig.app.json and tsconfig.node.json
-  npm run test:unit          11 files, 111 tests passed
-  npm run test:integration    7 files,  52 tests passed
+  npm run test:unit          15 files, 185 tests passed
+  npm run test:integration   10 files, 103 tests passed
+
+What the review's fixes added to those counts:
+  F1  the month-balancing table now asserts hand-computed literals per row, with
+      two remainder rows, and a seven-seat case through computeSummary
+  F2  three rounding cases on shareForMonth, pinning round against truncation
+  F3  eight isolated-router cases, one read and one write per new router,
+      in tests/integration/router-isolation.test.ts
 
 The three commands
 ------------------
@@ -28,13 +42,13 @@ $ npm run test:unit
 > vitest run --config vitest.unit.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-final
 
 
- Test Files  11 passed (11)
-      Tests  111 passed (111)
-   Start at  20:47:45
-   Duration  520ms (transform 372ms, setup 0ms, import 833ms, tests 99ms, environment 1ms)
+ Test Files  15 passed (15)
+      Tests  185 passed (185)
+   Start at  21:11:03
+   Duration  459ms (transform 354ms, setup 0ms, import 845ms, tests 116ms, environment 1ms)
 
 
 $ npm run test:integration
@@ -43,7 +57,7 @@ $ npm run test:integration
 > vitest run --config vitest.integration.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-final
 
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
@@ -52,11 +66,14 @@ Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
 
- Test Files  7 passed (7)
-      Tests  52 passed (52)
-   Start at  20:47:47
-   Duration  8.69s (transform 13.33s, setup 35.26s, import 179ms, tests 8.45s, environment 0ms)
+ Test Files  10 passed (10)
+      Tests  103 passed (103)
+   Start at  21:11:05
+   Duration  11.80s (transform 17.41s, setup 48.18s, import 343ms, tests 19.55s, environment 0ms)
 
 
 
@@ -77,20 +94,20 @@ $ npm run typecheck && npm test
 > vitest run --config vitest.unit.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-final
 
 
- Test Files  11 passed (11)
-      Tests  111 passed (111)
-   Start at  20:48:07
-   Duration  416ms (transform 331ms, setup 0ms, import 705ms, tests 77ms, environment 1ms)
+ Test Files  15 passed (15)
+      Tests  185 passed (185)
+   Start at  21:11:18
+   Duration  514ms (transform 540ms, setup 0ms, import 1.13s, tests 116ms, environment 1ms)
 
 
 > test:integration
 > vitest run --config vitest.integration.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-final
 
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
@@ -99,9 +116,12 @@ Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
 
- Test Files  7 passed (7)
-      Tests  52 passed (52)
-   Start at  20:48:08
-   Duration  8.23s (transform 12.78s, setup 33.26s, import 221ms, tests 9.35s, environment 1ms)
+ Test Files  10 passed (10)
+      Tests  103 passed (103)
+   Start at  21:11:19
+   Duration  12.01s (transform 17.71s, setup 48.55s, import 360ms, tests 20.06s, environment 0ms)
 
