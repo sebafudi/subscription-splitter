@@ -1,3 +1,5 @@
+import type { Member, MonthStr, PriceEntry, Summary } from '../domain/types'
+
 export type SessionUser = { id: string; email: string; name: string }
 
 export type Subscription = {
@@ -31,12 +33,15 @@ export class SignedOutError extends Error {
 export class ApiError extends Error {
   status: number
   field?: string
+  /** Present on the 409 refusing a price delete: the months that would lose their price. */
+  months?: string[]
 
-  constructor(status: number, message: string, field?: string) {
+  constructor(status: number, message: string, field?: string, months?: string[]) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.field = field
+    this.months = months
   }
 }
 
@@ -62,7 +67,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
               ? (body as { error: string }).error
               : `request failed with status ${res.status}`)
     const field = body && typeof body === 'object' && typeof (body as { field?: unknown }).field === 'string' ? (body as { field: string }).field : undefined
-    throw new ApiError(res.status, message, field)
+    const months =
+      body && typeof body === 'object' && Array.isArray((body as { months?: unknown }).months)
+        ? ((body as { months: string[] }).months)
+        : undefined
+    throw new ApiError(res.status, message, field, months)
   }
 
   return body as T
@@ -113,4 +122,81 @@ export async function createSubscription(input: CreateSubscriptionInput): Promis
     method: 'POST',
     body: JSON.stringify(input),
   })
+}
+
+/**
+ * The member, price and summary shapes are the domain's own, re-exported here
+ * so the screens have one import for everything the API returns and so the
+ * client cannot drift from what the server computes.
+ */
+export type { ActiveRange, Member, MemberSummary, MonthStr, PriceEntry, Summary } from '../domain/types'
+
+/** Request keys stay snake_case, matching the validation schemas. */
+export type ActiveRangeInput = { joined_month: string; left_month: string | null }
+export type CreateMemberInput = { name: string; active_ranges: ActiveRangeInput[] }
+export type PatchMemberInput = { name?: string; active_ranges?: ActiveRangeInput[]; archived?: boolean }
+
+function membersPath(subscriptionId: string, memberId?: string): string {
+  const base = `/api/subscriptions/${subscriptionId}/members`
+  return memberId ? `${base}/${memberId}` : base
+}
+
+export async function listMembers(subscriptionId: string): Promise<Member[]> {
+  return request<Member[]>(membersPath(subscriptionId))
+}
+
+export async function createMember(subscriptionId: string, input: CreateMemberInput): Promise<Member> {
+  return request<Member>(membersPath(subscriptionId), { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updateMember(
+  subscriptionId: string,
+  memberId: string,
+  patch: PatchMemberInput,
+): Promise<Member> {
+  return request<Member>(membersPath(subscriptionId, memberId), { method: 'PATCH', body: JSON.stringify(patch) })
+}
+
+export async function deleteMember(subscriptionId: string, memberId: string): Promise<void> {
+  await request<null>(membersPath(subscriptionId, memberId), { method: 'DELETE' })
+}
+
+export async function listPrices(subscriptionId: string): Promise<PriceEntry[]> {
+  return request<PriceEntry[]>(`/api/subscriptions/${subscriptionId}/prices`)
+}
+
+export async function createPrice(
+  subscriptionId: string,
+  effectiveFrom: string,
+  amountMinor: number,
+): Promise<PriceEntry> {
+  return request<PriceEntry>(`/api/subscriptions/${subscriptionId}/prices`, {
+    method: 'POST',
+    body: JSON.stringify({ effective_from: effectiveFrom, amount: amountMinor }),
+  })
+}
+
+/** Without `confirm`, deleting the earliest entry is refused with a 409 naming the months it would unprice. */
+export async function deletePrice(subscriptionId: string, priceId: string, confirm = false): Promise<void> {
+  const query = confirm ? '?confirm=true' : ''
+  await request<null>(`/api/subscriptions/${subscriptionId}/prices/${priceId}${query}`, { method: 'DELETE' })
+}
+
+export async function listBreakMonths(subscriptionId: string): Promise<MonthStr[]> {
+  return request<MonthStr[]>(`/api/subscriptions/${subscriptionId}/break-months`)
+}
+
+export async function createBreakMonth(subscriptionId: string, month: string): Promise<void> {
+  await request<{ month: string }>(`/api/subscriptions/${subscriptionId}/break-months`, {
+    method: 'POST',
+    body: JSON.stringify({ month }),
+  })
+}
+
+export async function deleteBreakMonth(subscriptionId: string, month: string): Promise<void> {
+  await request<null>(`/api/subscriptions/${subscriptionId}/break-months/${month}`, { method: 'DELETE' })
+}
+
+export async function getSummary(subscriptionId: string): Promise<Summary> {
+  return request<Summary>(`/api/subscriptions/${subscriptionId}/summary`)
 }

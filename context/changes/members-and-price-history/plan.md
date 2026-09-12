@@ -1143,23 +1143,52 @@ Two choices the phase-2 text left open, both taken the smaller way:
 
 #### Automated
 
-- [ ] 4.1 Typecheck passes across all three projects
-- [ ] 4.2 Production build succeeds
-- [ ] 4.3 The whole suite passes
+- [x] 4.1 Typecheck passes across all three projects
+- [x] 4.2 Production build succeeds
+- [x] 4.3 The whole suite passes
 
 #### Manual
 
-- [ ] 4.5 A new subscription lists the owner as the account holder
-- [ ] 4.6 Two participants and a price of 100.00 give 33.33 each with the owner absorbing 33.34
-- [ ] 4.7 A departure moves the following month's share and leaves earlier months unchanged
-- [ ] 4.8 A rejoin resumes liability without a second record
-- [ ] 4.9 A skipped month costs nobody anything and leaves its neighbours unchanged
-- [ ] 4.10 A later price change leaves earlier months on the old price
-- [ ] 4.11 Archiving behaves as the requirements' default describes
-- [ ] 4.12 The reviewer account reaches none of the owner's records
-- [ ] 4.13 The layout is usable at a narrow phone width
-- [ ] 4.14 The earliest price delete shows an inline confirmation naming the affected months
-- [ ] 4.15 The detail screen's loading, error and no-owner states render as specified
+- [x] 4.5 A new subscription lists the owner as the account holder
+- [x] 4.6 Two participants and a price of 100.00 give 33.33 each with the owner absorbing 33.34
+- [x] 4.7 A departure moves the following month's share and leaves earlier months unchanged
+- [x] 4.8 A rejoin resumes liability without a second record
+- [x] 4.9 A skipped month costs nobody anything and leaves its neighbours unchanged
+- [x] 4.10 A later price change leaves earlier months on the old price
+- [x] 4.11 Archiving behaves as the requirements' default describes
+- [x] 4.12 The reviewer account reaches none of the owner's records
+- [x] 4.13 The layout is usable at a narrow phone width
+- [x] 4.14 The earliest price delete shows an inline confirmation naming the affected months
+- [x] 4.15 The detail screen's loading, error and no-owner states render as specified
+
+#### Notes
+
+- Every manual row was walked in a real browser against the local dev server
+  with the two seeded synthetic accounts, not reasoned about from the code.
+  Captures are in `evidence/screenshots/`. The figures seen on screen match
+  what the domain tests assert: 33,33 zł each with 33,34 zł left to the
+  organizer on a plan of 100,00 zł across three seats, a departure moving the
+  next month to 50,00 zł while the earlier months hold, a rejoin resuming
+  liability on the same row rather than a second one, a skipped month dropping
+  the plan total by exactly one month's price, and a later price entry leaving
+  the earlier months on the old price.
+- The loading state is recorded programmatically rather than as a screenshot:
+  on a local server the four reads resolve faster than a capture settles, so
+  the check reads the DOM in the same tick as the click and confirms the five
+  cards are still rendered with placeholders, the loading note is present and
+  the back control still works. The error and no-owner states are screenshots,
+  taken with the network forced offline and against a subscription row inserted
+  straight into the local database without an owner member.
+- The narrow-width row was checked at a 390 px viewport through device
+  emulation, since neither the window-size flag nor a page resize changed the
+  layout width in this environment. At that width the card row stacks to one
+  column and `document.scrollWidth` equals `clientWidth`, so nothing overflows
+  sideways.
+- `shareForMember`'s `current` argument, added in phase 3, is what lets the
+  screen ask for a single month's share without re-deriving the window; the
+  detail screen reads every figure from the summary payload and formats with
+  the currency and locale it carries, so no screen re-reads the subscription
+  row to format money.
 
 ### Phase 5: Evidence
 

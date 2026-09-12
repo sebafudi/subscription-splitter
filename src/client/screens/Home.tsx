@@ -4,10 +4,11 @@ import { SubscriptionForm } from './SubscriptionForm'
 
 type Props = {
   user: SessionUser
+  onSelect: (subscription: Subscription) => void
   onSignedOut: () => void
 }
 
-export function Home({ user, onSignedOut }: Props) {
+export function Home({ user, onSelect, onSignedOut }: Props) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -55,7 +56,9 @@ export function Home({ user, onSignedOut }: Props) {
           <ul className="subscription-list">
             {subscriptions.map((subscription) => (
               <li key={subscription.id}>
-                <strong>{subscription.name}</strong>, {subscription.currency}, starting {subscription.startMonth}
+                <button type="button" className="link-row" onClick={() => onSelect(subscription)}>
+                  <strong>{subscription.name}</strong>, {subscription.currency}, starting {subscription.startMonth}
+                </button>
               </li>
             ))}
           </ul>
