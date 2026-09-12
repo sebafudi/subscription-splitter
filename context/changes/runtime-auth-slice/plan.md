@@ -701,16 +701,16 @@ means re-reading its core table definitions in the installed package and editing
 
 #### Automated
 
-- [x] 2.1 Integration tests pass
-- [x] 2.2 Unit tests pass
-- [x] 2.3 Typecheck passes
-- [x] 2.4 Both migrations apply in order to a clean local database
-- [x] 2.6 Zod is declared at an exact version and recorded in the lockfile
-- [x] 2.7 The validation unit test is picked up by the unit runner
+- [x] 2.1 Integration tests pass — 2801e14
+- [x] 2.2 Unit tests pass — 2801e14
+- [x] 2.3 Typecheck passes — 2801e14
+- [x] 2.4 Both migrations apply in order to a clean local database — 2801e14
+- [x] 2.6 Zod is declared at an exact version and recorded in the lockfile — 2801e14
+- [x] 2.7 The validation unit test is picked up by the unit runner — 2801e14
 
 #### Manual
 
-- [x] 2.5 Ownership tests failed first for the right reason
+- [x] 2.5 Ownership tests failed first for the right reason — 2801e14
 
 ### Phase 3: Seeding the accounts
 
