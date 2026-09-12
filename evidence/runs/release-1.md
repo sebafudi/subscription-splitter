@@ -404,3 +404,105 @@ Stated rather than left to inference, in the same spirit as the first deployment
   tests over `validatePaymentDate`.
 - The sign-in rate limit. Exercising it means deliberately failing sign-ins against the live account,
   which would be indistinguishable in the logs from an attack on it.
+
+## Walkthrough, release version `8e4fa506-cd63-412c-88f2-0101b6348bdb`
+
+Every capture below came from this release, in one browser session against the live URL, signed in as
+the owner except where the second account is named. Months continue to be written as offsets from the
+demo plan's start month S. This section continues the input list above rather than starting a second
+one.
+
+### What was recorded in the browser
+
+| Step | Input | Observed | Capture |
+|---|---|---|---|
+| Sign in | owner account | The sign-in screen, then the subscription list | `release-01-login.png`, `release-02-home.png` |
+| Payment 1 | Blake, dated S+6, 150,00 zł, "September transfer" | Blake moved from owing 279,99 zł to owing 129,99 zł, exactly 150,00 zł | `release-03-input-record-payment.png` |
+| Payment 2 | Casey R., dated S+5, 120,00 zł, "August transfer, settling early" | Casey moved from owing 99,99 zł to being ahead by 20,01 zł, which is 120,00 less 99,99 | |
+| Edit payment 1 | 150,00 zł corrected to 180,00 zł | Blake moved to owing 99,99 zł, following the correction by exactly 30,00 zł | |
+| Standing order | Blake, 30,00 zł a month from S+4, still running | Three elapsed months counted, 90,00 zł assumed received, Blake down to owing 9,99 zł | `release-07-recurring-assumed-received.png` |
+| One month not received | S+5 of that standing order | The month redrawn as "not counted, marked as not received", the total back to 60,00 zł over 2 of 3 elapsed months, Blake at owing 39,99 zł | `release-07-recurring-assumed-received.png` |
+
+Everything in that table is kept. It is the demo state a reviewer opens.
+
+### The final state, against a hand calculation
+
+Computed before the screen was read, from the rules rather than from the response:
+
+- Blake owes the same 279,99 zł as before, because payments change what is paid and never what is
+  owed. Against that sits 180,00 zł recorded by hand plus the standing order's two counted months at
+  30,00 zł each, 60,00 zł, giving 240,00 zł paid and a balance of 39,99 zł owing.
+- Casey R. owes 99,99 zł against 120,00 zł paid, so is ahead by 20,01 zł.
+- Collected this month is the 180,00 zł payment dated in S+6 plus the standing order's S+6 month,
+  30,00 zł, giving 210,00 zł, against 60,00 zł expected. Collected exceeding expected is correct
+  here: one participant paid more than one month's share.
+- The plan has still cost 660,00 zł, and 360,00 zł of it has been collected, so the organizer's net
+  cost is 300,00 zł.
+
+The live screen showed exactly those figures, and a fresh read of the API after a reload returned
+`owedToYouNow` 3999, `creditOutstanding` 2001, `totalCollected` 36000 and `ownerNetCost` 30000 in
+minor units, with Blake at owed 27999, paid 24000, balance -3999 and Casey R. at owed 9999, paid
+12000, balance 2001.
+
+### Refusal states
+
+All three were provoked live. Each message names the field or the reason, and each left the stored
+data unchanged, confirmed by reloading and re-reading the records from the server afterwards.
+
+| Refusal | What was attempted | The message |
+|---|---|---|
+| Payment before the plan started | Blake, dated two months before S, 20,00 zł | "date must not precede the subscription start month", rendered in red directly under the date field |
+| Deleting a participant who has records | Delete on Blake, who has a payment and a standing order | "this member has records attached and is archived rather than deleted" |
+| Overlapping standing order | A second standing order for Blake opening at S+5, inside the one already running from S+4 | "two standing orders for one participant may not cover the same month, and two that touch are an overlap rather than a continuation" |
+
+After all three, the plan still held two payments, one standing order and three participants, and
+every balance was unchanged. Only the first has a named capture in the set below; the other two are
+recorded here with their exact messages, because the screenshot list the plan fixes has one error
+slot.
+
+### The second account, in the same session
+
+Signed out of the owner account and signed in as the reviewer account in the same browser. Its
+subscription list reads "No subscriptions yet." Asked directly for the owner's records by id from
+that session, the deployment answered 404 for the subscription, its summary, its members, its
+payments, its schedules and its prices, while the reviewer's own list answered 200 with nothing in
+it. That is the isolation demonstration D-010 describes: the second account is empty on purpose.
+
+### The screenshot set
+
+Ten files, `evidence/screenshots/release-*.png`. Nine are browser captures from the live URL with the
+address bar visible; `release-05-tests-passing.png` is the terminal capture phase 2 took in the clean
+checkout, and is the one that has no address bar to show.
+
+| File | What it shows |
+|---|---|
+| `release-01-login.png` | The sign-in screen, fields empty |
+| `release-02-home.png` | The post-login list: the demo plan and the relabelled first-deployment artefact |
+| `release-03-input-record-payment.png` | The payment form filled in, before submitting |
+| `release-04-output-balances.png` | The five headline cards, the net-cost line, and both participants, one owing and one ahead |
+| `release-05-tests-passing.png` | The release SHA and `npm test` passing, from the clean checkout |
+| `release-06-members-and-prices.png` | Casey R.'s inclusive active range, S to S+3, above the price history with its change |
+| `release-07-recurring-assumed-received.png` | The standing order's months, two assumed received and one marked not received, with the total over 2 of 3 elapsed months |
+| `release-08-error-before-start-month.png` | The refused payment, its message under the date field, both stored payments untouched above it |
+| `release-09-reviewer-sees-nothing.png` | The second account signed in, with an empty subscription list |
+| `release-10-narrow-phone.png` | The detail screen at 390 CSS pixels, the cards stacked to one column, no horizontal overflow |
+
+Two notes on how the captures were taken, so nobody has to guess. Each is a capture of the test
+browser's own window rather than of the screen, so the address bar is genuine and nothing outside the
+browser is in frame. `release-10-narrow-phone.png` uses device emulation at 390 CSS pixels because
+the operating system clamps the window to a wider minimum, which is the same limitation the S-02
+walkthrough recorded; that is why the page occupies the left portion of a wider window in that one
+capture.
+
+No capture shows a password, a token or a session cookie. The two account addresses are visible,
+which is deliberate and unchanged from the first deployment's evidence; the passwords behind them
+stay in `evidence/private/reviewer-credentials.md`.
+
+### What the walkthrough did not do
+
+- It created nothing in a shape the product cannot delete. No subscription and no owner member was
+  created in this phase; the two that exist were created on purpose in phase 3 and are recorded above.
+- The archive flag was not exercised. The refusal that matters, deleting a participant with records,
+  was, and archiving is covered by the integration suite.
+- The confirmed half of a price delete was not exercised here either, for the same reason as in
+  phase 3: the guard is the point, and the demo plan keeps its price history.

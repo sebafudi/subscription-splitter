@@ -1120,20 +1120,20 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 
 #### Automated
 
-- [ ] 4.1 All ten release screenshots exist with the specified names
-- [ ] 4.2 Each is a non-empty PNG
-- [ ] 4.3 The release summary names every screenshot file
+- [x] 4.1 All ten release screenshots exist with the specified names
+- [x] 4.2 Each is a non-empty PNG
+- [x] 4.3 The release summary names every screenshot file
 
 #### Manual
 
-- [ ] 4.4 The four form-required captures are identifiable without reading the filename
-- [ ] 4.5 The balances on the output screenshot match a hand calculation
-- [ ] 4.6 No screenshot shows a credential, a token or a non-synthetic value
-- [ ] 4.7 Each refusal state left the data unchanged, confirmed by a reload
-- [ ] 4.8 The owner's populated list and the second account's empty list came from one session
-- [ ] 4.9 The layout is usable at a narrow phone width
-- [ ] 4.11 The tests capture shows the release SHA and the nine browser captures show the live URL
-- [ ] 4.12 Nothing was created in a shape the product cannot delete beyond what phase 3 created on purpose
+- [x] 4.4 The four form-required captures are identifiable without reading the filename
+- [x] 4.5 The balances on the output screenshot match a hand calculation
+- [x] 4.6 No screenshot shows a credential, a token or a non-synthetic value
+- [x] 4.7 Each refusal state left the data unchanged, confirmed by a reload
+- [x] 4.8 The owner's populated list and the second account's empty list came from one session
+- [x] 4.9 The layout is usable at a narrow phone width
+- [x] 4.11 The tests capture shows the release SHA and the nine browser captures show the live URL
+- [x] 4.12 Nothing was created in a shape the product cannot delete beyond what phase 3 created on purpose
 
 ### Phase 5: The mvp-check run, the evidence index, and the hand-off
 
