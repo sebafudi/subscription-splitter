@@ -20,6 +20,21 @@ describe('createSubscriptionSchema', () => {
     expect(result.time_zone).toBe('Europe/Warsaw')
   })
 
+  it('defaults owner_name to Me', () => {
+    const result = createSubscriptionSchema.parse({ name: 'Family plan', start_month: '2026-01' })
+    expect(result.owner_name).toBe('Me')
+  })
+
+  it('accepts an explicit owner_name', () => {
+    const result = createSubscriptionSchema.parse({ name: 'Family plan', start_month: '2026-01', owner_name: 'Organizer' })
+    expect(result.owner_name).toBe('Organizer')
+  })
+
+  it('rejects an owner_name that is empty after trimming', () => {
+    const result = createSubscriptionSchema.safeParse({ name: 'Family plan', start_month: '2026-01', owner_name: '   ' })
+    expect(result.success).toBe(false)
+  })
+
   it('rejects a name that is empty after trimming', () => {
     const result = createSubscriptionSchema.safeParse({ name: '   ', start_month: '2026-01' })
     expect(result.success).toBe(false)
@@ -77,6 +92,11 @@ describe('patchSubscriptionSchema', () => {
 
   it('rejects an unknown key', () => {
     const result = patchSubscriptionSchema.safeParse({ name: 'Renamed plan', nope: true })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects start_month, in the same shape as the existing refusal of id and user_id', () => {
+    const result = patchSubscriptionSchema.safeParse({ start_month: '2026-02' })
     expect(result.success).toBe(false)
   })
 })

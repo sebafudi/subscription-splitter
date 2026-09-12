@@ -17,6 +17,8 @@ export type CreateSubscriptionInput = {
   locale: string
   time_zone: string
   start_month: string
+  /** Names the owner member created with the subscription; the server defaults it to `Me`. */
+  owner_name?: string
 }
 
 export class SignedOutError extends Error {

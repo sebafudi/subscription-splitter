@@ -1058,33 +1058,50 @@ with every child table added after this one.
 
 #### Automated
 
-- [x] 1.1 Unit tests pass
-- [x] 1.2 Typecheck passes
-- [x] 1.3 Integration tests still pass
-- [x] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
-- [x] 1.7 All three of US-01's numeric acceptance criteria are asserted through the shipped paths
+- [x] 1.1 Unit tests pass — 69b8fbc
+- [x] 1.2 Typecheck passes — 69b8fbc
+- [x] 1.3 Integration tests still pass — 69b8fbc
+- [x] 1.4 Nothing under src/domain imports the server, Hono or a D1 type — 69b8fbc
+- [x] 1.7 All three of US-01's numeric acceptance criteria are asserted through the shipped paths — 69b8fbc
 
 #### Manual
 
-- [x] 1.5 Each new unit test failed first for the stated reason
-- [x] 1.6 The worked example was computed by hand before the assertion was written
+- [x] 1.5 Each new unit test failed first for the stated reason — 69b8fbc
+- [x] 1.6 The worked example was computed by hand before the assertion was written — 69b8fbc
 
 ### Phase 2: Members, their active ranges and the owner
 
 #### Automated
 
-- [ ] 2.1 Integration tests pass
-- [ ] 2.2 Unit tests pass
-- [ ] 2.3 Typecheck passes
-- [ ] 2.4 All three migrations apply in order to a clean local database
-- [ ] 2.5 Every new route answers 401 without a cookie
-- [ ] 2.8 A created subscription comes back with exactly one owner member starting at its start month
-- [ ] 2.9 A subscription PATCH carrying start_month is refused with 400 and changes nothing
+- [x] 2.1 Integration tests pass
+- [x] 2.2 Unit tests pass
+- [x] 2.3 Typecheck passes
+- [x] 2.4 All three migrations apply in order to a clean local database
+- [x] 2.5 Every new route answers 401 without a cookie
+- [x] 2.8 A created subscription comes back with exactly one owner member starting at its start month
+- [x] 2.9 A subscription PATCH carrying start_month is refused with 400 and changes nothing
 
 #### Manual
 
-- [ ] 2.6 The ownership cases failed first for the right reason
-- [ ] 2.7 A second owner produced 409 rather than a 500
+- [x] 2.6 The ownership cases failed first for the right reason
+- [x] 2.7 A second owner produced 409 rather than a 500
+
+#### Notes
+
+Two choices the phase-2 text left open, both taken the smaller way:
+
+- `hasDependents` keeps the four-argument signature the repository contract
+  gives it, but runs no statement in this slice. Nothing references a member
+  until S-03's payments and schedules, so a statement carrying the ownership
+  predicate would have had no table to query; the parameters are kept and
+  marked as awaiting that clause, so it arrives inside the module-wide rule
+  rather than beside it.
+- The per-route 401 assertions cannot, on their own, prove the members module
+  registered its own session middleware. Both routers are mounted at `'/'` and
+  both own `/api/subscriptions/*`, and Hono merges them into one router, so the
+  subscriptions router's middleware already answers 401 for the member paths.
+  The module registers its own anyway, for the reason the plan gives, and the
+  test carries a comment saying what the assertion does and does not prove.
 
 ### Phase 3: Prices, break months and the summary
 

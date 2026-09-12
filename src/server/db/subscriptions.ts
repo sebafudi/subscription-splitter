@@ -50,15 +50,30 @@ export async function create(
   input: CreateSubscriptionInput,
 ): Promise<Subscription> {
   const id = crypto.randomUUID()
+  const ownerId = crypto.randomUUID()
   const createdAt = new Date().toISOString()
 
-  await db
-    .prepare(
-      `insert into subscriptions (id, user_id, name, currency, locale, time_zone, start_month, created_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(id, userId, input.name, input.currency, input.locale, input.time_zone, input.start_month, createdAt)
-    .run()
+  // One atomic unit: a subscription that exists without an owner member has no
+  // defined per-person share, so there is no window in which one can be read
+  // (decision D-006). The owner's opening range starts at the first month and
+  // stays open, which is also why that month can no longer be patched.
+  await db.batch([
+    db
+      .prepare(
+        `insert into subscriptions (id, user_id, name, currency, locale, time_zone, start_month, created_at)
+         values (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(id, userId, input.name, input.currency, input.locale, input.time_zone, input.start_month, createdAt),
+    db
+      .prepare(
+        `insert into members (id, subscription_id, name, is_owner, archived, created_at)
+         values (?, ?, ?, 1, 0, ?)`,
+      )
+      .bind(ownerId, id, input.owner_name, createdAt),
+    db
+      .prepare('insert into active_ranges (id, member_id, joined_month, left_month) values (?, ?, ?, null)')
+      .bind(crypto.randomUUID(), ownerId, input.start_month),
+  ])
 
   return {
     id,
@@ -95,16 +110,15 @@ export async function update(
     currency: patch.currency ?? existing.currency,
     locale: patch.locale ?? existing.locale,
     time_zone: patch.time_zone ?? existing.timeZone,
-    start_month: patch.start_month ?? existing.startMonth,
   }
 
   await db
     .prepare(
-      `update subscriptions set name = ?, currency = ?, locale = ?, time_zone = ?, start_month = ?
+      `update subscriptions set name = ?, currency = ?, locale = ?, time_zone = ?
        where id = ? and user_id = ?`,
     )
-    .bind(next.name, next.currency, next.locale, next.time_zone, next.start_month, id, userId)
+    .bind(next.name, next.currency, next.locale, next.time_zone, id, userId)
     .run()
 
-  return { ...existing, name: next.name, currency: next.currency, locale: next.locale, timeZone: next.time_zone, startMonth: next.start_month }
+  return { ...existing, name: next.name, currency: next.currency, locale: next.locale, timeZone: next.time_zone }
 }

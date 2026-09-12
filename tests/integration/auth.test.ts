@@ -1,36 +1,10 @@
 import { SELF, env } from 'cloudflare:test'
-import { betterAuth } from 'better-auth'
 import { describe, expect, it } from 'vitest'
+import { extractSessionCookie, headersFor as headersWithPrefix, seedUser } from './accounts'
 
-function seedingAuth() {
-  return betterAuth({
-    baseURL: 'http://example.com',
-    database: env.DB,
-    emailAndPassword: {
-      enabled: true,
-      disableSignUp: false,
-    },
-  })
-}
-
-function extractSessionCookie(res: Response): string {
-  const setCookie = res.headers.get('set-cookie')
-  if (!setCookie) throw new Error('no set-cookie header on response')
-  return setCookie.split(';')[0]
-}
-
+/** This file's slice of the rate limiter's client-address space; see `accounts.ts`. */
 function headersFor(testId: string, extra?: Record<string, string>): Record<string, string> {
-  return {
-    'content-type': 'application/json',
-    'cf-connecting-ip': `10.0.0.${testId}`,
-    origin: 'http://example.com',
-    ...extra,
-  }
-}
-
-async function seedUser(email: string, password: string, name: string) {
-  const auth = seedingAuth()
-  return auth.api.signUpEmail({ body: { email, password, name } })
+  return headersWithPrefix('10.0.0', testId, extra)
 }
 
 describe('session lifecycle against local D1', () => {

@@ -1,5 +1,6 @@
 import { SELF } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
+import { headersFor } from './accounts'
 
 describe('dev seed route (decision D-005)', () => {
   it('returns 404 with the gate on but a wrong token', async () => {
@@ -79,11 +80,7 @@ describe('dev seed route (decision D-005)', () => {
 
     const signInRes = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'cf-connecting-ip': '10.2.0.1',
-        origin: 'http://example.com',
-      },
+      headers: headersFor('10.2.0', '1'),
       body: JSON.stringify({ email: 'seed-then-signin@example.com', password: 'correct horse battery staple' }),
     })
     expect(signInRes.status).toBe(200)

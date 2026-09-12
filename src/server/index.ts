@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import authRoutes from './routes/auth'
 import subscriptionsRoutes from './routes/subscriptions'
+import membersRoutes from './routes/members'
 import devSeedRoutes from './routes/dev-seed'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -8,6 +9,7 @@ const app = new Hono<{ Bindings: Env }>()
 app.get('/api/health', (c) => c.json({ ok: true }))
 app.route('/', authRoutes)
 app.route('/', subscriptionsRoutes)
+app.route('/', membersRoutes)
 app.route('/', devSeedRoutes)
 
 // Any other /api/* path is a JSON 404 rather than falling through to the

@@ -1,35 +1,10 @@
-import { SELF, env } from 'cloudflare:test'
-import { betterAuth } from 'better-auth'
+import { SELF } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
+import { signedInCookie as signedInCookieWithPrefix } from './accounts'
 
-function seedingAuth() {
-  return betterAuth({
-    baseURL: 'http://example.com',
-    database: env.DB,
-    emailAndPassword: { enabled: true, disableSignUp: false },
-  })
-}
-
-function extractSessionCookie(res: Response): string {
-  const setCookie = res.headers.get('set-cookie')
-  if (!setCookie) throw new Error('no set-cookie header on response')
-  return setCookie.split(';')[0]
-}
-
-async function signedInCookie(testId: string, email: string): Promise<string> {
-  const auth = seedingAuth()
-  await auth.api.signUpEmail({ body: { email, password: 'correct horse battery staple', name: 'Owner' } })
-
-  const res = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'cf-connecting-ip': `10.1.0.${testId}`,
-      origin: 'http://example.com',
-    },
-    body: JSON.stringify({ email, password: 'correct horse battery staple' }),
-  })
-  return extractSessionCookie(res)
+/** This file's slice of the rate limiter's client-address space; see `accounts.ts`. */
+function signedInCookie(testId: string, email: string): Promise<string> {
+  return signedInCookieWithPrefix('10.1.0', testId, email)
 }
 
 const validBody = {

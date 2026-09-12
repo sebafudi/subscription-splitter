@@ -12,6 +12,7 @@ export function SubscriptionForm({ onCreated, onSignedOut }: Props) {
   const [locale, setLocale] = useState('pl-PL')
   const [timeZone, setTimeZone] = useState('Europe/Warsaw')
   const [startMonth, setStartMonth] = useState('')
+  const [ownerName, setOwnerName] = useState('')
   const [error, setError] = useState<{ field?: string; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,10 +27,12 @@ export function SubscriptionForm({ onCreated, onSignedOut }: Props) {
         locale,
         time_zone: timeZone,
         start_month: startMonth,
+        ...(ownerName.trim() ? { owner_name: ownerName.trim() } : {}),
       })
       onCreated(created)
       setName('')
       setStartMonth('')
+      setOwnerName('')
     } catch (err) {
       if (err instanceof SignedOutError) {
         onSignedOut()
@@ -64,6 +67,14 @@ export function SubscriptionForm({ onCreated, onSignedOut }: Props) {
         placeholder="2026-01"
         value={startMonth}
         onChange={(event) => setStartMonth(event.target.value)}
+      />
+
+      <label htmlFor="owner_name">Your name on this plan</label>
+      <input
+        id="owner_name"
+        placeholder="Me"
+        value={ownerName}
+        onChange={(event) => setOwnerName(event.target.value)}
       />
 
       {error && (

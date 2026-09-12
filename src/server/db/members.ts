@@ -1,0 +1,233 @@
+import type { ActiveRange, Member } from '../../domain/types'
+import type { CreateMemberInput, PatchMemberInput } from '../validation/members'
+
+type MemberRow = {
+  id: string
+  name: string
+  is_owner: number
+  archived: number
+}
+
+type RangeRow = {
+  member_id: string
+  joined_month: string
+  left_month: string | null
+}
+
+/**
+ * The ownership predicate, in one place. Every statement in this module carries
+ * both halves: the subscription id and the session user. Keeping `s.user_id`
+ * and dropping `s.id` still passes every cross-account test while letting one
+ * account read its first subscription's members through its second
+ * subscription's id, so the two are never separated.
+ */
+const OWNED_MEMBER_IDS = `select m.id from members m
+    join subscriptions s on s.id = m.subscription_id
+    where m.id = ? and s.id = ? and s.user_id = ?`
+
+function toMember(row: MemberRow, ranges: ActiveRange[]): Member {
+  return {
+    id: row.id,
+    name: row.name,
+    isOwner: row.is_owner === 1,
+    archived: row.archived === 1,
+    activeRanges: ranges,
+  }
+}
+
+function toRange(row: RangeRow): ActiveRange {
+  return { joinedMonth: row.joined_month, leftMonth: row.left_month }
+}
+
+function rangeInserts(db: D1Database, memberId: string, ranges: CreateMemberInput['active_ranges']) {
+  return ranges.map((range) =>
+    db
+      .prepare('insert into active_ranges (id, member_id, joined_month, left_month) values (?, ?, ?, ?)')
+      .bind(crypto.randomUUID(), memberId, range.joined_month, range.left_month),
+  )
+}
+
+/** The members of one subscription, in creation order, empty for a missing or foreign subscription. */
+export async function list(db: D1Database, subscriptionId: string, userId: string): Promise<Member[]> {
+  const members = await db
+    .prepare(
+      `select m.id, m.name, m.is_owner, m.archived from members m
+       join subscriptions s on s.id = m.subscription_id
+       where s.id = ? and s.user_id = ?
+       order by m.created_at asc, m.id asc`,
+    )
+    .bind(subscriptionId, userId)
+    .all<MemberRow>()
+
+  const ranges = await db
+    .prepare(
+      `select r.member_id, r.joined_month, r.left_month from active_ranges r
+       join members m on m.id = r.member_id
+       join subscriptions s on s.id = m.subscription_id
+       where s.id = ? and s.user_id = ?
+       order by r.joined_month asc`,
+    )
+    .bind(subscriptionId, userId)
+    .all<RangeRow>()
+
+  return members.results.map((row) =>
+    toMember(
+      row,
+      ranges.results.filter((range) => range.member_id === row.id).map(toRange),
+    ),
+  )
+}
+
+/** Null for a missing member, a foreign one, and one reached through the wrong subscription alike. */
+export async function get(
+  db: D1Database,
+  subscriptionId: string,
+  memberId: string,
+  userId: string,
+): Promise<Member | null> {
+  const row = await db
+    .prepare(
+      `select m.id, m.name, m.is_owner, m.archived from members m
+       join subscriptions s on s.id = m.subscription_id
+       where m.id = ? and s.id = ? and s.user_id = ?`,
+    )
+    .bind(memberId, subscriptionId, userId)
+    .first<MemberRow>()
+  if (!row) return null
+
+  const ranges = await db
+    .prepare(
+      `select r.member_id, r.joined_month, r.left_month from active_ranges r
+       where r.member_id = ? order by r.joined_month asc`,
+    )
+    .bind(memberId)
+    .all<RangeRow>()
+
+  return toMember(row, ranges.results.map(toRange))
+}
+
+/**
+ * Writes the member and all its ranges in one batch, so a member can never
+ * land without the ranges it was created with. Returns null when the
+ * subscription is missing or foreign: the insert itself carries the ownership
+ * predicate, so no separate check can race it.
+ */
+export async function create(
+  db: D1Database,
+  subscriptionId: string,
+  userId: string,
+  input: CreateMemberInput,
+): Promise<Member | null> {
+  const owned = await db
+    .prepare('select 1 as ok from subscriptions where id = ? and user_id = ?')
+    .bind(subscriptionId, userId)
+    .first<{ ok: number }>()
+  if (!owned) return null
+
+  const id = crypto.randomUUID()
+
+  const [inserted] = await db.batch([
+    db
+      .prepare(
+        `insert into members (id, subscription_id, name, is_owner, archived, created_at)
+         select ?, ?, ?, ?, ?, ?
+         where exists (select 1 from subscriptions where id = ? and user_id = ?)`,
+      )
+      .bind(
+        id,
+        subscriptionId,
+        input.name,
+        input.is_owner ? 1 : 0,
+        input.archived ? 1 : 0,
+        new Date().toISOString(),
+        subscriptionId,
+        userId,
+      ),
+    ...rangeInserts(db, id, input.active_ranges),
+  ])
+
+  if (inserted.meta.changes === 0) return null
+
+  return {
+    id,
+    name: input.name,
+    isOwner: input.is_owner,
+    archived: input.archived,
+    activeRanges: input.active_ranges.map((range) => ({
+      joinedMonth: range.joined_month,
+      leftMonth: range.left_month,
+    })),
+  }
+}
+
+/**
+ * Applies the member row update, and when the patch carries ranges, replaces
+ * the whole set in the same batch. A partial replacement would leave a member
+ * holding rows from two different edits, which is the one way this table can
+ * invent liability.
+ */
+export async function update(
+  db: D1Database,
+  subscriptionId: string,
+  memberId: string,
+  userId: string,
+  patch: PatchMemberInput,
+): Promise<Member | null> {
+  const existing = await get(db, subscriptionId, memberId, userId)
+  if (!existing) return null
+
+  const next = {
+    name: patch.name ?? existing.name,
+    archived: (patch.archived ?? existing.archived) ? 1 : 0,
+  }
+
+  const statements = [
+    db
+      .prepare(`update members set name = ?, archived = ? where id in (${OWNED_MEMBER_IDS})`)
+      .bind(next.name, next.archived, memberId, subscriptionId, userId),
+  ]
+
+  if (patch.active_ranges) {
+    statements.push(
+      db
+        .prepare(`delete from active_ranges where member_id in (${OWNED_MEMBER_IDS})`)
+        .bind(memberId, subscriptionId, userId),
+      ...rangeInserts(db, memberId, patch.active_ranges),
+    )
+  }
+
+  await db.batch(statements)
+
+  return get(db, subscriptionId, memberId, userId)
+}
+
+/** False when the member is missing, foreign or reached through the wrong subscription. */
+export async function remove(
+  db: D1Database,
+  subscriptionId: string,
+  memberId: string,
+  userId: string,
+): Promise<boolean> {
+  const result = await db
+    .prepare(`delete from members where id in (${OWNED_MEMBER_IDS})`)
+    .bind(memberId, subscriptionId, userId)
+    .run()
+  return (result.meta.changes ?? 0) > 0
+}
+
+/**
+ * Whether anything else in the subscription would lose its parent if this
+ * member were deleted. Nothing references a member yet; S-03's payments and
+ * recurring schedules are what attach here, and they inherit the subscription
+ * id and session user this signature already carries rather than growing a
+ * second, narrower ownership rule beside the one every other statement in this
+ * module uses. Parameters are named for that arrival and unused until then.
+ */
+export async function hasDependents(
+  _db: D1Database,
+  _subscriptionId: string,
+  _memberId: string,
+  _userId: string,
+): Promise<boolean> {
+  return false
+}
