@@ -22,7 +22,7 @@ Resumable state for this repository. Update at every completed block.
 
 ## Checks
 
-- `runtime-auth-slice`: typecheck clean, 17 unit tests passing, 19 integration tests passing (`evidence/runs/runtime-auth-slice-tests.txt`), production build succeeds, and a live Chrome walkthrough recorded (`evidence/runs/runtime-auth-slice-smoke.txt`).
+- `runtime-auth-slice`: typecheck clean, 20 unit tests passing, 23 integration tests passing after the F1-F6 implementation-review fixes (see `evidence/work-log.md`; the original `evidence/runs/runtime-auth-slice-tests.txt` capture of 17/19 predates them), production build succeeds, and a live Chrome walkthrough recorded (`evidence/runs/runtime-auth-slice-smoke.txt`).
 - `tools/reviewer`: `npm test` 67 of 67 passing across 10 test files, typecheck clean, `npx promptfoo validate` valid (see `evidence/work-log.md` for the phase-by-phase commit trail).
 - Hosted CI (`.github/workflows/ci.yml`, workflow `CI`) is green on `main`: run `34698878084`, https://github.com/sebafudi/subscription-splitter/actions/runs/34698878084 (`evidence/runs/ci-main-first-run.md`).
 
