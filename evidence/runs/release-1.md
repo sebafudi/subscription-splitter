@@ -506,3 +506,62 @@ stay in `evidence/private/reviewer-credentials.md`.
   was, and archiving is covered by the integration suite.
 - The confirmed half of a price delete was not exercised here either, for the same reason as in
   phase 3: the guard is the point, and the demo plan keeps its price history.
+
+## The cold re-read
+
+Every persistence proof before this one was a re-read inside a session that was already open, which
+is the strongest thing a single stateless Worker request can show on its own. This one is taken after
+the browser was closed, in a session that carries nothing from the walkthrough.
+
+The session is cold, and that was proven rather than asserted: with no cookie at all, `GET /api/me`
+answered **401** first. Then a fresh sign-in as the owner, into a new empty cookie jar, answered
+**200**, and the demo plan's summary and payment list were re-read.
+
+| Field | Recorded in phase 4 | Cold re-read |
+|---|---|---|
+| `owedToYouNow` | 3999 | 3999 |
+| `creditOutstanding` | 2001 | 2001 |
+| `totalCollected` | 36000 | 36000 |
+| `ownerNetCost` | 30000 | 30000 |
+| `totalPlanCost` | 66000 | 66000 |
+| `collectedThisMonth` | 21000 | 21000 |
+| `expectedThisMonth` | 6000 | 6000 |
+| Blake, owed / paid / balance | 27999 / 24000 / -3999 | 27999 / 24000 / -3999 |
+| Casey R., owed / paid / balance | 9999 / 12000 / 2001 | 9999 / 12000 / 2001 |
+
+The payment list returned the same two rows, 12000 minor dated S+5 with the note "August transfer,
+settling early" and 18000 minor dated S+6 with the note "September transfer", both `kind` `manual`.
+
+Nothing drifted. This is what closes the reload clause of test-plan risk 3 against the deployment
+rather than against a local database: a record written through the product is still there, unchanged,
+read by a session that did not exist when it was written.
+
+## Submission package inventory
+
+An inventory of what exists on disk, not a submission. **Nothing has been uploaded, attached, sent or
+submitted to the course, its forms, its community or its organizers, and nothing here authorizes
+that.** Uploading requires the user's explicit confirmation of that specific action. The Builder form
+fields and their required status are recorded separately in
+`/Users/sebastian.f/Projects/10xDevs/docs/SUBMISSION-PACKAGE.md`.
+
+| Item the Builder form asks for | What would satisfy it |
+|---|---|
+| Repository | The public GitHub repository for this project |
+| Public URL of the deployed application (optional) | `https://subscription-splitter.sebastianfudalej.workers.dev` |
+| Screenshot: login screen (optional) | `evidence/screenshots/release-01-login.png` |
+| Screenshot: home page / post-login screen | `evidence/screenshots/release-02-home.png` |
+| Screenshot: main feature 1, data entry | `evidence/screenshots/release-03-input-record-payment.png` |
+| Screenshot: main feature 2, data display | `evidence/screenshots/release-04-output-balances.png` |
+| Screenshot: passing tests | `evidence/screenshots/release-05-tests-passing.png` |
+| Custom attachments (optional) | The remaining five captures, `release-06` through `release-10` |
+
+Alongside them, for a reviewer who opens the instance: the owner account holds the demo plan, and the
+second account is deliberately empty because an empty second account is the ownership-isolation
+demonstration rather than an oversight. Which account is which, and why the second one holds nothing,
+belongs in the submission comment. Credentials reach a reviewer only through the authorized private
+channel named in decision D-010 and are never written into a committed file, a screenshot or a form
+field that is not a credential field; they live only in the gitignored
+`evidence/private/reviewer-credentials.md`.
+
+The goal-box updates this slice's evidence supports are handed to the designated status writer by
+naming the paths above. This slice does not edit `GOALS.md`.

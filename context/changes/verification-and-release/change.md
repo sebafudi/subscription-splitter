@@ -1,7 +1,7 @@
 ---
 change_id: verification-and-release
 title: Certify the whole flow on the deployed instance and close the release out
-status: implementing
+status: implemented
 archived_at: null
 ---
 

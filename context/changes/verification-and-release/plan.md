@@ -1139,17 +1139,17 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 
 #### Automated
 
-- [ ] 5.1 Typecheck passes
-- [ ] 5.2 The whole suite passes
-- [ ] 5.3 The mvp-check report names each of the five criteria exactly once
-- [ ] 5.4 The evidence index names the transcript, the summary, the screenshot prefix and the report
-- [ ] 5.5 No credential reached a committed file
-- [ ] 5.9 The report carries a pass or fail marker for each criterion and a percentage line
-- [ ] 5.10 The cold re-read in a fresh session returns the balances phase 4 recorded
+- [x] 5.1 Typecheck passes
+- [x] 5.2 The whole suite passes
+- [x] 5.3 The mvp-check report names each of the five criteria exactly once
+- [x] 5.4 The evidence index names the transcript, the summary, the screenshot prefix and the report
+- [x] 5.5 No credential reached a committed file
+- [x] 5.9 The report carries a pass or fail marker for each criterion and a percentage line
+- [x] 5.10 The cold re-read in a fresh session returns the balances phase 4 recorded
 
 #### Manual
 
-- [ ] 5.6 Every pass in the mvp-check report was confirmed by opening the file it cites
-- [ ] 5.7 A reader can follow STATUS to the release, the evidence and the next action without asking
-- [ ] 5.8 The package inventory lists only what exists on disk and states that nothing was uploaded
-- [ ] 5.11 The index says, for B01, B02 and B04, what moved them or why the live pass deliberately did not
+- [x] 5.6 Every pass in the mvp-check report was confirmed by opening the file it cites
+- [x] 5.7 A reader can follow STATUS to the release, the evidence and the next action without asking
+- [x] 5.8 The package inventory lists only what exists on disk and states that nothing was uploaded
+- [x] 5.11 The index says, for B01, B02 and B04, what moved them or why the live pass deliberately did not
