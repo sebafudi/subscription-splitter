@@ -1,7 +1,7 @@
 ---
 change_id: ai-review-pipeline
 title: AI code review pipeline for pull requests
-status: plan_reviewed
+status: implementing
 ---
 
 ## Notes
