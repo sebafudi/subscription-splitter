@@ -1,0 +1,9 @@
+# Reviewer model selection update
+
+## OpenRouter configuration update
+
+The user reports supplying the OpenRouter key in the workspace root `.env`: `/Users/sebastian.f/Projects/10xDevs/.env`. The file exists; its contents have not been inspected in this update. Do not print, commit or copy its contents into evidence. Have the assigned Opus/Sonnet implementation agent load it securely into the reviewer process; the reviewer currently reads process environment, so file presence alone does not establish authentication. Configure the GitHub `OPENROUTER_API_KEY` secret through secure tooling under the standing GitHub authorization, without logging the value. Do not require the user to provide the key again unless validation proves it absent or invalid.
+
+Preferred reviewer model: `z-ai/glm-5.3-flash`. Alternative: `deepseek/deepseek-v4-flash-0731`. Use these two as the course's 2-model promptfoo comparison on the same fixtures. Verify exact IDs, availability, structured-output compatibility and current pricing before live execution; do not assume the alternative is cheaper without checking. Set `REVIEWER_MODEL` consistently for local runs and CI, and align evaluation configuration, tests and documentation through the existing researched/reviewed change flow. Select between them using actual rubric pass/fail, cost and latency results. Do not silently switch to a more expensive model if either fails; record the failure and use the supported preferred alternative where possible.
+
+These are models for the Champion reviewer/evaluations only. Fable 5.1 remains the designer/orchestrator, and implementation subagents remain Opus/Sonnet. Retain existing spending limits; use bounded fixtures and avoid unbounded retries. This update does not claim a successful API call, provisioned GitHub secret or hosted review run. Complete and checkpoint those steps with real evidence.
