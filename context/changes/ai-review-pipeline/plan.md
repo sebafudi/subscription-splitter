@@ -787,17 +787,17 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Automated
 
-- [x] 1.1 Dependencies install in tools/reviewer
-- [x] 1.2 Type check passes in tools/reviewer
-- [x] 1.3 Unit tests pass with no network access
-- [x] 1.4 Schema rejects out-of-range scores and missing criterion keys
-- [x] 1.5 deriveVerdict covers every branch of the threshold rule
-- [x] 1.6 boundDiff reports truncation with both byte counts
-- [x] 1.8 A committed lockfile supports a clean npm ci in tools/reviewer
-- [x] 1.9 Schema accepts a review whose overall is null
-- [x] 1.10 deriveVerdict returns a derived verdict when overall is null
-- [x] 1.11 tools/reviewer/env.example is tracked by Git
-- [x] 1.12 No dependency in tools/reviewer/package.json carries a caret or tilde range
+- [x] 1.1 Dependencies install in tools/reviewer - 727b90f
+- [x] 1.2 Type check passes in tools/reviewer - 727b90f
+- [x] 1.3 Unit tests pass with no network access - 727b90f
+- [x] 1.4 Schema rejects out-of-range scores and missing criterion keys - 727b90f
+- [x] 1.5 deriveVerdict covers every branch of the threshold rule - 727b90f
+- [x] 1.6 boundDiff reports truncation with both byte counts - 727b90f
+- [x] 1.8 A committed lockfile supports a clean npm ci in tools/reviewer - 727b90f
+- [x] 1.9 Schema accepts a review whose overall is null - 727b90f
+- [x] 1.10 deriveVerdict returns a derived verdict when overall is null - 727b90f
+- [x] 1.11 tools/reviewer/env.example is tracked by Git - 727b90f
+- [x] 1.12 No dependency in tools/reviewer/package.json carries a caret or tilde range - 727b90f
 
 #### Manual
 
