@@ -73,11 +73,67 @@ done, is how the remote database is seeded under slice S-04.
 
 ## Deploy
 
+Deployment is a deliberate step and is not wired to merges. Local development uses its own local D1
+database (see Database above); the remote database used by the deployed Worker is entirely separate
+and is provisioned once, the first time this repository is deployed.
+
+**One-time remote setup**, before the first deploy:
+
+```
+npx wrangler d1 create subscription-splitter-db
+```
+
+Put the returned `database_id` into `wrangler.jsonc`, replacing the placeholder. Then apply the
+migrations to that remote database:
+
+```
+npx wrangler d1 migrations apply subscription-splitter-db --remote
+```
+
+Set the deployment secrets (never committed; `wrangler secret put` reads the value from stdin):
+
+```
+openssl rand -base64 48 | npx wrangler secret put BETTER_AUTH_SECRET
+echo -n "https://<your-worker>.<subdomain>.workers.dev" | npx wrangler secret put APP_ORIGINS
+```
+
+The workers.dev subdomain is only known after the first deploy (`npx wrangler whoami`, or the URL
+printed by `wrangler deploy`), so `APP_ORIGINS` is normally set right after that first deploy, then
+the Worker is redeployed once more to pick it up. `COOKIE_SECURE` is left unset in every deployed
+environment, same as local: unset already means the session cookie carries `Secure` (see
+`.dev.vars.example`).
+
+**Deploy:**
+
 ```
 npm run deploy
 ```
 
-Builds, then deploys with wrangler. Before the first deploy, create the remote database and replace the placeholder `database_id` in `wrangler.jsonc`. Deployment is a deliberate step and is not wired to merges.
+Builds, then deploys with wrangler.
+
+**One-time seeding**, once after the first deploy that has `APP_ORIGINS` set correctly, following
+decision D-005:
+
+```
+echo -n "true" | npx wrangler secret put SEED_ENABLED
+openssl rand -hex 24 | npx wrangler secret put SEED_TOKEN
+```
+
+Then call `POST /api/dev/seed` once for the owner account and once for the reviewer account, against
+the live URL, with the `x-seed-token` header set to the value just generated. `scripts/seed-local.mjs`
+can do this against a remote target by pointing `SEED_TARGET_URL` at the live URL, provided its
+`.dev.vars` file holds the real remote `SEED_TOKEN` and the credentials to seed; otherwise call the
+route directly with curl. The call is idempotent.
+
+**Disable seeding** immediately afterward, so the route stops existing again:
+
+```
+npx wrangler secret delete SEED_ENABLED
+npx wrangler secret delete SEED_TOKEN
+```
+
+Deleting a secret takes effect immediately; no redeploy is needed. Confirm the route now answers 404
+even with the old token before considering the deployment done.
 
 ## Layout
 

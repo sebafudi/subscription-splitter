@@ -26,6 +26,15 @@ Resumable state for this repository. Update at every completed block.
 - `tools/reviewer`: `npm test` 67 of 67 passing across 10 test files, typecheck clean, `npx promptfoo validate` valid (see `evidence/work-log.md` for the phase-by-phase commit trail).
 - Hosted CI (`.github/workflows/ci.yml`, workflow `CI`) is green on `main`: run `34698878084`, https://github.com/sebafudi/subscription-splitter/actions/runs/34698878084 (`evidence/runs/ci-main-first-run.md`).
 
+## Deployment
+
+- Live URL: `https://subscription-splitter.sebastianfudalej.workers.dev`.
+- Release version id: `e259b7b3-d932-4b3b-8b84-7446cab7d636`. Release commit SHA: `149aa44d9e80102f8ad425c6f9f684f5ef6d54aa` (the working tree carried unrelated uncommitted `src/domain/` changes from concurrent work at build time; see `evidence/runs/deploy-1.md`).
+- Remote D1 `subscription-splitter-db` (`03067638-dc95-4b5c-9a8a-86f2921e0414`), migrations `0001_auth.sql` and `0002_subscriptions.sql` applied with `--remote`.
+- Owner and reviewer accounts seeded once via the gated `POST /api/dev/seed` route; credentials live only in the gitignored `evidence/private/reviewer-credentials.md`, not committed.
+- Seeding is disabled on the live deployment (`SEED_ENABLED`/`SEED_TOKEN` deleted); confirmed the route now answers 404 with the old token.
+- Full verification transcript: `evidence/runs/deploy-1-live-smoke.txt`. Summary: `evidence/runs/deploy-1.md`.
+
 ## Blockers
 
 - `OPENROUTER_API_KEY` is not available in this environment. Needed for the AI review pipeline (live model comparison, hosted PR review). Required actions by the account owner:

@@ -1,0 +1,56 @@
+Live smoke test, deployment release e259b7b3-d932-4b3b-8b84-7446cab7d636
+Target: https://subscription-splitter.sebastianfudalej.workers.dev
+
+GET /
+status=200
+
+GET /api/me (no cookie)
+status=401
+
+Cross-origin sign-in attempt (Origin: https://evil.example)
+status=403
+
+Sign-up endpoint blocked
+status=400
+body: {"message":"Email and password sign up is not enabled","code":"EMAIL_PASSWORD_SIGN_UP_DISABLED"}
+
+Sign-in as owner (POST /api/auth/sign-in/email)
+status=200
+Set-Cookie: __Secure-better-auth.session_token=<redacted>; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+
+GET /api/me with owner cookie
+status=200
+body: {"user":{"name":"Owner","email":"owner@example.com", ...}}
+
+POST /api/subscriptions as owner
+status=201
+body: {"id":"<redacted>","userId":"<redacted>","name":"Deploy smoke test","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-09","createdAt":"..."}
+
+GET /api/subscriptions as owner (list)
+status=200
+body: one row, the subscription created above
+
+Sign-in as reviewer
+status=200
+
+GET /api/subscriptions/<owner's subscription id> as reviewer
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions as reviewer (list)
+status=200
+body: []
+
+GET /api/dev/seed (wrong method)
+status=404
+
+POST /api/dev/seed with no token
+status=404
+
+--- Seeding disabled step ---
+After SEED_ENABLED and SEED_TOKEN were deleted with `wrangler secret delete` (secrets take
+effect immediately on the deployed Worker; no redeploy was needed):
+
+POST /api/dev/seed with the old (now-deleted) token
+status=404
+body: {"error":"not found"}

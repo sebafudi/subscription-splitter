@@ -16,8 +16,7 @@
     {
       "binding": "DB",
       "database_name": "subscription-splitter-db",
-      // Replaced with the real id when the remote database is created at deploy time.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "03067638-dc95-4b5c-9a8a-86f2921e0414",
       "migrations_dir": "migrations"
     }
   ]
