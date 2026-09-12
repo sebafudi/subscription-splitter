@@ -10,7 +10,7 @@ Resumable state for this repository. Update at every completed block.
 
 ## Current SHA
 
-- (set after first commit)
+- See `git rev-parse HEAD`; last recorded: decisions commit `7d5cbce`.
 
 ## Active change / phase
 
@@ -22,7 +22,7 @@ Resumable state for this repository. Update at every completed block.
 
 ## Blockers
 
-- Model API access for the AI review pipeline (Champion route) is not yet available in this environment.
+- `OPENROUTER_API_KEY` is not available in this environment. Needed for the AI review pipeline (reviewer spike, promptfoo model comparison, hosted PR review). Required actions by the account owner: export it in the local shell (or place it in `tools/reviewer/.env`) and add it as a repository secret with `gh secret set OPENROUTER_API_KEY -R sebafudi/subscription-splitter`. Everything else in the pipeline is prepared without it.
 
 ## Next executable action
 
