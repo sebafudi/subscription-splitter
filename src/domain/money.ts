@@ -15,13 +15,6 @@ export function shareForMonth(priceMinor: number, activeCount: number): number {
   return Math.round(priceMinor / activeCount)
 }
 
-/** What the owner absorbs: the plan cost less every non-owner's rounded share. */
-export function ownerResidualForMonth(priceMinor: number, activeCount: number): number {
-  const share = shareForMonth(priceMinor, activeCount)
-  const nonOwners = Math.max(activeCount - 1, 0)
-  return priceMinor - share * nonOwners
-}
-
 /** Formats a minor-unit amount for display only; never used inside the calculation. */
 export function formatMoney(minor: number, locale: string, currency: string): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(minor / 100)

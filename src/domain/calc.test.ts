@@ -6,7 +6,8 @@ import {
   recurringReceived,
   shareForMember,
 } from './calc'
-import type { Member, RecurringSchedule, SubscriptionState } from './types'
+import { scheduleMonthStatuses } from './recurring'
+import type { Member, MonthStr, Payment, RecurringSchedule, SubscriptionState } from './types'
 
 function owner(over: Partial<Member> = {}): Member {
   return {
@@ -148,6 +149,129 @@ describe('recurringReceived', () => {
     const s = state({ recurring: [schedule] })
     const member = s.members.find((m) => m.id === 'a')!
     expect(recurringReceived(s, member, ['2026-04'], '2026-03')).toBe(0)
+  })
+})
+
+describe('recurringReceived at the boundaries the assumed-receipt rule turns on', () => {
+  const schedule: RecurringSchedule = { id: 'r1', memberId: 'a', amount: 1000, startMonth: '2026-01', endMonth: null }
+  const window = ['2026-01', '2026-02', '2026-03', '2026-04']
+
+  it('counts the end month itself and not the month after it', () => {
+    const s = state({ recurring: [{ ...schedule, endMonth: '2026-02' }] })
+    const member = s.members.find((m) => m.id === 'a')!
+    expect(recurringReceived(s, member, ['2026-02'], '2026-04')).toBe(1000)
+    expect(recurringReceived(s, member, ['2026-03'], '2026-04')).toBe(0)
+  })
+
+  it('leaves another arrangement untouched when one of them has an exception in that month', () => {
+    const second: RecurringSchedule = { ...schedule, id: 'r2', amount: 500 }
+    const s = state({
+      recurring: [schedule, second],
+      recurringExceptions: [{ recurringId: 'r1', month: '2026-02' }],
+    })
+    const member = s.members.find((m) => m.id === 'a')!
+    expect(recurringReceived(s, member, ['2026-02'], '2026-04')).toBe(500)
+  })
+
+  it('an open-ended arrangement contributes for elapsed months only, with the current month as its own argument', () => {
+    const s = state({ recurring: [schedule] })
+    const member = s.members.find((m) => m.id === 'a')!
+    expect(recurringReceived(s, member, window, '2026-02')).toBe(2000)
+  })
+
+  it('an arrangement ending well after the current month contributes for elapsed months only', () => {
+    const s = state({ recurring: [{ ...schedule, endMonth: '2027-12' }] })
+    const member = s.members.find((m) => m.id === 'a')!
+    expect(recurringReceived(s, member, window, '2026-02')).toBe(2000)
+  })
+
+  it('the same bound holds through computeSummary, where the current month is threaded rather than passed', () => {
+    const s = state({ recurring: [schedule] })
+    const summary = computeSummary(s, '2026-02')
+    expect(summary.members.find((m) => m.memberId === 'a')!.paid).toBe(2000)
+  })
+
+  it('counts the months scheduleMonthStatuses reports as counted, as a set of months and not as a total', () => {
+    const departed = nonOwner('a', 'Alice', {
+      activeRanges: [
+        { joinedMonth: '2026-01', leftMonth: '2026-03' },
+        { joinedMonth: '2026-05', leftMonth: null },
+      ],
+    })
+    const s = state({
+      members: [owner(), departed],
+      breakMonths: ['2026-02'],
+      recurring: [schedule],
+      recurringExceptions: [{ recurringId: 'r1', month: '2026-05' }],
+    })
+    const current = '2026-06'
+    const all = ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']
+
+    const countedByRule = all.filter((month) => recurringReceived(s, departed, [month], current) > 0)
+    const countedByHelper = scheduleMonthStatuses(s, departed, schedule, ['2026-05'], current)
+      .filter((row) => row.counts)
+      .map((row) => row.month)
+
+    expect(countedByRule).toEqual(countedByHelper)
+    expect(countedByRule).toEqual(['2026-01', '2026-03', '2026-06'])
+  })
+
+  it('does not clamp an arrangement to the share, so paying over it accumulates visible credit', () => {
+    const generous: RecurringSchedule = { ...schedule, amount: 5000 }
+    const s = state({ recurring: [generous] })
+    const alice = s.members.find((m) => m.id === 'a')!
+    const afterOne = balanceForMember(s, alice, ['2026-01'], '2026-01').balance
+    const afterTwo = balanceForMember(s, alice, ['2026-01', '2026-02'], '2026-02').balance
+    expect(afterOne).toBe(5000 - 3333)
+    expect(afterTwo).toBeGreaterThan(afterOne)
+  })
+})
+
+describe('payments inside the summary', () => {
+  function payment(over: Partial<Payment> = {}): Payment {
+    return { id: 'pay1', memberId: 'a', date: '2026-01-15', amount: 2000, note: '', kind: 'manual', ...over }
+  }
+
+  it('counts a future-dated payment as credit now, but not as collected this month', () => {
+    const s = state({ payments: [payment(), payment({ id: 'pay2', date: '2029-08-01', amount: 700 })] })
+    const summary = computeSummary(s, '2026-01')
+    expect(summary.members.find((m) => m.memberId === 'a')!.paid).toBe(2700)
+    expect(summary.collectedThisMonth).toBe(2000)
+  })
+
+  it('adds a manual payment to the assumed receipt for the same month and the same member', () => {
+    const s = state({
+      payments: [payment()],
+      recurring: [{ id: 'r1', memberId: 'a', amount: 1000, startMonth: '2026-01', endMonth: null }],
+    })
+    expect(computeSummary(s, '2026-01').collectedThisMonth).toBe(3000)
+  })
+
+  it('does not move collectedThisMonth for a payment naming the owner, though the same payment from a participant does', () => {
+    const fromOwner = state({ payments: [payment({ memberId: 'owner' })] })
+    const fromParticipant = state({ payments: [payment()] })
+    expect(computeSummary(fromOwner, '2026-01').collectedThisMonth).toBe(0)
+    expect(computeSummary(fromParticipant, '2026-01').collectedThisMonth).toBe(2000)
+  })
+
+  it('counts a yearly lump sum exactly as an ordinary payment, with no spreading', () => {
+    const annual = state({ payments: [payment({ kind: 'annual', amount: 24000 })] })
+    const manual = state({ payments: [payment({ kind: 'manual', amount: 24000 })] })
+    const months: MonthStr[] = ['2026-01', '2026-02', '2026-03']
+    const alice = annual.members.find((m) => m.id === 'a')!
+    expect(balanceForMember(annual, alice, months, '2026-03')).toEqual(
+      balanceForMember(manual, alice, months, '2026-03'),
+    )
+    expect(balanceForMember(annual, alice, ['2026-01'], '2026-01').paid).toBe(24000)
+  })
+
+  it('recomputes from the inputs on an edit and on a delete, carrying nothing over', () => {
+    const before = computeSummary(state({ payments: [payment()] }), '2026-01')
+    const edited = computeSummary(state({ payments: [payment({ amount: 3000 })] }), '2026-01')
+    const deleted = computeSummary(state({ payments: [] }), '2026-01')
+    expect(before.members.find((m) => m.memberId === 'a')!.balance).toBe(-1333)
+    expect(edited.members.find((m) => m.memberId === 'a')!.balance).toBe(-333)
+    expect(deleted.members.find((m) => m.memberId === 'a')!.balance).toBe(-3333)
   })
 })
 

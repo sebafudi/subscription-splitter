@@ -10,8 +10,12 @@ export type MonthExclusion =
   | 'outside-active-range'
   | 'break-month'
   | 'unpriced'
+  | 'excepted'
 
 export type MonthStatus = { counts: boolean; reason: MonthExclusion | null }
+
+/** Everything `memberMonthStatus` reads: the subscription window and its break months, and nothing else. */
+export type MemberMonthInputs = Pick<SubscriptionState, 'settings' | 'breakMonths'>
 
 const COUNTS: MonthStatus = { counts: true, reason: null }
 
@@ -30,13 +34,18 @@ function excluded(reason: MonthExclusion): MonthStatus {
  * list a caller happens to pass, because the not-yet-elapsed boundary is a
  * failure mode in its own right and is tied to the subscription's time zone.
  *
+ * `MemberMonthInputs` is narrowed to what this function reads rather than the
+ * whole state, so the browser can call it with the two fields the detail
+ * screen holds. `SubscriptionState` satisfies it structurally, so every caller
+ * in the calculation passes the state unchanged (decision D-008).
+ *
  * The price is deliberately not one of these conditions. A month with no price
  * entry yet charges nobody, but it still counts as received against a standing
  * order, whose conditions do not include one (decision D-007). The share a
  * member owes asks the further question; see `chargedMonthStatus`.
  */
 export function memberMonthStatus(
-  state: SubscriptionState,
+  state: MemberMonthInputs,
   member: Member,
   month: MonthStr,
   current: MonthStr,

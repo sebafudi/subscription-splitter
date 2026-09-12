@@ -1291,18 +1291,18 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass
-- [ ] 1.2 Typecheck passes
-- [ ] 1.3 Integration tests still pass
-- [ ] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
-- [ ] 1.8 Exactly one export in src/domain decides whether a month counts for a member and both callers resolve through it
-- [ ] 1.9 The months recurringReceived counts equal the months scheduleMonthStatuses reports as counted
-- [ ] 1.10 A search for ownerResidualForMonth across src returns nothing
+- [x] 1.1 Unit tests pass
+- [x] 1.2 Typecheck passes
+- [x] 1.3 Integration tests still pass
+- [x] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
+- [x] 1.8 Exactly one export in src/domain decides whether a month counts for a member and both callers resolve through it
+- [x] 1.9 The months recurringReceived counts equal the months scheduleMonthStatuses reports as counted
+- [x] 1.10 A search for ownerResidualForMonth across src returns nothing
 
 #### Manual
 
-- [ ] 1.6 Each new unit test failed first for the stated reason
-- [ ] 1.7 The acceptance example was computed by hand before the assertion was written
+- [x] 1.6 Each new unit test failed first for the stated reason
+- [x] 1.7 The acceptance example was computed by hand before the assertion was written
 
 ### Phase 2: Payments
 

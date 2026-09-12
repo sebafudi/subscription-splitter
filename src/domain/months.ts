@@ -41,3 +41,24 @@ export function currentMonth(timeZone: string, now: Date = new Date()): MonthStr
   }
   return `${year}-${month}`
 }
+
+/**
+ * True only for a real day in a real month. Both the database `GLOB` and a
+ * plain regular expression admit `2025-02-30`, so the check reconstructs the
+ * date and compares its parts back. `setUTCFullYear` on the epoch is used
+ * rather than parsing, so the answer does not depend on how an engine reads an
+ * ISO string, and midnight UTC keeps a day from shifting under a zone.
+ */
+export function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  if (month < 1 || month > 12 || day < 1) return false
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+}
+
+/** The month a `YYYY-MM-DD` date falls in. A slice rather than a parse: the format is fixed and zero-padded. */
+export function monthOf(date: string): MonthStr {
+  return date.slice(0, 7)
+}

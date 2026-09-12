@@ -1,7 +1,8 @@
 import { enumerateMonths } from './months'
 import { shareForMonth } from './money'
 import { activeMembersInMonth, chargedMembersInMonth, rangeCovers } from './members'
-import { chargedMonthStatus, memberMonthStatus } from './month-status'
+import { chargedMonthStatus } from './month-status'
+import { scheduleMonthStatuses } from './recurring'
 import { priceForMonth } from './prices'
 import type { Member, MemberSummary, Minor, MonthStr, Summary, SubscriptionState } from './types'
 
@@ -31,9 +32,11 @@ export function shareForMember(
 }
 
 /**
- * Sums a member's standing-order receipts across `months`. `current` is an
- * explicit argument rather than a property of the caller's month list, so
- * the not-yet-elapsed boundary holds for any caller.
+ * Sums a member's standing-order receipts across `months`. Which months of an
+ * arrangement counted is `scheduleMonthStatuses`' answer and not a second one
+ * written here (decision D-008), so `months` is the caller's window and
+ * nothing more. `current` stays an explicit argument rather than a property of
+ * that window, so the not-yet-elapsed boundary holds for any caller.
  */
 export function recurringReceived(
   state: SubscriptionState,
@@ -45,15 +48,14 @@ export function recurringReceived(
   const schedules = state.recurring.filter((schedule) => schedule.memberId === member.id)
 
   for (const schedule of schedules) {
-    for (const month of months) {
-      if (month < schedule.startMonth) continue
-      if (schedule.endMonth !== null && month > schedule.endMonth) continue
-      if (!memberMonthStatus(state, member, month, current).counts) continue
-      const excepted = state.recurringExceptions.some(
-        (exception) => exception.recurringId === schedule.id && exception.month === month,
-      )
-      if (excepted) continue
-      total += schedule.amount
+    const exceptionMonths = state.recurringExceptions
+      .filter((exception) => exception.recurringId === schedule.id)
+      .map((exception) => exception.month)
+
+    for (const status of scheduleMonthStatuses(state, member, schedule, exceptionMonths, current)) {
+      if (status.counts && months.includes(status.month)) {
+        total += schedule.amount
+      }
     }
   }
 
@@ -119,8 +121,9 @@ export function computeSummary(state: SubscriptionState, current: MonthStr): Sum
   const totalPlanCost = months.reduce((total, month) => total + priceForMonth(state, month), 0)
   const totalCollected = memberResults.reduce((total, m) => total + m.paid, 0)
 
+  const nonOwnerIds = new Set(nonOwnerMembers.map((member) => member.id))
   const manualCollectedThisMonth = state.payments
-    .filter((payment) => payment.date.slice(0, 7) === current)
+    .filter((payment) => payment.date.slice(0, 7) === current && nonOwnerIds.has(payment.memberId))
     .reduce((total, payment) => total + payment.amount, 0)
   const recurringCollectedThisMonth = nonOwnerMembers.reduce(
     (total, member) => total + recurringReceived(state, member, [current], current),
