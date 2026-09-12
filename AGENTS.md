@@ -43,8 +43,9 @@ integration. `npm run typecheck` covers all three projects. Rest: @README.md.
 
 ## Testing
 
-Unit tests cover `src/domain/` with no bindings; integration runs inside the Workers runtime against
-a local D1 with migrations applied in setup. No coverage thresholds. Risk to test-type mapping:
+Unit tests cover all of `src/` with no bindings (the calculation in `src/domain/`, validation schemas
+under `src/server/validation/`); integration runs inside the Workers runtime against a local D1 with
+migrations applied in setup. No coverage thresholds. Risk to test-type mapping:
 @context/foundation/test-plan.md.
 
 ## Commits and pull requests

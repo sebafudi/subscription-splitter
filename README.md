@@ -42,7 +42,7 @@ npm run test:integration  # the Worker against a local D1, migrations applied in
 npm run typecheck
 ```
 
-Unit tests cover `src/domain/`, which has no storage dependency. Integration tests run inside the Workers runtime through `@cloudflare/vitest-pool-workers`. What each test type is responsible for is set out in `context/foundation/test-plan.md`.
+Unit tests cover all of `src/` with no storage dependency: the money calculation in `src/domain/` and the validation schemas under `src/server/validation/`. Integration tests run inside the Workers runtime through `@cloudflare/vitest-pool-workers`. What each test type is responsible for is set out in `context/foundation/test-plan.md`.
 
 ## Database
 
