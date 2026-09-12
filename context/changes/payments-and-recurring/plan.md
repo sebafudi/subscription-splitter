@@ -136,13 +136,18 @@ account asking for any of the new records, by any route and any verb, is told th
   counter-argument as answered.
 - No reminder, no notification and no participant-facing view of a payment. Participants are records,
   not users.
-- No change to any calculation signature from S-02 and no change to the summary route's shape.
-  `MemberSummary` keeps its single `paid` field: the recorded-versus-assumed distinction is drawn on
-  the screen from the month-status helper rather than added to the response, which was the alternative
-  D-008 rejected. Two things inside the calculation do move, and neither is a signature or a response
-  shape: `recurringReceived` is re-expressed over that helper, and `manualCollectedThisMonth` gains the
-  non-owner filter `totalCollected` already has. The month status is a new named concept in the
-  domain, and it is the only one this slice adds.
+- No change to the parameter list or the return type of any calculation from S-02, and no change to
+  the summary route's shape. `MemberSummary` keeps its single `paid` field: the recorded-versus-assumed
+  distinction is drawn on the screen from the month-status helper rather than added to the response,
+  which was the alternative D-008 rejected. Two things inside the calculation do move, and neither is a
+  parameter list or a response shape: `recurringReceived` is re-expressed over that helper, and
+  `manualCollectedThisMonth` gains the non-owner filter `totalCollected` already has. Two things at the
+  type level do move, in `src/domain/month-status.ts` and in phase 1: `memberMonthStatus`'s first
+  parameter is narrowed from `SubscriptionState` to `Pick<SubscriptionState, 'settings' |
+  'breakMonths'>`, which every existing caller satisfies structurally, and `MonthExclusion` gains
+  `'excepted'`, which no caller of `memberMonthStatus` can produce. Both widen what the module accepts
+  rather than what it demands, so no caller changes and no behaviour a caller can observe changes. The
+  month status is a new named concept in the domain, and it is the only one this slice adds.
 - No deployment, no remote database and no browser end-to-end test. S-04 owns all three; this slice's
   browser pass is a manual checklist with captured evidence.
 
