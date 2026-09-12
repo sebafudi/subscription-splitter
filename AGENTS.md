@@ -51,3 +51,11 @@ a local D1 with migrations applied in setup. No coverage thresholds. Risk to tes
 
 Conventional Commits, one lowercase line, no body. CI runs typecheck and tests; deploying is a
 separate manual step.
+
+## Reviewer package
+
+`tools/reviewer/` is an independent npm package, invoked from that directory rather than from the
+repository root: `npm test`, `npm run typecheck` and `npm run review` (the CLI, through `tsx`) all run
+inside `tools/reviewer/`. Root `npm test` and root `npm run typecheck` do not cover it, because the two
+Vitest include globs and the three `tsconfig` projects at the root all stop short of `tools/`. See
+`tools/reviewer/README.md` for the review criteria, the threshold rule and where the credential goes.

@@ -16,8 +16,20 @@ export interface ReviewUsage {
   readonly cost?: number;
 }
 
+export interface TruncationInfo {
+  readonly truncated: boolean;
+  readonly originalBytes: number;
+  readonly includedBytes: number;
+}
+
 export type ReviewOutcome =
-  | { status: Verdict; review: Review; usage?: ReviewUsage; model: string }
+  | {
+      status: Verdict;
+      review: Review;
+      usage?: ReviewUsage;
+      model: string;
+      truncation: TruncationInfo;
+    }
   | { status: "error"; reason: ErrorReason; detail: string };
 
 const PASS_THRESHOLD = 6;
