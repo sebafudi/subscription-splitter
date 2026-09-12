@@ -1,5 +1,6 @@
 import type { ActiveRange, Member } from '../../domain/types'
 import { existsForMember as paymentExistsForMember } from './payments'
+import { existsForMember as scheduleExistsForMember } from './recurring'
 import type { CreateMemberInput, PatchMemberInput } from '../validation/members'
 
 type MemberRow = {
@@ -218,10 +219,11 @@ export async function remove(
 
 /**
  * Whether anything else in the subscription would lose its parent if this
- * member were deleted. Recorded payments are the first clause; S-03 phase 3
- * adds recurring schedules beside it. The check lives here rather than in the
- * route because `payments.member_id` cascades on delete, so a member delete
- * that reaches SQL has already destroyed the history it was meant to protect.
+ * member were deleted: a recorded payment or a standing order, which is
+ * everything the requirements call history. The check lives here rather than in
+ * the route because both `payments.member_id` and
+ * `recurring_schedules.member_id` cascade on delete, so a member delete that
+ * reaches SQL has already destroyed the history it was meant to protect.
  */
 export async function hasDependents(
   db: D1Database,
@@ -229,5 +231,9 @@ export async function hasDependents(
   memberId: string,
   userId: string,
 ): Promise<boolean> {
-  return paymentExistsForMember(db, subscriptionId, memberId, userId)
+  const [payments, schedules] = await Promise.all([
+    paymentExistsForMember(db, subscriptionId, memberId, userId),
+    scheduleExistsForMember(db, subscriptionId, memberId, userId),
+  ])
+  return payments || schedules
 }

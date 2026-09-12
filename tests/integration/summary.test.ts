@@ -184,6 +184,112 @@ describe('the month the summary reports', () => {
   })
 })
 
+async function addSchedule(
+  cookie: string,
+  subscriptionId: string,
+  memberId: string,
+  amount: number,
+  startMonth: string,
+  endMonth: string | null = null,
+): Promise<{ id: string }> {
+  const res = await SELF.fetch(`http://example.com/api/subscriptions/${subscriptionId}/schedules`, {
+    method: 'POST',
+    headers: jsonHeaders(cookie),
+    body: JSON.stringify({ member_id: memberId, amount, start_month: startMonth, end_month: endMonth }),
+  })
+  expect(res.status).toBe(201)
+  return res.json<{ id: string }>()
+}
+
+async function markUnpaid(cookie: string, subscriptionId: string, scheduleId: string, month: string) {
+  const res = await SELF.fetch(
+    `http://example.com/api/subscriptions/${subscriptionId}/schedules/${scheduleId}/exceptions/${month}`,
+    { method: 'PUT', headers: { cookie } },
+  )
+  expect(res.status).toBe(204)
+}
+
+async function addPayment(cookie: string, subscriptionId: string, memberId: string, date: string, amount: number) {
+  const res = await SELF.fetch(`http://example.com/api/subscriptions/${subscriptionId}/payments`, {
+    method: 'POST',
+    headers: jsonHeaders(cookie),
+    body: JSON.stringify({ member_id: memberId, date, amount }),
+  })
+  expect(res.status).toBe(201)
+}
+
+/** A three-month-old plan priced from its first month, with one participant present throughout. */
+async function threeMonthPlan(cookie: string, participantJoins?: string) {
+  const month = currentMonth(TIME_ZONE)
+  const first = addMonth(month, -2)
+  const plan = await createPlan(cookie, first)
+  const member = await addParticipant(cookie, plan.id, 'Alice', participantJoins ?? first)
+  await addPrice(cookie, plan.id, first, 9000)
+  return { planId: plan.id, memberId: member.id, first, middle: addMonth(month, -1), month }
+}
+
+describe('assumed receipts read through the API, against stored arrangements', () => {
+  it('counts every elapsed month of an arrangement, so three months move the balance by three times the amount', async () => {
+    const cookie = await signedInCookie('8', 'summary-recurring-elapsed@example.com')
+    const { planId, memberId, first, month } = await threeMonthPlan(cookie)
+    await addSchedule(cookie, planId, memberId, 1000, first, month)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(3000)
+  })
+
+  it('removes exactly the month marked as not received', async () => {
+    const cookie = await signedInCookie('9', 'summary-recurring-exception@example.com')
+    const { planId, memberId, first, middle, month } = await threeMonthPlan(cookie)
+    const schedule = await addSchedule(cookie, planId, memberId, 1000, first, month)
+    await markUnpaid(cookie, planId, schedule.id, middle)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(2000)
+  })
+
+  it('removes a break month, and the exception and the break month remove one month each', async () => {
+    const cookie = await signedInCookie('10', 'summary-recurring-break@example.com')
+    const { planId, memberId, first, middle, month } = await threeMonthPlan(cookie)
+    const schedule = await addSchedule(cookie, planId, memberId, 1000, first, month)
+    await markUnpaid(cookie, planId, schedule.id, middle)
+    await addBreakMonth(cookie, planId, first)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(1000)
+  })
+
+  it('counts nothing for a month outside the participant own active range', async () => {
+    const cookie = await signedInCookie('11', 'summary-recurring-inactive@example.com')
+    const month = currentMonth(TIME_ZONE)
+    const { planId, memberId, first } = await threeMonthPlan(cookie, month)
+    await addSchedule(cookie, planId, memberId, 1000, first, month)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(1000)
+  })
+
+  it('counts elapsed months only for an open-ended arrangement, with nothing for the month ahead', async () => {
+    const cookie = await signedInCookie('12', 'summary-recurring-open-ended@example.com')
+    const { planId, memberId, first } = await threeMonthPlan(cookie)
+    await addSchedule(cookie, planId, memberId, 1000, first, null)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(3000)
+  })
+
+  it('adds a manual payment in the current month to the assumed receipt for the same month', async () => {
+    const cookie = await signedInCookie('13', 'summary-recurring-collected@example.com')
+    const { planId, memberId, first, month } = await threeMonthPlan(cookie)
+    await addSchedule(cookie, planId, memberId, 1000, first, month)
+    await addPayment(cookie, planId, memberId, `${month}-05`, 2500)
+
+    const summary = await readSummary(cookie, planId)
+    expect(summary.collectedThisMonth).toBe(3500)
+    expect(summary.members.find((m) => m.memberId === memberId)!.paid).toBe(3000 + 2500)
+  })
+})
+
 describe('summary ownership and preconditions', () => {
   it('answers 404 for another account and 401 without a cookie', async () => {
     const cookieA = await signedInCookie('4', 'summary-owner-a@example.com')

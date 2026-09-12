@@ -1329,18 +1329,18 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [ ] 3.1 Integration tests pass
-- [ ] 3.2 Unit tests pass
-- [ ] 3.3 Typecheck passes
-- [ ] 3.4 All six migrations apply in order to a clean local database
-- [ ] 3.5 Every new route answers 401 without a cookie
-- [ ] 3.6 Deleting a member with a payment or a schedule returns 409 and the history survives
-- [ ] 3.7 The summary through the API reflects a stored schedule and its exception
+- [x] 3.1 Integration tests pass
+- [x] 3.2 Unit tests pass
+- [x] 3.3 Typecheck passes
+- [x] 3.4 All six migrations apply in order to a clean local database
+- [x] 3.5 Every new route answers 401 without a cookie
+- [x] 3.6 Deleting a member with a payment or a schedule returns 409 and the history survives
+- [x] 3.7 The summary through the API reflects a stored schedule and its exception
 
 #### Manual
 
-- [ ] 3.8 The exception and out-of-range cases failed first for the right reason
-- [ ] 3.9 An overlapping arrangement produced 409 naming the rule rather than a 500
+- [x] 3.8 The exception and out-of-range cases failed first for the right reason
+- [x] 3.9 An overlapping arrangement produced 409 naming the rule rather than a 500
 
 ### Phase 4: The payments and standing-order sections
 
