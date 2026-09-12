@@ -1346,23 +1346,23 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [ ] 4.1 Typecheck passes across all three projects
-- [ ] 4.2 Production build succeeds
-- [ ] 4.3 The whole suite passes
+- [x] 4.1 Typecheck passes across all three projects
+- [x] 4.2 Production build succeeds
+- [x] 4.3 The whole suite passes
 
 #### Manual
 
-- [ ] 4.4 A recorded payment moves the balance and the headline cards by its amount
-- [ ] 4.5 An edit moves the balance and a delete returns it to where it started
-- [ ] 4.6 A payment before the plan's first month is refused with a message naming the date
-- [ ] 4.7 A future-dated payment counts as credit now
-- [ ] 4.8 A standing order's elapsed months are counted and labelled assumed received
-- [ ] 4.9 Marking one month as not received stops that month alone from counting
-- [ ] 4.10 A recorded receipt and an assumed one are told apart without reading the amounts
-- [ ] 4.11 Deleting a participant with history is refused
-- [ ] 4.12 The reviewer account reaches none of the payments or standing orders
-- [ ] 4.13 The layout is usable at a narrow phone width
-- [ ] 4.14 A break month and a departure inside a standing order are drawn as not counted with the reason named
+- [x] 4.4 A recorded payment moves the balance and the headline cards by its amount
+- [x] 4.5 An edit moves the balance and a delete returns it to where it started
+- [x] 4.6 A payment before the plan's first month is refused with a message naming the date
+- [x] 4.7 A future-dated payment counts as credit now
+- [x] 4.8 A standing order's elapsed months are counted and labelled assumed received
+- [x] 4.9 Marking one month as not received stops that month alone from counting
+- [x] 4.10 A recorded receipt and an assumed one are told apart without reading the amounts
+- [x] 4.11 Deleting a participant with history is refused
+- [x] 4.12 The reviewer account reaches none of the payments or standing orders
+- [x] 4.13 The layout is usable at a narrow phone width
+- [x] 4.14 A break month and a departure inside a standing order are drawn as not counted with the reason named
 
 ### Phase 5: Evidence
 

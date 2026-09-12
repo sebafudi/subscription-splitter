@@ -193,3 +193,87 @@ button:disabled {
   flex-direction: column;
   gap: 0.25rem;
 }
+
+select {
+  font-size: 1rem;
+  padding: 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  background: transparent;
+  max-width: 100%;
+}
+
+/* Lets a row's own content wrap while the controls stay at the end of the row. */
+.row-main {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-row label {
+  margin-top: 0;
+}
+
+.inline-edit {
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.schedule {
+  align-items: flex-start;
+}
+
+/* Wraps rather than scrolling, so a long arrangement stays readable on a phone. */
+.month-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.month-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  flex: 1 1 12rem;
+  font-size: 0.9rem;
+}
+
+.month-chip button {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+}
+
+.month-name {
+  font-weight: 700;
+}
+
+/* An assumed month is never drawn like a recorded one: solid for counted,
+   dimmed and outlined for a month the rule excluded, with the reason in words
+   beside it rather than left to the amount to imply. */
+.month-chip.counted {
+  border-width: 2px;
+}
+
+.month-chip.not-counted {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.month-state {
+  opacity: 0.9;
+}

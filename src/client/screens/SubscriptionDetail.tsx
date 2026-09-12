@@ -6,16 +6,22 @@ import {
   getSummary,
   listBreakMonths,
   listMembers,
+  listPayments,
   listPrices,
+  listSchedules,
   type Member,
+  type Payment,
   type PriceEntry,
+  type Schedule,
   type Subscription,
   type Summary,
 } from '../api'
 import { BreakMonths } from '../components/BreakMonths'
 import { MemberForm } from '../components/MemberForm'
 import { MemberList } from '../components/MemberList'
+import { PaymentList } from '../components/PaymentList'
 import { PriceHistory } from '../components/PriceHistory'
+import { RecurringSection } from '../components/RecurringSection'
 
 type Props = {
   subscription: Subscription
@@ -28,6 +34,8 @@ type Loaded = {
   members: Member[]
   prices: PriceEntry[]
   breakMonths: string[]
+  payments: Payment[]
+  schedules: Schedule[]
 }
 
 type State =
@@ -46,13 +54,15 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
     // collapsing the layout back to the loading state.
     setState((current) => (current.status === 'ready' ? current : { status: 'loading' }))
     try {
-      const [summary, members, prices, breakMonths] = await Promise.all([
+      const [summary, members, prices, breakMonths, payments, schedules] = await Promise.all([
         getSummary(subscription.id),
         listMembers(subscription.id),
         listPrices(subscription.id),
         listBreakMonths(subscription.id),
+        listPayments(subscription.id),
+        listSchedules(subscription.id),
       ])
-      setState({ status: 'ready', data: { summary, members, prices, breakMonths } })
+      setState({ status: 'ready', data: { summary, members, prices, breakMonths, payments, schedules } })
     } catch (error) {
       if (error instanceof SignedOutError) {
         onSignedOut()
@@ -94,7 +104,7 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
             (label) => (
               <div className="card" key={label}>
                 <span className="card-label">{label}</span>
-                <span className="card-value">—</span>
+                <span className="card-value">-</span>
               </div>
             ),
           )}
@@ -129,9 +139,25 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
     )
   }
 
-  const { summary, members, prices, breakMonths } = state.data
+  const { summary, members, prices, breakMonths, payments, schedules } = state.data
   const owner = members.find((member) => member.isOwner)
   const money = (minor: number) => formatMoney(minor, summary.locale, summary.currency)
+
+  /**
+   * Exactly what `memberMonthStatus` reads, assembled from the subscription this
+   * screen already holds and the break months it already lists. `MemberSummary`
+   * carries neither, and nothing here is fabricated to satisfy the type: the
+   * parameter is narrowed to these two fields for this caller (decision D-008).
+   */
+  const monthInputs = {
+    settings: {
+      startMonth: subscription.startMonth,
+      currency: subscription.currency,
+      locale: subscription.locale,
+      timeZone: subscription.timeZone,
+    },
+    breakMonths,
+  }
 
   return (
     <main className="screen">
@@ -205,6 +231,28 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
       <BreakMonths
         subscriptionId={subscription.id}
         breakMonths={breakMonths}
+        onChanged={() => void load()}
+        onSignedOut={onSignedOut}
+      />
+
+      <PaymentList
+        subscriptionId={subscription.id}
+        payments={payments}
+        members={members}
+        currency={summary.currency}
+        locale={summary.locale}
+        onChanged={() => void load()}
+        onSignedOut={onSignedOut}
+      />
+
+      <RecurringSection
+        subscriptionId={subscription.id}
+        schedules={schedules}
+        members={members}
+        monthInputs={monthInputs}
+        currentMonth={summary.currentMonth}
+        currency={summary.currency}
+        locale={summary.locale}
         onChanged={() => void load()}
         onSignedOut={onSignedOut}
       />

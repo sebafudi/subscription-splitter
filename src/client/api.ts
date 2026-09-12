@@ -1,4 +1,4 @@
-import type { Member, MonthStr, PriceEntry, Summary } from '../domain/types'
+import type { Member, MonthStr, Payment, PriceEntry, RecurringSchedule, Summary } from '../domain/types'
 
 export type SessionUser = { id: string; email: string; name: string }
 
@@ -129,7 +129,17 @@ export async function createSubscription(input: CreateSubscriptionInput): Promis
  * so the screens have one import for everything the API returns and so the
  * client cannot drift from what the server computes.
  */
-export type { ActiveRange, Member, MemberSummary, MonthStr, PriceEntry, Summary } from '../domain/types'
+export type {
+  ActiveRange,
+  Member,
+  MemberSummary,
+  MonthStr,
+  Payment,
+  PriceEntry,
+  RecurringSchedule,
+  SubscriptionSettings,
+  Summary,
+} from '../domain/types'
 
 /** Request keys stay snake_case, matching the validation schemas. */
 export type ActiveRangeInput = { joined_month: string; left_month: string | null }
@@ -199,4 +209,104 @@ export async function deleteBreakMonth(subscriptionId: string, month: string): P
 
 export async function getSummary(subscriptionId: string): Promise<Summary> {
   return request<Summary>(`/api/subscriptions/${subscriptionId}/summary`)
+}
+
+/**
+ * What the schedules route returns: the arrangement plus the months marked as
+ * not received, so the standing-order section draws its toggles from one read.
+ */
+export type Schedule = RecurringSchedule & { exceptionMonths: MonthStr[] }
+
+export type PaymentKind = 'manual' | 'annual'
+
+export type CreatePaymentInput = {
+  member_id: string
+  date: string
+  amount: number
+  note?: string
+  kind?: PaymentKind
+}
+
+export type PatchPaymentInput = Partial<CreatePaymentInput>
+
+function paymentsPath(subscriptionId: string, paymentId?: string): string {
+  const base = `/api/subscriptions/${subscriptionId}/payments`
+  return paymentId ? `${base}/${paymentId}` : base
+}
+
+/** `memberId` is resolved through the subscription on the server, so a foreign one is a 404 rather than an empty list. */
+export async function listPayments(subscriptionId: string, memberId?: string): Promise<Payment[]> {
+  const query = memberId ? `?memberId=${encodeURIComponent(memberId)}` : ''
+  return request<Payment[]>(`${paymentsPath(subscriptionId)}${query}`)
+}
+
+export async function createPayment(subscriptionId: string, input: CreatePaymentInput): Promise<Payment> {
+  return request<Payment>(paymentsPath(subscriptionId), { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updatePayment(
+  subscriptionId: string,
+  paymentId: string,
+  patch: PatchPaymentInput,
+): Promise<Payment> {
+  return request<Payment>(paymentsPath(subscriptionId, paymentId), { method: 'PATCH', body: JSON.stringify(patch) })
+}
+
+export async function deletePayment(subscriptionId: string, paymentId: string): Promise<void> {
+  await request<null>(paymentsPath(subscriptionId, paymentId), { method: 'DELETE' })
+}
+
+export type CreateScheduleInput = {
+  member_id: string
+  amount: number
+  start_month: string
+  end_month: string | null
+}
+
+export type PatchScheduleInput = Partial<CreateScheduleInput>
+
+function schedulesPath(subscriptionId: string, scheduleId?: string): string {
+  const base = `/api/subscriptions/${subscriptionId}/schedules`
+  return scheduleId ? `${base}/${scheduleId}` : base
+}
+
+export async function listSchedules(subscriptionId: string): Promise<Schedule[]> {
+  return request<Schedule[]>(schedulesPath(subscriptionId))
+}
+
+export async function createSchedule(subscriptionId: string, input: CreateScheduleInput): Promise<Schedule> {
+  return request<Schedule>(schedulesPath(subscriptionId), { method: 'POST', body: JSON.stringify(input) })
+}
+
+export async function updateSchedule(
+  subscriptionId: string,
+  scheduleId: string,
+  patch: PatchScheduleInput,
+): Promise<Schedule> {
+  return request<Schedule>(schedulesPath(subscriptionId, scheduleId), { method: 'PATCH', body: JSON.stringify(patch) })
+}
+
+export async function deleteSchedule(subscriptionId: string, scheduleId: string): Promise<void> {
+  await request<null>(schedulesPath(subscriptionId, scheduleId), { method: 'DELETE' })
+}
+
+function exceptionPath(subscriptionId: string, scheduleId: string, month: string): string {
+  return `${schedulesPath(subscriptionId, scheduleId)}/exceptions/${month}`
+}
+
+/** Both ends of one toggle; each answers 204 whichever state it leaves the month in. */
+export async function markMonthNotReceived(
+  subscriptionId: string,
+  scheduleId: string,
+  month: string,
+): Promise<void> {
+  await request<null>(exceptionPath(subscriptionId, scheduleId, month), { method: 'PUT' })
+}
+
+export async function clearMonthNotReceived(
+  subscriptionId: string,
+  scheduleId: string,
+  month: string,
+): Promise<void> {
+  await request<null>(exceptionPath(subscriptionId, scheduleId, month), { method: 'DELETE' })
 }
