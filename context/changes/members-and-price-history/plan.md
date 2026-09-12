@@ -1,0 +1,967 @@
+# Implementation plan: members and price history
+
+## Overview
+
+Teach the product to answer its own central question: what does each participant owe. The organizer
+records participants with the whole months they were active, records what the plan cost from each
+month onward, marks the months that were skipped, and reads this month's per-person share, the
+headline totals and a per-participant balance. This is roadmap item S-02 and the milestone's north
+star, because the primary success criterion is a balance that matches a hand calculation to the
+minor unit and nothing else in the product matters if that number is wrong.
+
+The calculation lands first, as a pure module with no storage dependency, so the boundary cases in
+test-plan risks 1 and 5 are unit tests rather than browser runs.
+
+## Current state analysis
+
+S-01 brought the application to life: two seeded accounts, sessions through Better Auth's mounted
+endpoints, a `subscriptions` table, its repository and four routes, and the ownership rule enforced
+inside the repository's SQL. `migrations/0001_auth.sql` and `0002_subscriptions.sql` are applied,
+`src/server/validation/subscriptions.ts` carries the first Zod contract, and the integration suite
+runs against one shared local D1 that it never resets.
+
+`src/domain/` holds two helpers and nothing else. `shareForMonth(priceMinor, activeCount)` rounds a
+priced month across the active members and already answers `0` for a zero active count.
+`ownerResidualForMonth(priceMinor, activeCount)` returns `priceMinor - share * (activeCount - 1)`,
+which silently assumes the owner is one of the active members. There is no month arithmetic, no
+price lookup, no membership model and no summary. There is no table below `subscriptions`, and the
+only screen is the one S-01 builds.
+
+The prototype at `spotify-family-split` has a complete tested version of this accounting and was read
+as a source of semantics only. Nothing is copied from it. Its rules, the two this slice keeps that it
+gets subtly right and the one it gets wrong, are recorded in
+`context/changes/members-and-price-history/research.md`.
+
+## Desired end state
+
+A subscription has an owner member from the moment it is created. The organizer adds participants
+with one or more whole-month active ranges, edits them, archives the ones who have history and
+deletes the ones who do not. They record what the plan cost from a given month onward, correct or
+remove a price entry, and mark a month as skipped. The detail screen shows the headline numbers, what
+is owed to the organizer now, this month's per-person share, collected against expected this month,
+the organizer's own net cost and how many participants are active, and underneath the same
+calculation resolved per participant, most-owing first.
+
+The worked example from the requirements holds through the API: a plan costing 100.00 PLN with the
+owner and two participants active gives each participant a share of 33.33 and leaves the owner
+absorbing 33.34 for that month. A price change, a skipped month and a participant who left all
+produce the right answer without manual correction. A second account asking for any of the new
+records, by any route and any verb, is told they do not exist.
+
+### Key findings
+
+- `ownerResidualForMonth(priceMinor, activeCount)` encodes "exactly one active member is the owner"
+  in `activeCount - 1` (`src/domain/money.ts:19`). The owner holds active ranges like any other
+  member and may sit a month out, and in that month every active member is charged. The helper needs
+  the number of charged members as an explicit input.
+- A new Hono router mounted at `'/'` inherits no middleware from another router.
+  `src/server/routes/subscriptions.ts` registers `requireSession` for its own two path patterns, and
+  `src/server/index.ts` mounts each router at `'/'` with the router owning its absolute paths. A new
+  route module that forgets its own registration ships unauthenticated and every test that carries a
+  cookie still passes.
+- Ownership for a child record is one join, not two queries. Filtering
+  `join subscriptions s on s.id = <child>.subscription_id where s.user_id = ?` in the same statement
+  answers the foreign-child case and the foreign-parent case identically, which is exactly the pair
+  test-plan risk 2 names.
+- D1 has no interactive transactions; `db.batch([...])` is the atomic unit. Two writes here need it:
+  replacing a member's active ranges, and creating a subscription together with its owner member and
+  that member's opening range.
+- SQLite partial indexes express "at most one owner per subscription" in the schema, so the rule
+  cannot be forgotten by a route. The cost is that a violation arrives as a thrown D1 error, which the
+  route must catch and translate into 409 rather than letting it become a 500.
+- The prototype's per-person share returns the whole undivided price when the active count is zero
+  and the price is not, and no test pins that value. This project returns zero and lets the owner
+  absorb the month, which is what `shareForMonth` already does. Recorded as D-006.
+- A range whose joined month equals its left month covers exactly that one month, and two ranges that
+  touch in the same month are an overlap rather than a merge, because the month is the unit of
+  account and a member cannot leave and rejoin inside one.
+- `Intl.DateTimeFormat` with an IANA zone behaves identically in the Workers runtime and in the node
+  unit runner, so the current-month rule is testable with a fixed clock at the cheapest layer.
+
+## What we are NOT doing
+
+- No payments, no standing orders and no recurring exceptions through the API or the screens. Their
+  types and the received-month rule land in the domain module now, because they are cheap there and
+  because `balanceForMember` is meaningless without them, but no table, route or form exists for them
+  until S-03. The state loader passes empty arrays.
+- No status grid, no per-month per-member cell status and no first-in-first-out attribution of funds
+  against months. The requirements ask for a balance per participant, not a grid.
+- No coverages, no opening balances carried in from a previous spreadsheet, and no month series or
+  chart. All three are non-goals in the requirements.
+- No largest-remainder allocation. The owner absorbs the residual, as `AGENTS.md` requires.
+- No proration. Membership is whole months.
+- No second subscription in the interface, no subscription deletion, no currency conversion.
+- No deployment, no remote database and no browser end-to-end test. S-04 owns all three; this slice's
+  browser pass is a manual checklist with captured evidence.
+- No backfill of an owner member into subscriptions created before this slice. The summary answers
+  409 for them and says why.
+
+## Implementation approach
+
+Test-first for the first two phases, which is where both of this slice's silent failures live. A
+mis-rounded share and a leaked record both look like success from the outside, so each of those
+phases writes the failing test first and watches it fail for the stated reason.
+
+The calculation comes before any table. It is a pure module that receives a `SubscriptionState` value
+and returns numbers, so every boundary the test plan names, price effective dating, break months,
+inclusive multi-range membership, rounding, the owner's residual, a month with nobody active and the
+current month in a given time zone, is exercised without a binding. The storage layers that follow
+have only one job each, to produce that value and to persist edits to it.
+
+Ownership is extended, not re-established. Every new statement joins back to `subscriptions` and
+filters by `user_id` in the same query, so a foreign child and a child reached through a foreign
+parent fail the same predicate and both become 404.
+
+Phases are ordered so each leaves the suite green and is reversible on its own: the calculation, then
+members and their ranges, then prices and break months and the summary that combines everything, then
+the owner member and the screen, then the evidence.
+
+## Critical implementation details
+
+**Every new route module registers its own session middleware.** Routers are mounted at `'/'` and own
+their absolute paths, so middleware does not cascade between them. Each new module registers
+`requireSession` for `/api/subscriptions/*` before declaring its routes. A module that omits it ships
+unauthenticated and every test that sends a cookie still passes, so the integration suite asserts a
+401 without a cookie for every new route, not only for one of them.
+
+**A duplicate owner arrives as a thrown error, not as a return value.** The partial unique index
+rejects a second owner inside D1, so the insert throws. The route catches it, distinguishes the
+unique-constraint failure from any other database error, and answers 409 with a message naming the
+rule. Letting it escape would be a 500 that reads like a server fault rather than a refused write.
+
+**Active ranges are replaced, never merged.** A member update carries the complete range set, and the
+repository deletes every existing row for that member and inserts the new set inside one
+`db.batch([...])` together with the member row update. A partial replacement would leave a member
+with ranges from two different edits, which is the one way this table can invent liability.
+
+**The owner member is created in the same batch as its subscription.** A subscription that exists
+without an owner has no defined per-person share, so the two writes are one atomic unit. Phase 3's
+summary tests create the owner explicitly through the members route because phase 4 is what makes it
+automatic; that ordering is deliberate and the tests written in phase 3 keep passing afterwards.
+
+## Phase 1: The calculation
+
+### Overview
+
+The domain module the whole product is judged against: month arithmetic, effective-dated prices,
+whole-month membership, the per-person share, the owner's residual and the summary. Pure, with no
+import from D1 or Hono. Written test-first, one failing unit test at a time, because test-plan phase
+2 exists for exactly these cases.
+
+### Required changes:
+
+#### 1. Domain types
+
+**File**: `src/domain/types.ts`
+
+**Purpose**: One declared shape for everything the calculation reads, so the repositories and the
+summary route have a target to produce rather than a shape they invent per call site.
+
+**Contract**: `MonthStr` and `Minor` as named aliases over `string` and `number`, documented as
+`YYYY-MM` and integer minor units. `ActiveRange { joinedMonth: MonthStr; leftMonth: MonthStr | null }`.
+`Member { id: string; name: string; isOwner: boolean; archived: boolean; activeRanges: ActiveRange[] }`.
+`PriceEntry { id: string; effectiveFrom: MonthStr; amount: Minor }`.
+`RecurringSchedule { id: string; memberId: string; amount: Minor; startMonth: MonthStr; endMonth: MonthStr | null }`.
+`RecurringException { recurringId: string; month: MonthStr }`.
+`Payment { id: string; memberId: string; date: string; amount: Minor; note: string; kind: 'manual' | 'annual' }`.
+`SubscriptionSettings { startMonth: MonthStr; currency: string; locale: string; timeZone: string }`.
+`SubscriptionState { settings: SubscriptionSettings; priceHistory: PriceEntry[]; breakMonths: MonthStr[]; members: Member[]; recurring: RecurringSchedule[]; recurringExceptions: RecurringException[]; payments: Payment[] }`.
+`MemberSummary` and `Summary` as the return shapes of `computeSummary`, listed in change 5 below.
+
+The three collections S-03 fills are typed now and passed empty by this slice. Typing them now costs
+one line each and keeps `balanceForMember` from being rewritten when payments arrive.
+
+#### 2. Month arithmetic
+
+**File**: `src/domain/months.ts`
+
+**Purpose**: The month is the unit of account, so the two operations over it and the rule that
+decides which month is current live in one place with no `Date` arithmetic in sight.
+
+**Contract**: `addMonth(month: MonthStr, delta: number): MonthStr` by integer arithmetic over
+`year * 12 + (month - 1) + delta`, correct for negative deltas and multi-year jumps.
+`enumerateMonths(start: MonthStr, end: MonthStr): MonthStr[]`, inclusive of both endpoints and empty
+when `end` precedes `start`. `currentMonth(timeZone: string, now?: Date): MonthStr`, derived from
+`Intl.DateTimeFormat` with the passed zone and reassembled from its parts, with `now` defaulting to
+the current instant so a test can pin it. `AGENTS.md` forbids deriving the month from server-local
+date parts, and this is the one function allowed to ask what time it is.
+
+Month strings compare chronologically as strings because the format is zero-padded, and the module
+says so in one line so no later reader reaches for a parse.
+
+#### 3. Money helpers
+
+**File**: `src/domain/money.ts`
+
+**Purpose**: Keep the rounding rule in one place, correct the residual helper's hidden assumption,
+and add the one formatting function the display layer needs.
+
+**Contract**: `shareForMonth` is unchanged. `ownerResidualForMonth` gains a third input, the number
+of members actually charged for the month, and returns
+`priceMinor - shareForMonth(priceMinor, activeCount) * chargedCount`. When the owner is active,
+`chargedCount` is `activeCount - 1` and the result is what the function returns today; when the owner
+sat the month out, every active member is charged and the residual is smaller, possibly negative by a
+few minor units, which is the defined consequence of rounding each share independently. The existing
+unit test is updated to pass the third argument in the same step, and a new case covers the
+inactive-owner month. Add `formatMoney(minor: Minor, locale: string, currency: string): string` over
+`Intl.NumberFormat`, used only at the display edge and never inside the calculation.
+
+#### 4. Membership
+
+**File**: `src/domain/members.ts`
+
+**Purpose**: Decide who occupied a seat in a given month, and validate a proposed set of ranges before
+it can be stored.
+
+**Contract**: `rangeCovers(member: Member, month: MonthStr): boolean`, true when any of the member's
+ranges covers the month, where a range covers `joinedMonth <= month` and either `leftMonth` is null or
+`month <= leftMonth`. The left month is inclusive, so a range whose two ends are equal covers exactly
+one month. `activeMembersInMonth(state: SubscriptionState, month: MonthStr): Member[]`, filtering
+every member including the owner and ignoring `archived` entirely, because archiving is a
+presentation flag and a member's liability is decided by their ranges alone. Making archiving change
+the active count would move every past month's share retroactively.
+
+`validateActiveRanges(ranges: ActiveRange[], startMonth: MonthStr): string | null`, returning null or
+the first violation as a message naming the field at fault: the set is empty, a range ends before it
+starts, a range begins before the subscription's first month, ranges overlap once sorted by joined
+month, or an open-ended range is followed by another range. Two ranges that touch in the same month
+count as an overlap rather than a merge.
+
+#### 5. The calculation
+
+**File**: `src/domain/calc.ts`
+
+**Purpose**: Every number the product shows, derived from which months each member was active and
+what the plan cost in each month.
+
+**Contract**:
+
+`priceForMonth(state, month): Minor` returns `0` when the month is a break month, without consulting
+the price history at all, and otherwise the amount of the latest entry whose `effectiveFrom` is at or
+before the month, or `0` when no entry applies yet. The break month wins; that ordering is the whole
+point of having both concepts.
+
+`perPersonShare(state, month): Minor` returns `0` when the price for the month is `0` or when nobody
+is active, and otherwise `shareForMonth(price, activeCount)` with the owner counted in the active
+count. The zero-active answer is decision D-006: the month still costs what it costs, nobody owes a
+share, and the owner absorbs all of it.
+
+`shareForMember(state, member, month): Minor` returns `0` for the owner and `0` for a member whose
+ranges do not cover the month, and otherwise `perPersonShare` for that month.
+
+`recurringReceived(state, member, months): Minor` sums a schedule's amount for each month that is at
+or after its start month, at or before its end month when it has one, not a break month, covered by
+one of the member's ranges, and not listed as an exception for that schedule and month. All five
+conditions, because dropping any one of them overstates what has been collected, which is the failure
+test-plan risk 4 names.
+
+`balanceForMember(state, member, months): { owed: Minor; paid: Minor; balance: Minor }`, where owed is
+the sum of `shareForMember` over the months, paid is the member's recorded payments plus
+`recurringReceived`, and balance is paid minus owed, negative when they owe.
+
+`computeSummary(state, current: MonthStr): Summary` enumerates the months from the settings' start
+month to `current` inclusive and returns `currentMonth`, `currentMonthly`, `currentActiveCount`,
+`currentPerPersonShare`, `owedToYouNow` (the total of every negative balance, as a positive number),
+`creditOutstanding` (the total of every positive balance), `expectedThisMonth` (the sum of every
+non-owner's share for the current month), `collectedThisMonth` (payments dated in the current month
+plus recurring received for it), `totalPlanCost` (the sum of `priceForMonth` over every month,
+whether or not anyone was active), `totalCollected`, `ownerNetCost` (`totalPlanCost` less
+`totalCollected`) and `members`, one `MemberSummary` per non-owner member sorted by balance ascending
+so the most-owing member is first.
+
+`MemberSummary` carries `memberId`, `name`, `archived`, `activeThisMonth`, `currentShare`, `owed`,
+`paid` and `balance`. The owner is not in the list: their position is the two headline numbers,
+`ownerNetCost` for the whole plan and `currentMonthly - expectedThisMonth` for this month's residual.
+
+The month always balances exactly. For any month, the sum of every non-owner's share plus
+`ownerResidualForMonth(price, activeCount, chargedCount)` equals the price for that month, including
+when the price is zero, when the month is a break month and when nobody is active.
+
+#### 6. Unit tests for the calculation
+
+**Files**: `src/domain/months.test.ts`, `src/domain/money.test.ts`, `src/domain/members.test.ts`,
+`src/domain/calc.test.ts`
+
+**Purpose**: Prove test-plan risks 1 and 5 at the cheapest layer, and close the two blind spots the
+prototype's own suite has. Written before the modules they exercise.
+
+**Contract**: Cases, ported in intent from the prototype and extended where its suite was silent:
+
+- month arithmetic across a year boundary in both directions, and a multi-year jump in one call
+- `enumerateMonths` inclusive at both ends, one month when the ends are equal, empty when reversed
+- `currentMonth` with a fixed instant and two zones that disagree about the month at that instant, so
+  the time-zone rule is exercised rather than assumed, and the same instant in a zone where it is
+  already the next month
+- the price for a month is the latest entry at or before it, across a change
+- the price is zero before the first entry
+- a break month is zero and the price entry still applies to the month after it
+- three active members including the owner split an evenly divisible price exactly
+- the requirements' worked example: 10000 minor units and three active members give a share of 3333,
+  two charged members give 6666, and the owner's residual is 3334
+- a residual month in which the owner is not active, where every active member is charged and the
+  residual is the remainder over all of them
+- the month balances: for a set of prices, counts and break months, shares plus residual equal the
+  price every time
+- a range whose ends are equal covers exactly that month and no other
+- a member with two ranges and a gap owes for the covered months only and nothing for the gap
+- a member whose left month has passed stops accruing, and their earlier liability is unchanged
+- the owner never owes, whatever their ranges say
+- a priced month with nobody active: the share is zero, no member owes, the cost is still in
+  `totalPlanCost` and in `ownerNetCost`, and nothing throws or returns a non-number
+- `recurringReceived` counts a month in range and skips each of the four cases that disqualify one,
+  one test per case
+- `balanceForMember` is paid less owed, negative when owing and positive when ahead
+- `computeSummary` on a state with a price change, a break month, a departure and a rejoin returns
+  every field correctly, with the member list most-owing first
+- `validateActiveRanges` accepts a valid set and rejects each violation with its own message
+- `formatMoney` renders one amount in the subscription's locale and currency
+
+### Success criteria:
+
+#### Automated verification:
+
+- Unit tests pass: `npm run test:unit`
+- Typecheck passes: `npm run typecheck`
+- Integration tests still pass: `npm run test:integration`
+- Nothing under `src/domain/` imports from `src/server/`, `hono` or a D1 type
+
+#### Manual verification:
+
+- Each new unit test failed first against the unwritten function, for the stated reason rather than
+  for an import error
+- The worked example in the requirements was computed by hand and matched before the assertion was
+  written, rather than copied out of the implementation
+
+**Implementation note**: After this phase and all its automated verification, stop for human
+confirmation before moving to the next phase.
+
+---
+
+## Phase 2: Members and their active ranges
+
+### Overview
+
+The first child table, its repository, its routes and the ownership tests that prove a second account
+cannot reach any of it. Written test-first, because a leak looks like success from the outside.
+
+### Required changes:
+
+#### 1. Members migration
+
+**File**: `migrations/0003_members.sql`
+
+**Purpose**: Store participants and the whole months each of them took part in.
+
+**Contract**: `members(id TEXT PRIMARY KEY, subscription_id TEXT NOT NULL REFERENCES
+"subscriptions"("id") ON DELETE CASCADE, name TEXT NOT NULL, is_owner INTEGER NOT NULL CHECK (is_owner
+IN (0, 1)), archived INTEGER NOT NULL DEFAULT 0 CHECK (archived IN (0, 1)), created_at TEXT NOT NULL)`
+with `CREATE INDEX "members_subscription_id_idx"` on the foreign key and a partial unique index
+`CREATE UNIQUE INDEX "members_one_owner_idx" ON "members"("subscription_id") WHERE "is_owner" = 1`,
+which is how "exactly one owner per subscription" stops being a rule a route has to remember. The
+index name carries the repository's `_idx` suffix so it reads like every other index in `migrations/`.
+
+`active_ranges(id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES "members"("id") ON DELETE
+CASCADE, joined_month TEXT NOT NULL CHECK (joined_month GLOB '[0-9][0-9][0-9][0-9]-[01][0-9]'),
+left_month TEXT CHECK (left_month IS NULL OR left_month GLOB '[0-9][0-9][0-9][0-9]-[01][0-9]'))` with
+an added `CHECK (left_month IS NULL OR left_month >= joined_month)` and
+`CREATE INDEX "active_ranges_member_id_idx"`. Style follows `0002_subscriptions.sql` exactly: quoted
+identifiers, no `IF NOT EXISTS`, cascade on every foreign key, month CHECKs as tight as `GLOB` allows
+with the residual gap closed by the Zod range rule every write passes through.
+
+#### 2. Member validation contract
+
+**File**: `src/server/validation/members.ts`
+
+**Purpose**: One declared schema for member input, shared by the routes and exercised directly by a
+unit test.
+
+**Contract**: Request keys stay snake_case, matching `subscriptions.ts`. An active range is
+`{ joined_month, left_month }` with the same month pattern the subscription schema uses and
+`left_month` nullable. `createMemberSchema` requires `name` non-empty after trimming, `active_ranges`
+as a non-empty array, and accepts optional `is_owner` defaulting to false and `archived` defaulting to
+false. `patchMemberSchema` is the partial, strict form rejecting an empty body, and may carry
+`archived` and a complete replacement `active_ranges`. Both are `.strict()`, so an unknown key is a
+400 rather than a silent drop. Ordering rules over a range set are not expressed in Zod: the schema
+checks shape, the domain's `validateActiveRanges` checks the invariant, and the route runs the second
+after the first and turns its message into the same 400 shape.
+
+#### 3. Members repository
+
+**File**: `src/server/db/members.ts`
+
+**Purpose**: The only place that writes SQL for members and their ranges, and the single enforcement
+point for ownership over both.
+
+**Contract**: `list(db, subscriptionId, userId)`, `get(db, subscriptionId, memberId, userId)`,
+`create(db, subscriptionId, userId, input)`, `update(db, subscriptionId, memberId, userId, patch)`,
+`remove(db, subscriptionId, memberId, userId)` and `hasDependents(db, memberId)`. Every statement
+joins `subscriptions` and filters `s.user_id = ?` alongside the subscription id, so a foreign member,
+a member reached through a foreign subscription and a member that does not exist are one answer:
+`null`, or `false` from `remove`. Ranges are read with the member and mapped into the domain's
+camelCase `Member` shape at this boundary, so no column name escapes the module.
+
+`create` generates the identifiers with `crypto.randomUUID()` and writes the member row and all its
+range rows in one `db.batch([...])`. `update` writes the member row update, a delete of every range
+for that member and inserts for the complete new set in one `db.batch([...])`, so a half-applied edit
+cannot leave ranges from two versions side by side. `hasDependents` is the single named place the
+delete rule asks whether a member may be removed; in this slice no payment or schedule table exists,
+so it answers false, and S-03 adds its clauses here rather than in the route.
+
+#### 4. Member routes
+
+**File**: `src/server/routes/members.ts`
+
+**Purpose**: The five operations the participant list needs, each behind the session middleware and
+each scoped through the owning subscription.
+
+**Contract**: The module registers `app.use('/api/subscriptions/*', requireSession)` for itself before
+declaring anything, because middleware does not cascade from another router mounted at the same base.
+
+`GET /api/subscriptions/:id/members` returns the members of the subscription, 404 when the
+subscription is missing or belongs to someone else. `POST` validates the body, runs
+`validateActiveRanges` against the subscription's start month, creates the member and returns 201.
+`GET /api/subscriptions/:id/members/:memberId` returns the member or 404. `PATCH` validates, replaces
+the range set atomically when one is supplied, may set `archived`, and returns the updated member or
+404. `DELETE` returns 204 on success, 409 when the member is the owner, because a subscription without
+an owner has no defined share, and 409 when `hasDependents` is true, which in this slice cannot happen
+but is where S-03's payments and schedules attach.
+
+Status codes: 401 without a session, 400 with a message naming the field at fault, 404 for anything
+missing or foreign, 409 for a second owner and for a refused delete. A second owner surfaces as a
+thrown unique-constraint error from D1; the route distinguishes it from any other database failure and
+answers 409 with a message naming the rule rather than letting it become a 500.
+
+#### 5. Composition
+
+**File**: `src/server/index.ts`
+
+**Purpose**: Mount the new router.
+
+**Contract**: Add `app.route('/', membersRoutes)` alongside the existing routers, before the
+`notFound` handler. Order relative to the subscriptions router does not matter because the paths do
+not collide.
+
+#### 6. Shared integration helpers
+
+**File**: `tests/integration/accounts.ts`
+
+**Purpose**: Stop a third and fourth test file from copying the two-account seeding dance a third and
+fourth time.
+
+**Contract**: Export the helpers the existing integration files define privately: a Better Auth
+instance built against `env.DB` with sign-up enabled for seeding, a `set-cookie` extractor, a header
+builder giving each test its own `cf-connecting-ip`, and a helper that seeds an account and returns a
+signed-in cookie. The existing S-01 test files are deliberately left alone in this slice, so folding
+their private copies into this module does not collide with the in-flight slice; a later change can do
+it in one step once S-01 is closed.
+
+#### 7. Ownership and validation tests
+
+**Files**: `tests/integration/members.test.ts`, `src/server/validation/members.test.ts`
+
+**Purpose**: Prove test-plan risk 2 for a child resource and risk 3 for its round trip. Written before
+the routes.
+
+**Contract**: The integration test seeds two accounts inside one block with emails unique to the test,
+signs both in, and creates a subscription for each. Cases:
+
+- a member created by account A is listed for A
+- account B gets 404 from `GET`, `POST`, `PATCH` and `DELETE` naming A's subscription or A's member,
+  including A's member id reached through B's own subscription id, which is the wrong-parent case
+- every one of the five routes returns 401 without a cookie
+- a created member with two ranges is returned by a later, separate request with both ranges intact,
+  proving it persisted rather than being held in memory
+- a `PATCH` replacing the range set leaves exactly the new set, with no row from the previous edit
+- a second owner for the same subscription returns 409, and the first owner is unaffected
+- deleting the owner returns 409; deleting an ordinary member returns 204 and a following read is 404
+- invalid bodies return 400 with the field named, covering a bad month, an empty name, an empty range
+  array, a range ending before it starts, overlapping ranges, a range beginning before the
+  subscription's start month and an unknown key
+
+The unit test covers the schema alone: defaults, the month format including the values the database
+pattern by itself would admit, rejection of unknown keys and rejection of an empty patch.
+
+### Success criteria:
+
+#### Automated verification:
+
+- Integration tests pass: `npm run test:integration`
+- Unit tests pass: `npm run test:unit`
+- Typecheck passes: `npm run typecheck`
+- All three migrations apply in order to a clean local database: `npm run db:migrate:local`
+- Every new route answers 401 without a cookie, asserted per route rather than once
+
+#### Manual verification:
+
+- The ownership cases failed first against the unwritten routes, and for the right reason
+- A second owner was attempted against a local database and produced 409 rather than a 500
+
+**Implementation note**: Stop for human confirmation before the next phase.
+
+---
+
+## Phase 3: Prices, break months and the summary
+
+### Overview
+
+What the plan cost from each month onward, which months were skipped, and the route that loads the
+whole state and answers with the numbers the screen shows.
+
+### Required changes:
+
+#### 1. Prices and break months migration
+
+**File**: `migrations/0004_prices_and_breaks.sql`
+
+**Purpose**: The two remaining inputs the calculation needs.
+
+**Contract**: `price_history(id TEXT PRIMARY KEY, subscription_id TEXT NOT NULL REFERENCES
+"subscriptions"("id") ON DELETE CASCADE, effective_from TEXT NOT NULL CHECK (effective_from GLOB
+'[0-9][0-9][0-9][0-9]-[01][0-9]'), amount INTEGER NOT NULL CHECK (amount > 0), UNIQUE(subscription_id,
+effective_from))`. A positive amount is deliberate: a month that costs nothing is a break month, not a
+price of zero, and the requirements keep the two apart because they differ in whether a standing order
+counts as received.
+
+`break_months(subscription_id TEXT NOT NULL REFERENCES "subscriptions"("id") ON DELETE CASCADE, month
+TEXT NOT NULL CHECK (month GLOB '[0-9][0-9][0-9][0-9]-[01][0-9]'), PRIMARY KEY(subscription_id,
+month))`.
+
+Neither table needs a separate index on its foreign key: `UNIQUE(subscription_id, effective_from)` and
+the composite primary key each lead with `subscription_id`, so they already serve every lookup this
+slice makes. Adding one would be a second index over the same leading column.
+
+#### 2. Price and break-month validation
+
+**File**: `src/server/validation/prices.ts`
+
+**Purpose**: One schema per write, in the same shape as the other validation modules.
+
+**Contract**: `createPriceSchema` with `effective_from` on the month pattern and `amount` a positive
+integer in minor units, strict. `createBreakMonthSchema` with `month` on the same pattern, strict. A
+month in a path parameter is validated with the same month schema before it reaches SQL, so a
+malformed month is a 400 rather than a silent miss.
+
+#### 3. Price and break-month repositories
+
+**Files**: `src/server/db/prices.ts`, `src/server/db/break-months.ts`
+
+**Purpose**: The only places that write SQL for these two tables.
+
+**Contract**: `list(db, subscriptionId, userId)`, `create(db, subscriptionId, userId, input)` and
+`remove(db, subscriptionId, ..., userId)` in each, every statement joining `subscriptions` and
+filtering `s.user_id = ?`. Prices are removed by identifier, break months by their month value, which
+is their own key. A duplicate price for a month violates the unique constraint and throws, which the
+route translates into 409; a duplicate break month is idempotent and answers 201 either way, because
+marking an already-skipped month as skipped is not an error.
+
+#### 4. State loader
+
+**File**: `src/server/db/subscription-state.ts`
+
+**Purpose**: Produce the exact `SubscriptionState` the domain module expects, in one place, so the
+summary route does no assembly of its own.
+
+**Contract**: `loadState(db, subscriptionId, userId): Promise<SubscriptionState | null>` reads the
+subscription, its members with their ranges, its price history and its break months, all filtered
+through the same ownership predicate, and returns `null` when the subscription is missing or foreign.
+Recurring schedules, exceptions and payments are returned as empty arrays with a one-line note saying
+S-03 fills them; the domain is already written against the full shape, so that slice adds three reads
+and changes nothing else.
+
+#### 5. Price, break-month and summary routes
+
+**Files**: `src/server/routes/prices.ts`, `src/server/routes/break-months.ts`,
+`src/server/routes/summary.ts`
+
+**Purpose**: The remaining API surface this slice needs.
+
+**Contract**: Each module registers `requireSession` for `/api/subscriptions/*` itself.
+
+`GET` and `POST /api/subscriptions/:id/prices`, `DELETE /api/subscriptions/:id/prices/:priceId`.
+`GET` and `POST /api/subscriptions/:id/break-months`,
+`DELETE /api/subscriptions/:id/break-months/:month`. Status codes follow the members routes: 401, 400
+with the field named, 404 for missing or foreign, 201 on create and 204 on delete.
+
+`GET /api/subscriptions/:id/summary` loads the state, derives the current month from the
+subscription's own time zone with `currentMonth(settings.timeZone)`, and returns `computeSummary`.
+When the state has no owner member, which is only possible for a subscription created before this
+slice, it answers 409 with a message saying the subscription has no owner member and naming the
+members route as the remedy. The alternative, a backfill migration, was rejected because it would have
+to invent both a name and a joined month for a member the organizer never entered.
+
+#### 6. Composition
+
+**File**: `src/server/index.ts`
+
+**Purpose**: Mount the three new routers.
+
+**Contract**: Three more `app.route('/', ...)` calls before the `notFound` handler.
+
+#### 7. Tests
+
+**Files**: `tests/integration/prices.test.ts`, `tests/integration/summary.test.ts`,
+`src/server/validation/prices.test.ts`
+
+**Purpose**: Prove the ownership rule for the two remaining resources and prove the worked example
+end to end through the API rather than only in the domain module.
+
+**Contract**: The price and break-month integration tests mirror the members file: a round trip that
+persists across requests, 404 for every verb from the second account including through a foreign
+parent, 401 without a cookie for every route, 400 for a malformed month and a non-positive amount, 409
+for a duplicate price month, and an idempotent second break month.
+
+The summary test builds the requirements' worked example through the API only: create a subscription
+starting in the current month, add the owner member and two participants active from that month, post
+a price of 10000, then read the summary and assert a per-person share of 3333, two members each owing
+3333, `expectedThisMonth` 6666, `currentActiveCount` 3, `owedToYouNow` 6666 and `totalPlanCost` 10000.
+A second case adds a price change and a break month across three months and asserts the totals. A
+third asserts 404 from the second account and 401 without a cookie. A fourth asserts the 409 for a
+subscription with no owner member, created by calling the subscriptions route directly, which is still
+possible until phase 4.
+
+### Success criteria:
+
+#### Automated verification:
+
+- Integration tests pass: `npm run test:integration`
+- Unit tests pass: `npm run test:unit`
+- Typecheck passes: `npm run typecheck`
+- All four migrations apply in order to a clean local database: `npm run db:migrate:local`
+- The worked example from the requirements is asserted through the API and matches to the minor unit
+
+#### Manual verification:
+
+- The summary read through the API agrees with the same state computed by the domain unit tests, for
+  the worked example
+- The current month in the summary matches the calendar month in the subscription's time zone rather
+  than the machine's
+
+**Implementation note**: Stop for human confirmation before the next phase.
+
+---
+
+## Phase 4: The owner member and the detail screen
+
+### Overview
+
+A subscription gains its owner member at the moment it is created, and the organizer can do all of
+this in a browser.
+
+### Required changes:
+
+#### 1. Owner name on subscription create
+
+**File**: `src/server/validation/subscriptions.ts`
+
+**Purpose**: Let the organizer name themselves without making it a required field.
+
+**Contract**: Add `owner_name` to `createSubscriptionSchema` as an optional non-empty string
+defaulting to `Me`. The patch schema is unchanged: renaming the owner is a member edit, not a
+subscription edit, so there is one path for it rather than two.
+
+#### 2. Owner member created with the subscription
+
+**File**: `src/server/db/subscriptions.ts`
+
+**Purpose**: Make a subscription without an owner unreachable rather than merely discouraged.
+
+**Contract**: `create` writes the subscription row, the owner member row with `is_owner` set and the
+owner's opening active range starting at the subscription's start month with no left month, in one
+`db.batch([...])`. The returned shape is unchanged, so the S-01 routes, tests and screens keep working
+untouched. The partial unique index makes a second owner impossible from any path afterwards.
+
+#### 3. API client
+
+**File**: `src/client/api.ts`
+
+**Purpose**: Keep the new calls in the one place S-01 established rather than scattering `fetch` calls
+across screens.
+
+**Contract**: Extend the S-01 wrapper with the members, prices, break-months and summary calls,
+following whatever shape that file landed with: same credentials handling, same JSON handling, same
+translation of a 401 into a signed-out state. If S-01 phase 4 has not landed when this phase starts,
+this phase creates the file against the same contract rather than waiting or duplicating it.
+
+#### 4. The detail screen
+
+**Files**: `src/client/screens/SubscriptionDetail.tsx`,
+`src/client/components/MemberForm.tsx`, `src/client/components/MemberList.tsx`,
+`src/client/components/PriceHistory.tsx`, `src/client/components/BreakMonths.tsx`,
+`src/client/App.tsx`
+
+**Purpose**: The screen the requirements describe, and the only place the organizer meets the
+calculation.
+
+**Contract**: `App` gains a selected subscription in its own state, set by choosing one on the home
+screen and cleared by a back control, so no router library is added for one navigation step. The
+detail screen shows five headline cards reading from the summary: what is owed to you now, this
+month's per-person share, collected against expected this month, your net cost since the plan started,
+and how many participants are active this month. Labels are honest: the net-cost card says since the
+plan started, and this month's own residual, `currentMonthly` less `expectedThisMonth`, is shown
+beside the share rather than folded into the same number.
+
+Below the cards: the member list with each member's balance, owing or ahead, most-owing first, the
+owner shown separately as the account holder rather than as a row with a balance, and archived members
+hidden behind a toggle when their balance is zero, which is the requirements' own default for open
+question 3. A form adds and edits a member with a name and one or more month ranges, adding and
+removing a range row. A price history list adds an entry with a month and an amount and deletes one. A
+break month list adds and removes a month. Amounts are entered in major units and converted at the
+edge; everything over the wire stays in minor units. Field-level messages from a 400 are shown against
+the field the response names.
+
+#### 5. Layout
+
+**File**: `src/client/index.css`
+
+**Purpose**: Keep the new screen readable on a phone without adding a component library.
+
+**Contract**: Extend the existing plain stylesheet with a card row that wraps, a list that reads as
+rows on a narrow screen, and form controls legible at small sizes with visible focus states. No design
+system, no icon font, no external stylesheet.
+
+### Success criteria:
+
+#### Automated verification:
+
+- Typecheck passes across all three projects: `npm run typecheck`
+- Production build succeeds: `npm run build`
+- The whole suite passes: `npm test`
+- A subscription created through the API comes back with exactly one owner member whose range starts
+  at the subscription's start month
+
+#### Manual verification:
+
+- Create a subscription, open it, and find the owner already listed as the account holder
+- Add two participants active from the first month, set a price of 100.00, and read a per-person share
+  of 33.33 with the owner absorbing 33.34
+- Record that one participant left, and watch the following month's share move to the smaller group
+  while their earlier months are unchanged
+- Record a rejoin for the same participant and watch their liability resume without a second record
+  appearing
+- Mark a month as skipped and confirm nobody owes anything for it and the months around it are
+  unchanged
+- Change the price from a later month and confirm earlier months keep the old price
+- Archive a participant with a balance and confirm they stay reachable, and archive one with a zero
+  balance and confirm the current-month view hides them until the toggle is used
+- Sign in as the reviewer account and confirm none of the owner's participants, prices or break months
+  are reachable
+- The layout is usable at a narrow phone width
+
+**Implementation note**: Stop for human confirmation before the next phase.
+
+---
+
+## Phase 5: Evidence
+
+### Overview
+
+Capture the verification trail this project requires.
+
+### Required changes:
+
+#### 1. Captured run
+
+**File**: `evidence/runs/members-and-price-history-tests.txt`
+
+**Purpose**: A record of what passed, at which commit, rather than an assertion that it did.
+
+**Contract**: The captured output of `npm run typecheck`, `npm run test:unit` and
+`npm run test:integration` in one file, with the counts visible.
+
+#### 2. Index and work log
+
+**Files**: `evidence/index.md`, `evidence/work-log.md`
+
+**Purpose**: Keep the evidence map complete.
+
+**Contract**: Append one evidence row naming this slice, the artifacts, the commit and the risks
+covered, and one work-log entry. Append only; never rewrite either file.
+
+#### 3. Test plan status
+
+**File**: `context/foundation/test-plan.md`
+
+**Purpose**: Record that rollout phase 2 has shipped, and fill in the cookbook entry it owns.
+
+**Contract**: Set rollout phase 2's status and change folder in the table in section 3, and replace
+the placeholder in section 6.1 with how a unit test for the calculation is added in this repository:
+where the file goes, that it takes a `SubscriptionState` value and asserts minor units, and that an
+expected value is computed by hand rather than read out of the implementation. Leave every other
+section untouched.
+
+### Success criteria:
+
+#### Automated verification:
+
+- The captured file exists and shows the passing counts for all three commands
+- The same commands pass in one run: `npm run typecheck && npm test`
+
+#### Manual verification:
+
+- The evidence index row and the work-log entry name this slice, its commit and the risks it covered
+
+---
+
+## Testing strategy
+
+### Unit tests:
+
+- Month arithmetic across year boundaries, inclusive enumeration, and the current month derived from a
+  fixed instant in two disagreeing time zones
+- Price effective dating, including before the first entry and across a change, and a break month
+  beating the price
+- The per-person share, its rounding, the owner's exclusion from paying and inclusion in the count,
+  and the residual for an active and an inactive owner
+- The month balancing exactly: shares plus residual equal the price
+- Inclusive single-month ranges, multi-range membership with a gap, and a departure that stops
+  accruing without disturbing earlier months
+- A priced month with nobody active: share zero, cost absorbed, totals intact, nothing thrown
+- The recurring received rule, one test per disqualifying condition
+- `computeSummary` over a state combining a price change, a break month, a departure and a rejoin
+- Range validation, one test per violation
+- Both validation schema modules: formats, defaults, unknown keys, empty patch
+
+### Integration tests:
+
+- Members, prices and break months: create, read back in a separate request, edit, delete
+- Ownership for every new route and verb, including a child reached through a foreign parent
+- 401 for every new route without a cookie
+- A second owner returns 409; deleting the owner returns 409
+- Range replacement leaves exactly the new set
+- The requirements' worked example read through the summary route, matching to the minor unit
+- A summary across a price change and a break month
+- A subscription with no owner member answers 409 from the summary
+
+### Manual testing steps:
+
+1. Create a subscription and confirm the owner member exists without being entered.
+2. Add two participants from the first month, set a price of 100.00, and read 33.33 each with the
+   owner absorbing 33.34.
+3. Record a departure, then a rejoin, and confirm the shares move only for the affected months.
+4. Mark a month as skipped and confirm nobody owes for it.
+5. Change the price from a later month and confirm earlier months are unaffected.
+6. Archive a participant and confirm the list behaves as the requirements' default describes.
+7. Sign in as the reviewer account and confirm none of it is reachable.
+8. Resize to a narrow phone width and confirm the screen stays usable.
+
+### Risk mapping
+
+| Test-plan risk | Covered by | Phase |
+|---|---|---|
+| 1, a balance wrong by rounding, by a month or by a price | the unit tests in `src/domain/*.test.ts`, and the worked example asserted through the summary route | 1, 3 |
+| 5, a charged month with nobody active | the zero-active unit cases: share zero, cost still in the plan total and the owner's net cost, nothing thrown | 1 |
+| 2, a record reached across accounts | ownership and 401 cases in `tests/integration/members.test.ts`, `prices.test.ts` and `summary.test.ts`, including a child reached through a foreign parent | 2, 3 |
+| 3, a record lost or half-applied | the create-then-refetch cases, the range-replacement case, and all four migrations applying in order | 2, 3 |
+| 4, a standing order counted for a month it should not cover | the `recurringReceived` unit cases only. The rule is proven in the domain module; no schedule can be stored until S-03, so the stored-exception half of the risk stays open | 1 |
+| 6, session lifecycle | covered by S-01 and not revisited here, beyond asserting 401 for every new route | - |
+
+## Performance considerations
+
+The summary reads a subscription's whole history on every request and computes over it in memory. For
+one household over a few years that is tens of rows and hundreds of month iterations, which is far
+below any threshold worth engineering against, and the requirements record the expected scale as
+small. No caching, no pagination and no denormalised totals. If a subscription ever ran long enough
+for this to matter, the cheapest first move would be to bound the enumerated range rather than to
+cache a derived number that can go stale.
+
+## Migration notes
+
+Two migrations, applied in order after the two S-01 already landed, on tables that have never held
+data. Nothing is migrated from an earlier shape.
+
+One existing row shape changes meaning rather than structure: a subscription created before this slice
+has no owner member. Nothing backfills one. The summary answers 409 naming the missing owner, and a
+local database from S-01 is either given an owner through the members route or recreated. A backfill
+was considered and rejected because it would have to invent a name and a joined month for a member the
+organizer never entered, and because the number of affected rows is two developers' local databases.
+
+## References
+
+- Related research: `context/changes/members-and-price-history/research.md`
+- Decision: `context/decisions/D-006-owner-member-and-zero-active-invariant.md`
+- The slice this one builds on: `context/changes/runtime-auth-slice/plan.md` and its
+  `reviews/plan-review.md`
+- Risks and their test types: `context/foundation/test-plan.md`, rollout phase 2
+- Product contract: `context/foundation/prd.md`, US-01, US-03, US-04, FR-006 to FR-014 and FR-022 to
+  FR-024
+- Repository rules: `AGENTS.md`, the money, ownership and time-zone hard rules
+
+## Progress
+
+> Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
+
+### Phase 1: The calculation
+
+#### Automated
+
+- [ ] 1.1 Unit tests pass
+- [ ] 1.2 Typecheck passes
+- [ ] 1.3 Integration tests still pass
+- [ ] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
+
+#### Manual
+
+- [ ] 1.5 Each new unit test failed first for the stated reason
+- [ ] 1.6 The worked example was computed by hand before the assertion was written
+
+### Phase 2: Members and their active ranges
+
+#### Automated
+
+- [ ] 2.1 Integration tests pass
+- [ ] 2.2 Unit tests pass
+- [ ] 2.3 Typecheck passes
+- [ ] 2.4 All three migrations apply in order to a clean local database
+- [ ] 2.5 Every new route answers 401 without a cookie
+
+#### Manual
+
+- [ ] 2.6 The ownership cases failed first for the right reason
+- [ ] 2.7 A second owner produced 409 rather than a 500
+
+### Phase 3: Prices, break months and the summary
+
+#### Automated
+
+- [ ] 3.1 Integration tests pass
+- [ ] 3.2 Unit tests pass
+- [ ] 3.3 Typecheck passes
+- [ ] 3.4 All four migrations apply in order to a clean local database
+- [ ] 3.5 The worked example is asserted through the API and matches to the minor unit
+
+#### Manual
+
+- [ ] 3.6 The summary read through the API agrees with the domain unit tests
+- [ ] 3.7 The current month matches the subscription's time zone rather than the machine's
+
+### Phase 4: The owner member and the detail screen
+
+#### Automated
+
+- [ ] 4.1 Typecheck passes across all three projects
+- [ ] 4.2 Production build succeeds
+- [ ] 4.3 The whole suite passes
+- [ ] 4.4 A created subscription comes back with exactly one owner member starting at its start month
+
+#### Manual
+
+- [ ] 4.5 A new subscription lists the owner as the account holder
+- [ ] 4.6 Two participants and a price of 100.00 give 33.33 each with the owner absorbing 33.34
+- [ ] 4.7 A departure moves the following month's share and leaves earlier months unchanged
+- [ ] 4.8 A rejoin resumes liability without a second record
+- [ ] 4.9 A skipped month costs nobody anything and leaves its neighbours unchanged
+- [ ] 4.10 A later price change leaves earlier months on the old price
+- [ ] 4.11 Archiving behaves as the requirements' default describes
+- [ ] 4.12 The reviewer account reaches none of the owner's records
+- [ ] 4.13 The layout is usable at a narrow phone width
+
+### Phase 5: Evidence
+
+#### Automated
+
+- [ ] 5.1 The captured file exists and shows the passing counts
+- [ ] 5.2 The same commands pass in one run
+
+#### Manual
+
+- [ ] 5.3 The evidence index row and work-log entry name this slice, its commit and its risks
