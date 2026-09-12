@@ -9,7 +9,10 @@ copy, interaction or motion. Every question raised under "Design decisions for F
 Constraints carried from `frame.md` and `research.md`: wire field names, `/api` routes,
 `formatMoney`, `scheduleMonthStatuses`, the `MemberMonthInputs` assembly and the
 recorded-versus-assumed distinction with its seven exclusion phrases stay as they are. The client
-derives no money figure, no share and no counted month. Native `button`, `select`, `input`,
+derives no new money figure, share or counted month; derivations the shipped client already
+performs (for example the assumed total shown under a standing order) stay exactly as they are and
+are not counted as new arithmetic. Reading a wire amount as zero or not zero, or counting the rows a
+list is rendering, is presentation, not accounting. Native `button`, `select`, `input`,
 `fieldset` and `label` elements stay native. No router is introduced; the detail screen remains one
 page. Accounting, authentication, ownership and persistence behaviour do not change.
 
@@ -64,7 +67,8 @@ controls follow the theme.
 | `--ink` | `#17211B` | `#E8EDE6` | primary text, primary button fill |
 | `--ink-soft` | `#4A5750` | `#A7B3AB` | secondary text, labels, subtitles |
 | `--ink-faint` | `#7C877F` | `#6F7B73` | placeholders, disabled text, settled balances |
-| `--rule` | `#C5D0C0` | `#2B352E` | hairline rules, control borders |
+| `--rule` | `#C5D0C0` | `#2B352E` | hairline rules between entries, index and app bar bottom lines |
+| `--border` | `#7C877F` | `#6F7B73` | borders of inputs, selects, quiet buttons and month tiles (non-text, 3:1) |
 | `--rule-strong` | `#17211B` | `#E8EDE6` | section opening rule (same as ink) |
 | `--green` | `#1F6F4A` | `#5DBB86` | recorded/ahead figures, success, focus ring, primary action hover |
 | `--green-tint` | `#DDEBE1` | `#1C3A2B` | success highlight, counted tile left rule ground |
@@ -75,6 +79,9 @@ controls follow the theme.
 Contrast checks required at implementation (WCAG AA): `--ink` on `--ground` and `--paper`,
 `--ink-soft` on both, `--green` and `--red` on both grounds, `--on-ink` on `--ink`. `--ink-faint` is
 used only for placeholder and disabled text and for the word "settled"; it must still reach 3:1.
+Non-text checks (WCAG 1.4.11, 3:1): `--border` on `--paper` and on `--ground`, `--green` and `--red`
+as tile left rules on `--paper`, the focus outline `--green` on both grounds. `--rule` is decorative
+separation only and is exempt; it must never be the sole boundary of a control.
 If any pair fails, darken the light value or lighten the dark value of the foreground token; do not
 change the ground.
 
@@ -164,21 +171,22 @@ radius 4px, `--t-body` weight 600.
 
 | Variant | Rest | Hover | Active | Disabled |
 | --- | --- | --- | --- | --- |
-| primary | fill `--ink`, text `--on-ink`, no border | fill `--green` | fill `--green`, translate none | fill `--ink-faint`, text `--on-ink`, `aria-disabled` |
-| quiet | transparent, text `--ink`, 1px border `--rule` | border `--ink` | ground `--paper` | text `--ink-faint`, border `--rule` |
+| primary | fill `--ink`, text `--on-ink`, no border | fill `--green` | fill `--green`, translate none | transparent, 1px border `--border`, text `--ink-soft`, `aria-disabled` |
+| quiet | transparent, text `--ink`, 1px border `--border` | border `--ink` | ground `--paper` | text `--ink-faint`, border `--border` |
 | link | transparent, text `--ink`, underline 1px `--rule` offset 3px, no border, padding 0, min height 24px | underline `--ink` | same | text `--ink-faint` |
-| destructive | transparent, text `--red`, 1px border `--red` | ground `--red-tint` | same | text `--ink-faint`, border `--rule` |
+| destructive | transparent, text `--red`, 1px border `--red` | ground `--red-tint` | same | text `--ink-faint`, border `--border` |
 
 Disabled buttons stay focusable (`aria-disabled="true"`, click handler returns early) so the
 explanatory note next to them is reachable; the note is referenced by `aria-describedby`.
 
 While a form submits, its primary button shows the label unchanged and `aria-busy="true"`, the whole
-form gets `aria-busy="true"` and every field is disabled; no spinner.
+form gets `aria-busy="true"`, every field is disabled and the submit handler ignores further submits
+until the request settles (the existing guard stays); no spinner.
 
 ### 3.4 Inputs
 
 `input`, `select`, `textarea`: height 40px (44px below 640px), padding `0 var(--s-3)`, ground
-`--paper`, 1px border `--rule`, radius 4px, text `--ink`, placeholder `--ink-faint`. Focus per 2.4.
+`--paper`, 1px border `--border`, radius 4px, text `--ink`, placeholder `--ink-faint`. Focus per 2.4.
 Invalid: border `--red`, ground `--red-tint`, `aria-invalid="true"`. Disabled: text `--ink-faint`,
 ground `--ground`.
 
@@ -236,11 +244,13 @@ moves under the secondary line, left aligned, and actions wrap on their own line
 
 Each section's add form is closed by default. Its primary action button opens it: the button is
 removed from the heading row and the form appears directly under the heading in a panel with ground
-`--paper`, 1px border `--rule`, radius 6px, padding `--s-5`. The panel heading (`h3`, `--t-entry`)
+`--paper`, 1px border `--border`, radius 6px, padding `--s-5`. The panel heading (`h3`, `--t-entry`)
 repeats the action ("Add a participant"). The last row of the panel holds `[Primary action]
 [Cancel]`. Cancel closes the panel, discards field values and returns focus to the heading-row
 button, which reappears. On open, focus moves to the first field. Escape inside the panel acts as
-Cancel unless a select is open. Open and close use the disclosure motion.
+Cancel; no special case for selects (a native select consumes Escape itself while its list is open).
+When the panel closes on success, focus moves to the heading-row primary action button as it
+reappears. Open and close use the disclosure motion.
 
 The Home "New subscription" form is a disclosure too, opened by the primary button in the Home
 heading row.
@@ -289,13 +299,16 @@ Unified across participant, price, payment and standing order deletion (particip
 the confirmation it lacks today; the API call is unchanged). The entry's action row is replaced in
 place by a confirmation strip: ground `--red-tint`, 3px left rule `--red`, padding `--s-3`,
 radius 4px, containing the question at `--t-body` and two buttons: `[Delete]` (destructive variant)
-and `[Keep]` (quiet). Focus moves to Keep. Escape acts as Keep. Only one confirmation may be open
-per section. Non-blocking: the rest of the page stays usable.
+and `[Keep]` (quiet). Focus moves to Keep. Escape acts as Keep. On Keep the action row remounts and
+focus moves to that entry's Delete button. After a successful delete the row is gone; focus moves to
+the section's `h2` (which carries `tabindex="-1"`) and the status line announces the deletion. Only
+one confirmation may be open per section. Non-blocking: the rest of the page stays usable.
 
 Questions, one per thing: "Delete Alice? Their payments stay recorded." (participant, only if the
 API allows the deletion; the existing refusal message from the server is shown through 3.8 if it
 does not), "Delete the 110,00 zł price from 2026-09?" (price), "Delete the 50,00 zł payment from
-Bob?" (payment), "Delete Bob's standing order?" (schedule). Amounts come from `formatMoney`, months
+Bob?" (payment), "Delete Bob's standing order? Its assumed receipts and not-received marks go with
+it. Recorded payments stay." (schedule). Amounts come from `formatMoney`, months
 from the month formatter in 3.12.
 
 ### 3.11 Empty states and refusals
@@ -399,15 +412,15 @@ PLN, Europe/Warsaw, from Jul 2026                   t-small ink-soft
 Owed to you now                                     t-small ink-soft
 0,00 zł                                             t-figure, red if > 0, ink if 0
 
-Per person this month   Your share this month   Collected this month
-55,00 zł                55,00 zł                55,00 zł of 55,00 zł     t-entry, tnum
+Per person this month   Your share this month   Collected this month    Active participants
+55,00 zł                55,00 zł                55,00 zł of 55,00 zł     2        t-entry, tnum
 
 Sep 2026 costs 110,00 zł. Your net cost since the plan started is 0,00 zł,
 against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
 
 [Participants] [Price history] [Skipped months] [Payments received] [Standing orders]   section index, sticky
 
-════ Participants (2 active) ...
+════ Participants ...
 ════ Price history (2) ...
 ════ Skipped months (1) ...
 ════ Payments received (2) ...
@@ -418,20 +431,27 @@ against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
 - Leading figure: label above, figure at `--t-figure`. Colour `--red` when the amount is greater
   than zero, `--ink` when zero. (Whether it is zero is read from the API amount already used to
   render the figure; no arithmetic.)
-- The three cell ledger line is a `dl` with three `div` groups: `dt` at `--t-small` colour
-  `--ink-soft`, `dd` at `--t-entry` weight 600 tabular. Groups sit in a row with `--s-6` gaps and a
-  hairline `--rule` above and below the line. Below 640px they stack in one column with the `dt`
-  and `dd` on one line, `dt` left and `dd` right.
-- The summary sentence keeps its current content; bold spans are removed, the figures are tabular.
-  "Active participants" is no longer a cell; the count moves into the Participants heading.
+- The ledger line is a `dl` with four `div` groups: "Per person this month", "Your share this
+  month", "Collected this month" and "Active participants" (the API's current active count, shown
+  as today, organizer included). `dt` at `--t-small` colour `--ink-soft`, `dd` at `--t-entry`
+  weight 600 tabular. Groups sit in a row with `--s-6` gaps, wrapping if needed, with a hairline
+  `--rule` above and below the line. Below 640px they stack in one column with the `dt` and `dd`
+  on one line, `dt` left and `dd` right.
+- The summary sentence keeps its current content and order; bold spans are removed, the figures
+  are tabular, and its month names go through the display formatter of 3.12 ("Sep 2026 costs
+  110,00 zł").
+- Heading counts: a section heading shows "(N)" only where N is the number of entries the list
+  under it is rendering (Price history, Skipped months, Payments received under the current
+  filter, Standing orders). The Participants heading has no count, because the API's active count
+  includes the organizer, who is not a row.
 - Section index: a horizontal list of link-variant buttons (`nav aria-label="Sections"`), labelled
   exactly as the section headings without their counts, that
   scroll the matching section heading into view (`scrollIntoView({ block: "start" })`, with
-  `scroll-margin-top` on headings equal to the index height plus `--s-4`). Sticky at the top of the
+  `scroll-margin-top` on headings of 116px: the 56px app bar, the 44px index and `--s-4`). Sticky at the top of the
   viewport under the app bar (`position: sticky; top: 56px`), ground `--ground`, bottom hairline,
   height 44px. The item whose section is currently at or above the top of the viewport carries
-  `aria-current="true"` and a 2px bottom rule `--ink` (an `IntersectionObserver` on headings is
-  fine). Below 640px the list scrolls horizontally with `overflow-x: auto`, hidden scrollbar, 8px inline
+  `aria-current="true"` and a 2px bottom rule `--ink` (an `IntersectionObserver` on headings with a
+  top `rootMargin` of -100px, the height of the bar plus the index, is fine). Below 640px the list scrolls horizontally with `overflow-x: auto`, hidden scrollbar, 8px inline
   padding so the first and last items sit clear of the 8px fading edges made with a `mask-image`
   gradient.
 - Loading (first load): the leading figure and each `dd` are static skeleton bars in `--paper`
@@ -449,7 +469,7 @@ against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
 
 ### 5.1 Participants
 
-Heading "Participants (N active)". Primary action "Add participant". Ledger entries:
+Heading "Participants", no count. Primary action "Add participant". Ledger entries:
 
 ```
 Alice   not active this month                            owes 16,67 zł        t-entry, red
@@ -501,13 +521,14 @@ Heading "Price history (N)". Subtitle none. Primary action "Record a price". Ent
 
 Heading "Skipped months (N)". Subtitle "A skipped month costs nobody anything." Primary action
 "Skip a month". Entries: month name as the primary line, "costs nobody anything" removed from the
-row since the subtitle says it, `[Unskip]` quiet. Success "Month skipped" / "Month unskipped". Add
+row since the subtitle says it, `[Unskip]` as a link-variant row action per 3.6. Success "Month skipped" / "Month unskipped". Add
 form: Month (span). Primary "Mark as skipped".
 
 ### 5.4 Payments received
 
-Heading "Payments received (N)". Subtitle "Money you saw arrive. Every amount here is recorded, not
-assumed." Primary action "Record a payment"; refusal per 3.11 when there are no participants.
+Heading "Payments received (N)", where N is the number of rows listed under the current filter.
+Subtitle "Money you saw arrive. Every amount here is recorded, not assumed." Primary action "Record
+a payment"; refusal per 3.11 when there are no participants other than the organizer.
 
 Filter: a labelled `select` "Show" (Everyone, then each participant) at the right end of the
 subtitle line, `--t-small` label, 32px high control. Below 640px it sits under the subtitle.
@@ -516,9 +537,13 @@ Entries:
 
 ```
 50,00 zł from Bob                                        10 May 2028
-One-off                                                  (note, if any) at t-small ink-soft
+One-off, August transfer                                 t-small ink-soft
 [Edit] [Delete]
 ```
+
+- The secondary line is the kind label exactly as the shipped client names it ("One-off",
+  "Yearly lump sum" and any other existing kind label), followed by ", " and the note when a note
+  exists. The kind is never dropped.
 
 - Add form: From and Date received (pair), Amount and Kind (pair), Note (span, optional, hint
   "Optional"). Primary "Record this payment". Success "Payment recorded".
@@ -547,9 +572,9 @@ Entry:
 
 | State | Left rule | Border | Figure | Reason line | Toggle |
 | --- | --- | --- | --- | --- | --- |
-| counted | 3px `--green` | 1px `--rule` | "55,00 zł assumed received" assumed treatment | none | `[Mark not received]` link variant |
-| excluded by rule | none | 1px dashed `--rule` | none | the exclusion phrase at `--t-small` `--ink-soft` | none |
-| marked not received | 3px `--red` | 1px `--rule` | none | "marked as not received" at `--t-small` `--red` | `[Mark received]` link variant |
+| counted | 3px `--green` | 1px `--border` | "55,00 zł assumed received" assumed treatment | none | `[Mark not received]` link variant |
+| excluded by rule | none | 1px dashed `--border` | none | the exclusion phrase at `--t-small` `--ink-soft` | none |
+| marked not received | 3px `--red` | 1px `--border` | none | "marked as not received" at `--t-small` `--red` | `[Mark received]` link variant |
 
   The month name is the tile's first line at `--t-small` weight 600. The seven exclusion phrases
   stay one per condition; wording may be tightened by the implementer only by removing the leading
@@ -581,8 +606,12 @@ Two-column pairs inside panels (everything else spans):
 - Disclosure buttons carry `aria-expanded` and `aria-controls`.
 - Status line per 3.9 uses `role="status"`; form errors use `role="alert"`; both are single elements
   per section that stay mounted.
-- Escape: closes the open disclosure panel or confirmation strip in the focused section, returning
-  focus to the control that opened it.
+- Escape: closes the open disclosure panel or confirmation strip in the focused section. Focus
+  destinations are fixed in 3.7 and 3.10: Cancel or Escape on a panel returns focus to the
+  heading-row button as it remounts; success closes the panel and focuses that same button; Keep or
+  Escape on a strip focuses the entry's Delete button as the action row remounts; a successful
+  delete focuses the section `h2` (`tabindex="-1"`). Every section `h2` therefore carries
+  `tabindex="-1"` and no visible focus ring change beyond the standard outline.
 - Enter inside a text input submits the panel's form; inside a confirmation strip it activates the
   focused button only.
 - No element uses `tabindex` greater than 0; no focus traps.
@@ -607,7 +636,7 @@ Changed:
 | "Back to subscriptions" | "All subscriptions" |
 | "Signed in as owner@example.test" | the bare email |
 | "Add a participant" (form heading) | button "Add participant", panel "Add a participant" |
-| "Active participants" cell | count in the Participants heading |
+| "Active participants" cell | unchanged, fourth cell of the ledger line |
 | "Active months" legend | unchanged |
 | "To (blank if still active)" | "To" with hint "Leave empty while still active" |
 | "Effective from (YYYY-MM)" | "Effective from" with the month hint |
@@ -618,6 +647,7 @@ Changed:
 | "ahead by 16,67 zł, this month 0,00 zł, owed 33,33 zł against paid 50,00 zł" | "ahead 16,67 zł" plus three cells "Owed", "Paid", "This month" |
 | "costs nobody anything" (per row) | section subtitle |
 | "from 2026-07 onward" | "from Jul 2026" |
+| summary sentence months "2026-09" | "Sep 2026" through the display formatter; the rest of the sentence unchanged |
 | "Mark received" / "Mark not received" | unchanged |
 | "not counted, the plan was paused that month" and the other six | leading "not counted, " removed inside dashed tiles, rest verbatim |
 
@@ -670,6 +700,20 @@ sections named.
 | D4 sticky app bar | 3.2: sticky at `top: 0` at every width; the index sits at `top: 56px` |
 | D5 button and status line sharing the right end | 3.5: one flex group, status line first, button second; stacked lines on mobile |
 | D6 section bodies on first load | 4.4: subtitles present, buttons disabled, two skeleton entries per list |
+
+Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
+
+| Finding | Resolution |
+| --- | --- |
+| 1 Participants count includes the organizer | 4.4 and 5.1: no count on Participants; "Active participants" returns as the fourth ledger cell with the API value; counts elsewhere equal rows rendered |
+| 2 summary sentence month format | 4.4 and 9: sentence content unchanged, months through the display formatter |
+| 3 payment secondary line | 5.4: kind label as shipped, then ", " and the note |
+| 4 Unskip variant | 5.3: link variant per 3.6 |
+| 5 non-text contrast | 2.1: new `--border` token for control and tile borders, non-text pairs added to the required checks; 3.3: disabled primary restyled |
+| 6 scroll offset | 4.4: 116px `scroll-margin-top`, -100px observer root margin |
+| 7 standing-order question | 3.10: consequence clause added |
+| 8 payments count under filter | 5.4: N is the rows listed under the current filter |
+| 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
 
 ## 13. Answer index to frame.md
 
