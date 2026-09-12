@@ -487,3 +487,102 @@ Progress: row 2.12, whose title described the gate as a file-reading check, is r
 gap; row 2.19 is added for the counts comparison. Row 2.13 keeps its title and now carries the
 concrete ancestry check. Per-phase row counts still equal the criterion bullets in both splits:
 7/3, 13/5, 9/6, 3/8, 7/4.
+
+## Re-verification
+
+- **Plan revision**: commits `851670a` and `7381251`, re-checked against the tree at `7381251` with
+  `payments-and-recurring` archived at `0ff74bd` (`904ebcc` applied its review findings, `5d1cb80`
+  recorded the resolution)
+- **Verdict**: approved
+
+Every resolution was verified against the revised plan, the shipped routes and the migration files,
+finding by finding. Two non-blocking nits are recorded at the end, for the next edit rather than for
+another review round.
+
+F1 holds. Phase 2 change 4 runs `d1 time-travel info` immediately before the phase closes and records
+the returned bookmark with the exact restore command; `npx wrangler d1 time-travel info --help` on the
+pinned `4.131.1` confirms the subcommand, its `--timestamp` and its "This command acts on remote D1
+Databases" line, so the bookmark is obtainable where the plan puts the step. The manual criterion
+confirming the retention window against this account rather than against the help text is the right
+correction to this review's own blind spot, and the stop condition if Time Travel is unavailable is
+the right response to it being unverified. The rollback note now orders three paths and drops the step
+that replayed the export into the existing database; it states the `d1_migrations` uncertainty and the
+interaction the review found, that a database rebuilt under a new id invalidates the previous release
+version id as a fallback. The export survives as change 5 retitled "The off-Cloudflare snapshot",
+which is the correct demotion: it is still the only copy of the two accounts that outlives the
+Cloudflare account.
+
+F2 holds and is resolved past both fixes this review offered, for a reason this review had wrong.
+`src/server/routes/members.ts:113-115` answers 409 to a delete of the owner member, before the
+dependents check, so the owner member Fix A proposed creating on the stray subscription could never
+have been cleaned up. Fix A was not buildable and the ranking that recommended it rested on a route
+this review read for its 409-on-duplicate branch without reading its delete. The third option the plan
+took is better than either. Its sequence is executable against the shipped routes, checked step by
+step: `POST /api/subscriptions` creates the subscription, its owner member and that member's opening
+range in one `db.batch` (`src/server/db/subscriptions.ts:53-75`), so the demo plan has an owner
+without a second call; `POST /api/subscriptions/:id/members` takes `active_ranges` with a nullable
+`left_month`, so the departed participant is one call; prices and break months have their own POST
+routes; the throwaway participant's rows are removed in the order the plan names, and that order is
+exactly right, because `hasDependents` at `src/server/db/members.ts:252-263` is payments and schedules
+and nothing else, so the participant deletes once those two are gone. The stray subscription's repair
+is available for the same reason the owner delete is refused: `createMemberSchema` admits
+`is_owner: true` and the duplicate-owner index answers 409 only when an owner already exists
+(`src/server/validation/members.ts:34-40`, `src/server/routes/members.ts:62-68`), and the stray row has
+none. The refusal path is recorded rather than retried, the rename goes through the one patchable
+field, and permanence is stated in the Overview, in phase 3 change 3 and in Migration notes. The end
+state is one a reviewer can read: two rows, the demo plan and a relabelled artefact that is now an
+ordinary empty plan rather than the degraded no-owner screen, with manual criterion 3.14 asserting
+exactly that and 4.12 guarding against new undeletable shapes.
+
+F3 holds. Phase 1 change 6 no longer touches S-03 and says why, and it uses the roadmap's own
+vocabulary: `proposed`, `ready`, `planning`, `in-progress`, `done` are the five values
+`context/foundation/roadmap.md` actually carries, and its single edit, `planning` to `in-progress`, is
+the correct next step from the `planning` the status writer already set at line 62 and line 185. S-03
+is `done` in both the table and its item body, written by its own archive procedure as the review
+asked. Phase 2 change 1 leads with the gate rather than with the clean tree, and the gate is a
+concrete commit: `git merge-base --is-ancestor 0ff74bd <release sha>`, which is the right direction
+for the assertion, `0ff74bd` being the archive commit. Every path in the plan, the brief and the
+decision points at `context/archive/payments-and-recurring/`; the one surviving mention of the old
+`context/changes/` path is in `research.md` and is explicitly historical, immediately followed by the
+move to the archive.
+
+F4 to F8 hold. The tests capture moved to phase 2 change 2, taken in the clean checkout with
+`git rev-parse HEAD` and the `npm test` run in one frame, and phase 4's contract now reads "nine
+captures taken in the browser from the live URL with the address bar visible, plus
+`release-05-tests-passing.png`", which removes the contradiction. The migration counts are seven
+tables and five index statements in the plan twice, the brief and the research, each with the
+half-sentence about the partial unique index. Phase 2 change 7 claims only what `wrangler secret list`
+can prove and the origin check is a separate owner sign-in against the current live build, before the
+migration, with `src/server/auth.ts`'s throw-on-empty given as the reason it cannot wait. Phase 5
+change 3 is the cold re-read in a fresh session with no cookie carried over, and the risk-mapping row
+for risk 3 now separates the migration half from the reload half. Phase 5 change 4 handles B01, B02
+and B04 explicitly, each either citing the release artifacts or stated as deliberately unchanged.
+
+The Progress contract still holds mechanically, and the author's own count is exact: one `## Progress`
+heading, five `### Phase N` titles identical to the body headers, per-phase rows equal to the
+criterion bullets in both splits (7/3, 13/5, 9/6, 3/8, 7/4), no checkbox outside the section, 4.10
+left as a gap rather than reused, one em dash and it is the mandated ` — <commit sha>` token, no
+calendar dates.
+
+**Two non-blocking nits, for the next edit rather than for a re-review.**
+
+(a) Phase 3 change 3 says "The payment, price-entry and schedule rows the transcript creates hang off
+it", meaning the throwaway participant. A price entry cannot hang off a participant:
+`migrations/0004_prices_and_breaks.sql:12-18` keys `price_history` on `subscription_id` with no
+`member_id`, which is why the dependency order two sentences later correctly lists only the payment,
+the schedule and the participant. As written the sentence tells the implementer that deleting the
+participant takes the price entry with it; it does not, so a price entry created for the cycle would
+survive on the demo plan and move the balances `release-04-output-balances.png` is captured from.
+Either drop "price-entry" from that sentence, since the demo plan already has a price and a price
+change from the same change, or keep it and add its own `DELETE /api/subscriptions/:id/prices/:priceId`
+to the cleanup order.
+
+(b) The two phase 5 criteria that replaced the line count are better but still measure by line.
+`rg -c` prints the number of lines matching any of its `-e` patterns, not a count per pattern, so it
+cannot assert "each pattern matching once"; and "Documentation" will match many lines in a report
+whose fifth criterion is documentation and whose improvements section discusses it, which is the same
+failure mode the original criterion had. Five separate `rg -c -e <one pattern>` invocations, or
+`--count-matches`, says what the criterion means. Separately, the marker criterion greps
+`(PASS|FAIL)` while phase 5 change 1 asks only for "an explicit pass or fail marker" and the prompt's
+own format uses ✅ and ❌, so the token the check depends on is unpinned; naming it in change 1 costs
+one clause.
