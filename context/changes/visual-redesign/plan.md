@@ -149,10 +149,18 @@ These hold at the end of every phase, not only at the end. They come from `frame
 
 ## Critical implementation details
 
-**The app bar and the section index share a sticky stack.** Design-spec 4.4 fixes the section index
-at `position: sticky; top: 56px`, which is the app bar's height. That offset is only correct while
-the app bar occupies the top 56px of the viewport, so the app bar's own position is load bearing for
-the index and is recorded as design question D4 below rather than chosen by the implementer.
+**The app bar and the section index share a sticky stack.** Design-spec 3.2 fixes the app bar at
+`position: sticky; top: 0` above page content in stacking order, at every width, and design-spec 4.4
+fixes the section index directly under it at `top: 56px`. The two offsets are one decision: the
+index's is only correct while the bar holds the top 56px of the viewport. Neither may be changed
+without the other.
+
+**Two error surfaces exist per section and they do not overlap.** Design-spec 3.8 keeps an error
+raised inside a disclosure panel inside that panel. Design-spec 3.5 adds a second, permanent
+`role="alert"` element under the section's heading row for errors raised outside any panel: a refused
+participant delete, a failed archive or unarchive, a failed unskip, a failed tile toggle and a failed
+list load. Both stay mounted and empty when idle. An implementation that routes an out-of-panel
+failure into the panel alert, or that mounts either on demand, is wrong on both counts.
 
 **Focus moves in four places and nowhere else.** On opening a disclosure panel, to the first field;
 on Cancel or Escape, back to the button that opened it; on a failed submit, to the first invalid
@@ -248,7 +256,8 @@ colours rather than custom properties, and `index.html` references it. The exist
 detail screen both have ad hoc headers today and neither shows the product.
 
 **Contract**: A 56px bar on ground `--ground` with a bottom hairline `--rule`, its content aligned to
-the 720px column. Left: the wordmark as a native `button` of type button that returns to Home,
+the 720px column, sticky at `position: sticky; top: 0` and above page content in stacking order at
+every width per design-spec 3.2. Left: the wordmark as a native `button` of type button that returns to Home,
 carrying `aria-current="page"` and doing nothing when already on Home. Right: the signed-in email at
 `--t-small` colour `--ink-soft`, then a quiet "Sign out" button. Below 640px the email becomes
 `sr-only` and the other two stay. The component takes the email, an `onHome` handler that may be
@@ -291,6 +300,8 @@ element and every handler they have. The sign-out call and the `onSignedOut` flo
 - With reduced motion enabled and again disabled, nothing animates on page load on either screen
 - At 390 the email is visually hidden while the wordmark and Sign out remain, and every control in the
   bar is at least 44px high
+- The app bar stays at the top of the viewport while the page scrolls, at 1280 and at 390, with page
+  content passing under it rather than over it
 
 **Implementation note**: The automated rows above cannot fail on appearance. Stop here for human
 confirmation that the manual rows passed before starting phase 2.
@@ -305,7 +316,8 @@ Every part design-spec 3 describes, built once and adopted first on the two scre
 inspect completely. Login exercises the button variants, the input box, the validation convention and
 the submitting state; session loading exercises the skeleton and the status role. The parts that
 Login does not exercise are still built here, because phases 3 to 5 all consume them, and they are
-inspected at their first use in phase 3.
+inspected at their first use: the heading-row flex group and the section alert in phase 3, the
+confirmation strip in phase 4.
 
 This phase deviates from a pure bottom-up build in one way, deliberately: it adopts the layer rather
 than only defining it, so that the phase has a browser check that can fail. A phase that adds only
@@ -335,17 +347,36 @@ ISO form, and every input and hint keeps the ISO form. Neither function touches 
 the same way and confirm themselves the same way.
 
 **Contract**: `SectionHeader` renders the 2px `--rule-strong` rule, an `h2` at `--t-section` whose
-optional count is part of the heading text at weight 400 colour `--ink-soft`, an optional subtitle
-sentence, a slot for the primary action button and a slot for the status line, with the action and
-the status line right aligned above 640px and wrapped under the heading left aligned below it. It
-takes the heading id so the section's `aria-labelledby` and the section index can both point at it.
+optional count is part of the heading text at weight 400 colour `--ink-soft`, and an optional subtitle
+sentence. The right end of the heading row is one flex group with gap `--s-4` holding the status line
+first and the primary action button second, per design-spec 3.5. While the section's disclosure panel
+is open the button is absent and the status line stands alone. Below 640px the heading takes the first
+line, the status line the second and only when it has text, and the button the third, left aligned and
+full text. It takes the heading id so the section's `aria-labelledby` and the section index can both
+point at it.
 
 `StatusLine` is one permanently mounted element per section with `role="status"`, empty when idle,
 rendering the 12px check glyph and the sentence at `--t-small` colour `--green` when set, clearing
 itself after 4 seconds or when the section fires another action. It uses the status-line motion from
 design-spec 2.5.
 
-#### 3. The ledger entry
+#### 3. The section alert
+
+**File**: `src/client/components/ui/SectionAlert.tsx` (new)
+
+**Purpose**: Design-spec 3.5. Errors raised outside any disclosure panel have no home in design-spec
+3.8, which places a generic error at the top of a panel. This is that home, and it is what makes a
+refused participant delete, a failed archive, a failed unskip and a failed tile toggle visible.
+
+**Contract**: One permanently mounted `role="alert"` element per section, empty when idle, rendered
+directly under the heading row and under the subtitle where there is one. With text it renders at
+`--t-body` colour `--red` on ground `--red-tint` with a 3px left rule `--red`, padding `--s-3` and
+radius 4px, ending in a link-variant "Dismiss" button. It carries the server's message verbatim when
+the API supplies one that names a rule, and otherwise "Could not save. Check your connection and try
+again." It clears on Dismiss and on the next successful action in the same section. It never carries
+an error raised inside a panel, which stays in that panel's own alert per design-spec 3.8.
+
+#### 4. The ledger entry
 
 **File**: `src/client/components/ui/LedgerEntry.tsx` (new)
 
@@ -353,12 +384,13 @@ design-spec 2.5.
 
 **Contract**: Slots for the primary line at `--t-entry`, a secondary line at `--t-small` colour
 `--ink-soft`, a figure column that is tabular and right aligned above 640px and moves under the
-secondary line left aligned below it, and an actions row that is always visible and never revealed on
-hover. A 1px `--rule` hairline closes the row; padding is `var(--s-3) 0`. A variant renders the whole
+secondary line left aligned below it, and an actions row of link-variant buttons at `--t-small`
+separated by `--s-3`, always visible and never revealed on hover, per design-spec 3.6. A 1px `--rule`
+hairline closes the row; padding is `var(--s-3) 0`. A variant renders the whole
 row as one native button for the Home list per design-spec 4.3, and that variant carries no action
 slot, so no button is ever nested inside another.
 
-#### 4. The disclosure panel
+#### 5. The disclosure panel
 
 **File**: `src/client/components/ui/DisclosurePanel.tsx` (new)
 
@@ -376,7 +408,7 @@ a native select is open. Field layout inside the panel is a two-column grid at
 `repeat(2, minmax(0, 1fr))` with gap `--s-4`, collapsing to one column below 640px; which fields pair
 is per form in design-spec 6.
 
-#### 5. The field, its hint and its error
+#### 6. The field, its hint and its error
 
 **Files**: `src/client/components/ui/Field.tsx` (new),
 `src/client/components/ui/fieldLabels.ts` (new)
@@ -395,7 +427,7 @@ and `--red-tint` ground of design-spec 3.4. The message is never prefixed with t
 `joined_month` to "From" and `left_month` to "To". A wire name with no entry in the form's map is not
 rendered against a field: it becomes the form's generic error line instead, never shown raw.
 
-#### 6. The generic error line
+#### 7. The generic error line
 
 **File**: `src/client/components/ui/FormAlert.tsx` (new)
 
@@ -407,7 +439,7 @@ while it has text. Network failure reads "Could not save. Check your connection 
 server message that names a rule is shown verbatim. On a failed submit focus moves to the first
 invalid field, or to this line when there is none.
 
-#### 7. The destructive confirmation strip
+#### 8. The destructive confirmation strip
 
 **File**: `src/client/components/ui/ConfirmStrip.tsx` (new)
 
@@ -420,7 +452,7 @@ in the destructive variant and `[Keep]` in the quiet variant. Focus moves to Kee
 acts as Keep. The rest of the page stays usable; nothing blocks. Only one strip may be open per
 section. The focus ring inside the strip stays green per design-spec 2.4.
 
-#### 8. The money treatments
+#### 9. The money treatments
 
 **File**: `src/client/components/ui/Money.tsx` (new)
 
@@ -435,7 +467,7 @@ minus. The component formats nothing itself and takes no minor-unit number: it t
 string and the caller's choice of treatment, so `formatMoney` stays the only producer of a money
 string.
 
-#### 9. Login and session loading
+#### 10. Login and session loading
 
 **Files**: `src/client/screens/Login.tsx`, `src/client/App.tsx`, `src/client/index.css`
 
@@ -509,7 +541,10 @@ line at `--t-entry`, and the currency with "from <month>" through the phase 2 mo
 figure column at `--t-small` colour `--ink-soft`. Hover gives the row ground `--paper`. The empty
 state is the single sentence "No subscriptions yet. Add the first one to start tracking who pays."
 with no rules, and the heading's "New subscription" button is the call to action. A load failure
-renders the generic error line with a quiet "Try again" button. The "Signed in as" header is already
+renders in the permanent section alert of design-spec 3.5, directly under the heading row, carrying
+the quiet "Try again" button that design-spec 4.3 specifies in place of the alert's Dismiss; that is
+the only reading that satisfies both sections, which agree on the message and differ only on the
+button. The "Signed in as" header is already
 gone; this screen's only chrome is the app bar from phase 1.
 
 #### 2. The new subscription form
@@ -527,7 +562,8 @@ the hint "How you appear in the participant list". The last row is `[Create subs
 Field errors go through the phase 2 `Field` and this form's display map, so `start_month` and
 `time_zone` are never rendered raw. On success the panel closes, the status line in the heading row
 reads "Subscription created", the new row takes the entry highlight, and the detail screen opens as it
-does today.
+does today. While the panel is open the "New subscription" button is absent from the heading row and
+the status line stands alone in the flex group, per design-spec 3.5.
 
 The payload keys the form submits are unchanged: `name`, `currency`, `locale`, `time_zone`,
 `start_month`, `owner_name`.
@@ -569,9 +605,14 @@ heading action. No new token and no new radius.
   the new row for the duration in design-spec 2.5, and opens the detail screen
 - A refused create shows one sentence under the offending field with that field marked invalid, with
   the label from the display map and never a wire name, and focus moves to that field
-- A load failure shows the alert line with a quiet "Try again" button that retries
-- At 390 the "New subscription" button wraps under the heading, left aligned with its full text, and
-  the page does not scroll horizontally
+- A load failure shows the section alert under the heading row with a quiet "Try again" button that
+  retries
+- After a create, the right end of the heading row shows the status line first and the "New
+  subscription" button second; while the panel is open the button is absent and the status line stands
+  alone
+- At 390 the "New subscription" button wraps under the heading, left aligned with its full text, the
+  heading, status line and button occupy three lines in that order, and the page does not scroll
+  horizontally
 
 **Implementation note**: Stop here for human confirmation that the manual rows passed before starting
 phase 4.
@@ -610,9 +651,12 @@ The summary sentence keeps its current content with its bold spans removed and i
 The "Active participants" card is gone; its number moves into the Participants heading and comes from
 `summary.currentActiveCount`, not from anything the screen counts.
 
-Loading on first load: the figure and each `dd` are static skeleton bars on `--paper` at 160x34 and
-96x21, the sentence area is one 100%x15 bar, section headings render with their counts blank, and an
-`sr-only` `role="status"` reads "Loading this subscription". Skeletons are `aria-hidden`. A reload
+Loading on first load, per design-spec 4.4: the figure and each `dd` are static skeleton bars on
+`--paper` at 160x34 and 96x21, the sentence area is one 100%x15 bar, section headings render with
+their counts blank and their subtitles present, each section's primary action button renders in its
+disabled state, and each list position shows two skeleton entries, each a 45% by 17 bar over a 30% by
+13 bar on `--paper` with the hairline below. An `sr-only` `role="status"` reads "Loading this
+subscription". Every skeleton is `aria-hidden`. A reload
 after an edit keeps the current figures on screen, which is the existing behaviour at
 `SubscriptionDetail.tsx:53` and does not change; the section that caused the reload shows its status
 line instead.
@@ -633,8 +677,8 @@ question 1 without a router.
 **Contract**: A `nav` with `aria-label="Sections"` holding a horizontal list of link-variant buttons
 labelled exactly as the five section headings without their counts. Each scrolls its section heading
 into view with `scrollIntoView({ block: "start" })`, and every heading carries a `scroll-margin-top`
-equal to the index height plus `--s-4`. The nav is sticky under the app bar at `top: 56px`, ground
-`--ground`, bottom hairline, 44px high. The item whose section is at or above the top of the viewport
+equal to the index height plus `--s-4`. The nav is sticky at `top: 56px`, directly under the app bar
+that design-spec 3.2 fixes at `top: 0`, on ground `--ground` with a bottom hairline, 44px high. The item whose section is at or above the top of the viewport
 carries `aria-current="true"` and a 2px `--ink` bottom rule; an `IntersectionObserver` over the
 headings is the intended mechanism. Below 640px the list scrolls horizontally with `overflow-x: auto`,
 a hidden scrollbar, 8px inline padding and 8px fading edges made with a `mask-image` gradient. In tab
@@ -660,18 +704,21 @@ this month" tags following it at `--t-small` colour `--ink-soft` with no chips a
 balance as the figure column through the phase 2 money treatment, "owes X" in `--red`, "ahead X" in
 `--green` and "settled" in `--ink-faint`; and under it three labelled cells "Owed", "Paid" and "This
 month" in one line at `--t-small` with the label `--ink-soft` and the figure `--ink` tabular,
-separated by `--s-4` gaps and wrapping on narrow widths. Actions are `[Edit] [Archive] [Delete]`,
-always visible.
+separated by `--s-4` gaps and wrapping on narrow widths. Actions are `[Edit] [Archive] [Delete]` as link-variant buttons at `--t-small`, always visible.
+Archive is a toggle per design-spec 5.1: it reads "Archive" on an active participant and "Unarchive"
+on an archived one, producing "Participant archived" with the tag added and "Participant unarchived"
+with the tag removed.
 
 The form's fields are Name spanning, then a `fieldset` "Active months" whose legend is at `--t-small`
 weight 600, each range a From and To pair with the hint "Leave empty while still active" on To, "Add
 another range" as a link-variant button under the last range, and a link-variant "Remove" at the end of
 each range beyond the first. The payload still sends `active_ranges` with `joined_month` and
-`left_month`. Primary "Add participant" produces "Participant added"; "Save changes" produces "Changes
-saved"; Archive produces "Participant archived".
+`left_month`. Primary "Add participant" produces "Participant added" and "Save changes" produces "Changes saved".
 
 Deletion uses the confirmation strip with "Delete <name>? Their payments stay recorded." The API call
-is unchanged, including the server's 409 for a participant with history.
+is unchanged, including the server's 409 for a participant with history; that refusal lands in the
+section alert of design-spec 3.5 with the server's message verbatim, and the strip closes. A failed
+archive or unarchive lands there too.
 
 The settled-archived toggle becomes a link-variant button under the list reading "Show N settled
 archived participants" and "Hide settled archived participants", using the disclosure motion.
@@ -694,10 +741,13 @@ panel with the server's message, and the existing inline confirmation becomes th
 inside the panel: the server's question with `[Replace]` as the primary variant and `[Keep the existing
 price]` as the quiet variant.
 
-The existing price-delete flow is driven by a server 409 carrying the months that would lose their
-price (`PriceHistory.tsx:46-66`). Design question D2 below covers how that interacts with the new
-client-side confirmation strip; until it is answered, leave the delete flow's server round trip
-exactly as it is and give it the strip's appearance only.
+Deletion runs design-spec 5.2's two steps inside one confirmation strip. Step one asks "Delete the
+<amount> price from <month>?" with `[Delete]` and `[Keep]`. Delete sends the request exactly as today.
+If the server answers 409 with the months that would lose their price, the strip stays open, its text
+becomes the server's message verbatim followed by "Delete anyway?", the buttons become `[Delete
+anyway]` in the destructive variant and `[Keep]`, and focus returns to Keep. "Delete anyway" sends the
+confirmed request that `PriceHistory.tsx:46-66` sends today. Any other failure goes to the section
+alert and the strip closes. The two requests and their parameters are unchanged.
 
 #### 5. Detail layout rules
 
@@ -732,9 +782,9 @@ cells, and the tag treatment. No new token.
   page, red when the amount is above zero and ink when it is zero, above the three cell ledger line
   with a hairline above and below it; a pass means no card remains anywhere
 - The summary sentence carries its current content with no bold spans and with tabular figures
-- The section index sticks under the app bar while scrolling, the item for the section at the top of
-  the viewport carries `aria-current` and the 2px bottom rule, and clicking an item scrolls that
-  heading clear of the index rather than under it
+- The app bar stays at the top and the section index sticks directly under it while scrolling with no
+  gap between them, the item for the section at the top of the viewport carries `aria-current` and the
+  2px bottom rule, and clicking an item scrolls that heading clear of both rather than under them
 - Participant entries show the name with its tags, the balance in the figure column coloured per
   design-spec 3.12 with "owes", "ahead" and "settled" carrying the sign in words, and the three
   labelled cells below
@@ -743,13 +793,23 @@ cells, and the tag treatment. No new token.
 - Editing a participant opens the panel in place of that entry; opening a second edit closes the first
   and discards its values
 - Deleting a participant opens the confirmation strip with focus on Keep, Escape acts as Keep, and the
-  rest of the page stays usable while it is open
+  rest of the page stays usable while it is open; a participant the server refuses puts the server's
+  message in the section alert and closes the strip
 - Price history entries show the amount as the primary line in the recorded treatment and the
   effective month as a short month and year in the figure column
 - The settled-archived toggle opens and closes with the disclosure motion and its label counts
   correctly in both directions
-- First load shows the static skeleton bars and announces "Loading this subscription"; a reload after
-  an edit keeps the figures on screen and shows the acting section's status line instead
+- First load shows the static skeleton bars for the figure and the cells, every section's subtitle
+  present with its count blank and its action button disabled, and two skeleton entries in each list
+  position; it announces "Loading this subscription" and announces no skeleton
+- A reload after an edit keeps the figures on screen and shows the acting section's status line instead
+- The Archive action reads "Archive" on an active participant and "Unarchive" on an archived one, and
+  the two success sentences are "Participant archived" and "Participant unarchived" with the tag
+  following
+- Deleting a price that the server refuses keeps one strip open across both steps, showing the server's
+  months verbatim with "Delete anyway?" and focus back on Keep, and "Delete anyway" completes it
+- The section alert clears on Dismiss and again on the next successful action in the same section, and
+  an error raised inside a panel never appears in it
 - At 390 the figure column moves under the secondary line, the actions take their own line, the three
   cells wrap, and the section index scrolls horizontally with its fading edges and no page-level
   horizontal scroll
@@ -776,10 +836,10 @@ the accounting depends on and the three tile states that replace the month chips
 
 **Contract**: Heading "Skipped months (N)" with the subtitle "A skipped month costs nobody anything."
 and a primary "Skip a month". Each entry's primary line is the month through the month formatter, with
-"costs nobody anything" removed from the row because the subtitle now carries it, and a quiet
-`[Unskip]`. The add panel has one field "Month" spanning, with the month hint, and a primary "Mark as
-skipped". Success reads "Month skipped" and "Month unskipped". The empty sentence is "No months
-skipped."
+"costs nobody anything" removed from the row because the subtitle now carries it, and a link-variant
+`[Unskip]` at `--t-small`. The add panel has one field "Month" spanning, with the month hint, and a primary "Mark as
+skipped". Success reads "Month skipped" and "Month unskipped". A failed unskip lands in the section
+alert of design-spec 3.5, not in a panel. The empty sentence is "No months skipped."
 
 #### 2. Payments received
 
@@ -799,7 +859,7 @@ right end of the subtitle line above 640px and under the subtitle below it, with
 
 Each payment is a ledger entry: the amount in the recorded treatment followed by "from <name>" as the
 primary line, the note as the secondary line when there is one, the date through the date formatter as
-the figure column, and `[Edit] [Delete]`. The add panel pairs "From" with "Date received" and "Amount"
+the figure column, and `[Edit] [Delete]` as link-variant buttons at `--t-small`. The add panel pairs "From" with "Date received" and "Amount"
 with "Kind", with "Note" spanning and hinted "Optional", and a primary "Record this payment" producing
 "Payment recorded". Editing opens in place with "Save changes" producing "Changes saved". Deleting
 uses the confirmation strip with "Delete the <amount> payment from <name>?" and produces "Payment
@@ -821,7 +881,7 @@ order", and the same refusal treatment as payments when there are no participant
 Each entry's primary line is the monthly amount in the assumed money treatment followed by "a month
 from <name>", with "from <month>, still running" or "until <month>" as the figure column at
 `--t-small`, and a secondary line reading the assumed total, also in the assumed treatment, with "over
-N of M elapsed months". Actions are `[Edit] [Delete]`.
+N of M elapsed months". Actions are `[Edit] [Delete]` as link-variant buttons at `--t-small`.
 
 Under each entry, a wrapping row of month tiles with `flex-wrap` and gap `--s-2`, each 156px wide,
 padding `--s-3`, radius 6px, ground `--paper`, falling into a two-column grid at full width below
@@ -838,6 +898,9 @@ Which state a tile is in comes from the single existing call to `scheduleMonthSt
 `RecurringSection.tsx:42-50` stay one per `MonthExclusion` and the map stays total over the union; the
 only permitted edit is removing the leading "not counted, " from each, because the dashed tile already
 says it. The rest of each phrase stays verbatim.
+
+A failed tile toggle lands in the section alert of design-spec 3.5 with the server's message verbatim
+and leaves the tile in the state it was in.
 
 The add panel has "From" spanning, "Amount each month" paired with "First month", and "Last month"
 spanning with the hint "Leave empty while it is still running". The primary "Record this standing
@@ -893,6 +956,8 @@ wrap below 640px, and the refusal sentence. No new token.
   removed, and no two tiles in any state share a phrase
 - Marking a month not received and then received again changes only that month, shows "Marked not
   received" and "Marked received", and leaves the assumed total matching what the summary reports
+- A failed unskip and a failed tile toggle each put the server's message in their own section alert,
+  leave the row or tile unchanged, and clear on Dismiss
 - At 390 the tiles fall into the two-column grid, the filter sits under the subtitle, and the page does
   not scroll horizontally
 
@@ -981,6 +1046,8 @@ pixels with a 2x device pixel ratio, following the naming convention the existin
 | `redesign-16-light-mobile.png` | the detail screen in light at 390 |
 | `redesign-17-dark-mobile.png` | the detail screen in dark at 390 |
 | `redesign-18-reduced-motion.png` | a disclosure and an entry highlight with reduced motion on |
+| `redesign-19-section-alert.png` | 11.4 a section alert carrying a refused participant delete |
+| `redesign-20-price-delete-step-two.png` | 11.4 the price delete strip on its second step with the server's months |
 
 The keyboard pass of design-spec 11.6 is recorded as prose in
 `evidence/runs/visual-redesign-keyboard.md` rather than as an image, naming each step and what
@@ -994,7 +1061,7 @@ records that it was not produced through the API.
 
 **Purpose**: Hand the designer a review that is complete against design-spec 11 and record the result.
 
-**Contract**: The implementer states that all eighteen captures, the contrast record, the bundle record
+**Contract**: The implementer states that all twenty captures, the contrast record, the bundle record
 and the keyboard record exist and are readable, then requests the designer's review against design-spec
 11. The designer's findings are recorded under "Design questions" as checkpoints, each naming the
 specification section it concerns. The implementer changes no appearance in response to a finding until
@@ -1016,7 +1083,7 @@ the designer has answered it.
 
 #### Manual verification:
 
-- All eighteen captures listed above exist, show the state they name, and contain no real credential,
+- All twenty captures listed above exist, show the state they name, and contain no real credential,
   token or session cookie
 - The keyboard pass of design-spec 11.6 is walked and recorded: tab through the detail screen, open a
   panel, Escape it, delete with Keep, delete with Delete
@@ -1058,42 +1125,21 @@ A mechanical code choice is not a design question. Which React hook holds a pane
 the section index uses an `IntersectionObserver` or a scroll handler, and how the display maps are
 typed are all the implementer's to make.
 
-The following were identified while writing this plan and are open.
+Six questions were raised while writing this plan. All six were answered by the designer and folded
+into the specification, which records them in design-spec 12. None is open, and the phase items above
+implement the answers rather than the questions.
 
-**D1. Where does a section-level action error render?** Design-spec 3.8 places a generic error "at the
-top of the panel", but several actions fire outside any panel: a participant delete refused by the
-server's 409, an archive that fails, an unskip that fails and a tile toggle that fails. Design-spec
-3.10 says the server's refusal for a participant delete "is shown through 3.8", which has no placement
-for an action with no panel. Blocks: phase 4 participant delete refusal, phase 5 unskip and tile toggle
-failures.
+| Question | Resolved in | What the phases implement |
+| --- | --- | --- |
+| D1 where a section-level action error renders | design-spec 3.5 | One permanent `role="alert"` per section under the heading row, with Dismiss; built in phase 2, used in phases 3, 4 and 5 |
+| D2 the price delete and the server's 409 | design-spec 5.2 | One strip, two steps; the second carries the server's months and "Delete anyway", in phase 4 |
+| D3 the unarchive control | design-spec 5.1 | The Archive row action toggles to "Unarchive" with "Participant unarchived", in phase 4 |
+| D4 whether the app bar is sticky | design-spec 3.2 | The bar is sticky at `top: 0` at every width and the index sits at `top: 56px`, in phases 1 and 4 |
+| D5 the button and the status line in the heading row | design-spec 3.5 | One flex group, status line first and button second, three stacked lines below 640px, in phases 2, 3, 4 and 5 |
+| D6 section bodies on first load | design-spec 4.4 | Subtitles present, counts blank, action buttons disabled, two skeleton entries per list, in phase 4 |
 
-**D2. How does the price delete interact with the confirmation strip?** Design-spec 3.10 gives price
-deletion a client-side question, "Delete the 110,00 zł price from 2026-09?". Today the first attempt is
-sent unconfirmed, the server answers 409 with the months that would lose their price, and that refusal
-becomes the confirmation (`PriceHistory.tsx:46-66`). Does the redesign keep the server round trip as a
-second confirmation after the strip, and if so where do the named months appear? Blocks: phase 4, price
-delete.
-
-**D3. What is the unarchive control and its success sentence?** Design-spec 5.1 names "Archive" and
-design-spec 3.9 lists "Participant archived". The existing control toggles to "Unarchive" for an
-already-archived participant (`MemberList.tsx:88`), and no label or success sentence is specified for
-it. Blocks: phase 4, the archived participant's action row.
-
-**D4. Is the app bar sticky?** Design-spec 4.4 fixes the section index at `position: sticky; top:
-56px`, which is the app bar's height from design-spec 3.2, but 3.2 does not say the bar is sticky or
-fixed. If it is not, the index sticks 56px below the viewport top with page content visible above it.
-Blocks: phase 4, the section index.
-
-**D5. How do the primary action button and the status line share the heading row?** Design-spec 3.5
-puts the section's primary action button at the right end of the heading row and 3.9 puts the status
-line there too. On a successful create both are present at once, because 3.7 returns the button to the
-heading row when the panel closes. Their order and spacing are unspecified. Blocks: phase 3 and every
-section in phases 4 and 5.
-
-**D6. What do section bodies render during the detail screen's first load?** Design-spec 4.4 specifies
-the skeletons for the leading figure, the three cells and the sentence, and says section headings
-render with their counts blank. It does not say whether the section bodies render their empty state,
-their own skeletons, or nothing at all. Blocks: phase 4, the loading state.
+Nothing further is open. Questions found during implementation are added below under the protocol
+above.
 
 ## Testing strategy
 
@@ -1181,6 +1227,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 1.11 Four woff2 requests go to the app's own origin and none to a third party
 - [ ] 1.12 Nothing animates on load with reduced motion on and with it off
 - [ ] 1.13 At 390 the email is visually hidden and every bar control is at least 44px high
+- [ ] 1.14 The app bar stays at the top of the viewport while the page scrolls at 1280 and at 390
 
 ### Phase 2: The shared presentation layer, proven on Login and session loading
 
@@ -1221,8 +1268,9 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 3.10 Currency and Locale pair above 640px and stack below it while other fields span
 - [ ] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
 - [ ] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
-- [ ] 3.13 A load failure shows the alert line with a quiet Try again that retries
+- [ ] 3.13 A load failure shows the section alert under the heading row with a quiet Try again
 - [ ] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll
+- [ ] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open
 
 ### Phase 4: The detail summary, the section index, Participants and Price history
 
@@ -1240,15 +1288,19 @@ certification screenshots are refreshed; both belong to that release step.
 
 - [ ] 4.8 The leading figure and the three cell ledger line match design-spec 4.4 at 1280 in light and dark
 - [ ] 4.9 The summary sentence keeps its content with no bold spans and tabular figures
-- [ ] 4.10 The section index sticks, tracks the current section and scrolls headings clear of itself
+- [ ] 4.10 The index sticks directly under the sticky app bar, tracks the current section and scrolls headings clear of both
 - [ ] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells
 - [ ] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls
 - [ ] 4.13 Editing opens in place and opening a second edit closes the first and discards its values
-- [ ] 4.14 Deleting a participant opens the confirmation strip with focus on Keep and Escape as Keep
+- [ ] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert
 - [ ] 4.15 Price history entries show the recorded amount and the short effective month
 - [ ] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly
-- [ ] 4.17 First load shows the static skeletons and a reload after an edit keeps the figures on screen
-- [ ] 4.18 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally
+- [ ] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list
+- [ ] 4.18 A reload after an edit keeps the figures on screen and shows the acting section's status line
+- [ ] 4.19 Archive reads Archive or Unarchive by state and produces its matching success sentence
+- [ ] 4.20 A refused price delete keeps one strip open across both steps with the server's months and Delete anyway
+- [ ] 4.21 The section alert clears on Dismiss and on the next success, and never carries a panel error
+- [ ] 4.22 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally
 
 ### Phase 5: Skipped months, Payments received and Standing orders
 
@@ -1272,7 +1324,8 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 5.13 One standing order shows all three tile states, each identifiable in greyscale
 - [ ] 5.14 The seven exclusion phrases still read one per condition with only the leading phrase removed
 - [ ] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary
-- [ ] 5.16 At 390 the tiles use the two-column grid and the page does not scroll horizontally
+- [ ] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss
+- [ ] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally
 
 ### Phase 6: The responsive, accessibility and acceptance pass
 
@@ -1288,7 +1341,7 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Manual
 
-- [ ] 6.8 All eighteen captures exist, show the state they name and contain no credential or cookie
+- [ ] 6.8 All twenty captures exist, show the state they name and contain no credential or cookie
 - [ ] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded
 - [ ] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions
 - [ ] 6.11 The contrast record covers every design-spec 2.1 pair in both themes and names the tool

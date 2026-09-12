@@ -50,6 +50,8 @@ three domain calls are untouched, and the designer accepts the result from captu
 | Phase order | Bottom up: tokens, shared layer, Login, Home, then the detail screen in two halves | The design is a small set of shared parts reused everywhere | Plan |
 | Test strategy | No new test and no DOM testing dependency | Adding a client test layer is its own change; the suites stay regression guards | Plan |
 | Gaps in the spec | Recorded as checkpoints under `## Design questions` and returned to the designer | The spec forbids improvising appearance, hierarchy, copy, interaction or motion | Design spec 1, Plan |
+| Out-of-panel errors | A second permanent alert per section, under the heading row, with Dismiss | A refused delete, archive, unskip or toggle fires outside every panel | Design spec 3.5 |
+| Price delete | One strip in two steps, the second carrying the server's months and "Delete anyway" | The refusal is server-driven and names the months that would lose their price | Design spec 5.2 |
 
 ## Scope
 
@@ -83,7 +85,7 @@ are regression guards on the contract underneath the markup, not evidence of app
 | 1. Tokens, typeface and app bar | Both themes as custom properties, self-hosted Plex, button and input styling, focus, reduced motion, glyph, favicon, app bar | The stylesheet is replaced wholesale, so a missed base rule is invisible until a later phase renders over it |
 | 2. Shared layer on Login | Section opening, ledger entry, disclosure panel, field and its error, status line, confirmation strip, money treatments, month formatter, all proven on Login and session loading | Parts Login does not exercise are only inspected at their first use in phase 3 |
 | 3. Home | The list as ledger rows, the create form as a disclosure, the first status line and entry highlight | First contact with the wire-name display maps, which is where a leaked field name would show |
-| 4. Detail top, index, Participants, Price history | Leading figure and three cell line replacing five cards, sticky section index, participant form moved inside its section, both destructive flows | The participant form moves ownership; the price delete is server-driven and is open as design question D2 |
+| 4. Detail top, index, Participants, Price history | Leading figure and three cell line replacing five cards, sticky section index, participant form moved inside its section, the two-step price delete, the Archive toggle | The participant form changes ownership, and the price delete runs two steps inside one strip against a server-driven refusal |
 | 5. Skipped months, Payments, Standing orders | The three remaining sections and the three tile states | Assumed money must never render in the recorded treatment, and the tile state must keep coming from one domain call |
 | 6. Responsive, accessibility and acceptance | Full pass at both widths in both themes with motion on and off, contrast and bundle recorded, eighteen captures for the designer | Findings here are design questions rather than fixes whenever they would change a specified appearance |
 
@@ -95,11 +97,10 @@ change.
 
 ## Open risks and assumptions
 
-- **Six specification gaps are already open** as design questions D1 to D6 in the plan: where a
-  section-level action error renders, how the price delete's server 409 meets the new confirmation
-  strip, what the unarchive control says, whether the app bar is sticky, how the primary action button
-  and the status line share the heading row, and what section bodies show during first load. Each
-  blocks a named item, and the implementer stops that item rather than improvising.
+- **The six specification gaps found during planning are closed.** Design questions D1 to D6 were
+  answered by the designer and folded into design-spec 3.2, 3.5, 3.6, 4.4, 5.1 and 5.2, and the phases
+  implement the answers. The protocol that produced them stays in the plan for anything implementation
+  turns up: record it, stop that item, continue the rest, never improvise.
 - **The suite cannot fail on appearance.** Every phase depends on a human walking its manual rows in a
   browser. A phase reported complete on its automated rows alone is not complete.
 - **Two states cannot be produced locally through the product**: the detail screen's 409 no-owner
