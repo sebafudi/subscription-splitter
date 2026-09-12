@@ -308,29 +308,112 @@ describe("the requirements' worked example, through computeSummary", () => {
 })
 
 describe('the month always balances exactly', () => {
+  /**
+   * Every number in this table is a literal worked out by hand before the
+   * assertion was written. Deriving them from the implementation's own
+   * expressions would make the owner-share assertion unable to fail, because
+   * that field is defined as exactly the subtraction a derived expectation
+   * would repeat, and the sum would then hold whatever the code did.
+   */
   it.each([
-    { price: 9000, activeIds: ['owner', 'a', 'b'], label: 'three active including owner' },
-    { price: 10000, activeIds: ['a', 'b'], label: 'owner sits the month out' },
-    { price: 5000, activeIds: [] as string[], label: 'nobody active' },
-  ])('$label: every charged share plus the owner share equals the price', ({ price, activeIds }) => {
-    const allMembers = [owner(), nonOwner('a', 'Alice'), nonOwner('b', 'Bob')]
-    for (const m of allMembers) {
-      m.activeRanges = activeIds.includes(m.id) ? [{ joinedMonth: '2026-01', leftMonth: null }] : []
-    }
-    const s = state({ priceHistory: [{ id: 'p1', effectiveFrom: '2026-01', amount: price }], members: allMembers })
+    {
+      label: 'three active including the owner, dividing exactly',
+      price: 9000,
+      activeIds: ['owner', 'a', 'b'],
+      share: 3000,
+      expectedThisMonth: 6000,
+      ownerShare: 3000,
+    },
+    {
+      label: 'the owner sits the month out',
+      price: 10000,
+      activeIds: ['a', 'b'],
+      share: 5000,
+      expectedThisMonth: 10000,
+      ownerShare: 0,
+    },
+    {
+      label: 'nobody active',
+      price: 5000,
+      activeIds: [] as string[],
+      share: 0,
+      expectedThisMonth: 0,
+      ownerShare: 5000,
+    },
+    {
+      label: 'three active with a remainder the organizer absorbs',
+      price: 10000,
+      activeIds: ['owner', 'a', 'b'],
+      share: 3333,
+      expectedThisMonth: 6666,
+      ownerShare: 3334,
+    },
+    {
+      // 3500 over three seats is 1166.67: the stated rule gives 1167 and
+      // truncation would give 1166, so this row disagrees with itself under
+      // the wrong rounding rule while still summing to the price.
+      label: 'three active with a remainder where rounding and truncation disagree',
+      price: 3500,
+      activeIds: ['owner', 'a', 'b'],
+      share: 1167,
+      expectedThisMonth: 2334,
+      ownerShare: 1166,
+    },
+  ])(
+    '$label: the share, the charged total and the owner share are each the expected value, and only then sum to the price',
+    ({ price, activeIds, share, expectedThisMonth, ownerShare }) => {
+      const allMembers = [owner(), nonOwner('a', 'Alice'), nonOwner('b', 'Bob')]
+      for (const m of allMembers) {
+        m.activeRanges = activeIds.includes(m.id) ? [{ joinedMonth: '2026-01', leftMonth: null }] : []
+      }
+      const s = state({ priceHistory: [{ id: 'p1', effectiveFrom: '2026-01', amount: price }], members: allMembers })
+      const summary = computeSummary(s, '2026-01')
+
+      expect(summary.currentMonthly).toBe(price)
+      expect(summary.currentPerPersonShare).toBe(share)
+      expect(summary.expectedThisMonth).toBe(expectedThisMonth)
+      expect(summary.ownerShareThisMonth).toBe(ownerShare)
+      expect(summary.expectedThisMonth + summary.ownerShareThisMonth).toBe(price)
+    },
+  )
+
+  it('splits 100,00 across seven seats as the stated rule does, not as truncation would', () => {
+    // 10000 over seven seats is 1428.57: the rule gives 1429 each, six charged
+    // participants carry 8574, and the organizer absorbs the remaining 1426.
+    // Truncation would give 1428, moving six grosze a month onto the organizer
+    // with every total still summing to the price.
+    const members = [owner(), ...['a', 'b', 'c', 'd', 'e', 'f'].map((id) => nonOwner(id, `Member ${id}`))]
+    const s = state({ priceHistory: [{ id: 'p1', effectiveFrom: '2026-01', amount: 10000 }], members })
     const summary = computeSummary(s, '2026-01')
 
-    const activeCount = activeIds.length
-    const expectedShare = activeCount === 0 ? 0 : Math.round(price / activeCount)
-    const chargedCount = activeIds.filter((id) => id !== 'owner').length
-    const expectedThisMonth = expectedShare * chargedCount
-    const ownerShare = price - expectedThisMonth
+    expect(summary.currentActiveCount).toBe(7)
+    expect(summary.currentPerPersonShare).toBe(1429)
+    expect(summary.expectedThisMonth).toBe(8574)
+    expect(summary.ownerShareThisMonth).toBe(1426)
+    expect(summary.expectedThisMonth + summary.ownerShareThisMonth).toBe(10000)
+  })
+})
 
-    expect(summary.currentMonthly).toBe(price)
-    expect(summary.currentPerPersonShare).toBe(expectedShare)
-    expect(summary.expectedThisMonth).toBe(expectedThisMonth)
-    expect(summary.ownerShareThisMonth).toBe(ownerShare)
-    expect(summary.expectedThisMonth + summary.ownerShareThisMonth).toBe(price)
+describe('the four collected and outstanding figures, which nothing else in this slice reads', () => {
+  it('reports one member ahead and one owing, with both totals, over a hand-computed state', () => {
+    // 9000 across three seats is 3000 each. Alice has sent 5000, so she is
+    // 2000 ahead; Bob has sent 1000, so he owes 2000. Both payments fall in
+    // the current month, so everything collected is collected this month.
+    const s = state({
+      priceHistory: [{ id: 'p1', effectiveFrom: '2026-01', amount: 9000 }],
+      payments: [
+        { id: 'pay1', memberId: 'a', date: '2026-01-15', amount: 5000, note: '', kind: 'manual' },
+        { id: 'pay2', memberId: 'b', date: '2026-01-10', amount: 1000, note: '', kind: 'manual' },
+      ],
+    })
+    const summary = computeSummary(s, '2026-01')
+
+    expect(summary.owedToYouNow).toBe(2000)
+    expect(summary.creditOutstanding).toBe(2000)
+    expect(summary.totalCollected).toBe(6000)
+    expect(summary.collectedThisMonth).toBe(6000)
+    expect(summary.totalPlanCost).toBe(9000)
+    expect(summary.ownerNetCost).toBe(3000)
   })
 })
 

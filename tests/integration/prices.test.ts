@@ -199,6 +199,10 @@ describe('price and break-month ownership', () => {
     expect(await (await SELF.fetch(breaksUrl(first.id), { headers: { cookie } })).json<string[]>()).toEqual(['2026-02'])
   })
 
+  // These go through the composed app, where several routers own
+  // `/api/subscriptions/*`, so they pin the contract a caller sees rather than
+  // proving that these two modules registered their own session middleware.
+  // `router-isolation.test.ts` proves that separately, per router.
   it('returns 401 from every price and break-month route without a session cookie', async () => {
     const calls: Array<[string, RequestInit]> = [
       [pricesUrl('any'), {}],

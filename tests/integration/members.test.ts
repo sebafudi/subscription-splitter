@@ -216,8 +216,8 @@ describe('member ownership, across accounts and across one account\'s own subscr
   // Both routers are mounted at '/' and both register requireSession for
   // '/api/subscriptions/*', so these four would answer 401 even if the members
   // module had forgotten its own registration. They pin the contract callers
-  // see; the module keeps its own registration so the answer does not depend
-  // on a pattern another router happens to own.
+  // see; that the module does not lean on a pattern another router owns is
+  // proven separately, per router, in `router-isolation.test.ts`.
   it('returns 401 from every member route without a session cookie', async () => {
     const listRes = await SELF.fetch(membersUrl('any-subscription'))
     expect(listRes.status).toBe(401)

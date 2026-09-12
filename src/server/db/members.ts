@@ -17,11 +17,17 @@ type RangeRow = {
 }
 
 /**
- * The ownership predicate, in one place. Every statement in this module carries
- * both halves: the subscription id and the session user. Keeping `s.user_id`
- * and dropping `s.id` still passes every cross-account test while letting one
- * account read its first subscription's members through its second
- * subscription's id, so the two are never separated.
+ * The ownership predicate, in one place. Keeping `s.user_id` and dropping
+ * `s.id` still passes every cross-account test while letting one account read
+ * its first subscription's members through its second subscription's id, so
+ * the two halves are never separated.
+ *
+ * Every statement that reads or writes a member row carries both halves. The
+ * one exception is the range inserts, which bind a member id alone: they only
+ * ever run in the same batch as a statement that did carry the predicate, and
+ * a range row is meaningless without the member row that batch just wrote or
+ * proved. Anything added to this module outside that pairing carries the
+ * predicate itself.
  */
 const OWNED_MEMBER_IDS = `select m.id from members m
     join subscriptions s on s.id = m.subscription_id
@@ -100,9 +106,12 @@ export async function get(
   const ranges = await db
     .prepare(
       `select r.member_id, r.joined_month, r.left_month from active_ranges r
-       where r.member_id = ? order by r.joined_month asc`,
+       join members m on m.id = r.member_id
+       join subscriptions s on s.id = m.subscription_id
+       where m.id = ? and s.id = ? and s.user_id = ?
+       order by r.joined_month asc`,
     )
-    .bind(memberId)
+    .bind(memberId, subscriptionId, userId)
     .all<RangeRow>()
 
   return toMember(row, ranges.results.map(toRange))
