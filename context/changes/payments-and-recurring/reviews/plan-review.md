@@ -454,3 +454,60 @@ Nothing in the review was rejected or deferred. F1 was resolved by the fix the r
 strengthened so that the server's own total reads the new helper rather than only agreeing with it,
 and F4 was resolved by the branch that keeps `member_id` patchable, which costs two rules on the
 merged row and two integration cases.
+
+## Re-verification
+
+- **Plan revision**: commit `a71f211`, re-checked against the tree at `a71f211` with S-02 phases 1 to
+  3 landed (`69b8fbc`, `a304b6d`, `b805445`)
+- **Verdict**: approved
+
+Every resolution was verified against the revised plan and the code on disk, finding by finding.
+
+F1 holds and is stronger than the fix this review specified. `scheduleMonthStatuses` composes rather
+than duplicates: phase 1 change 3 defines the row set as the arrangement's own three conditions,
+makes each row `memberMonthStatus(inputs, member, month, current)`, and applies the exception last,
+so `break-month` and `outside-active-range` are still decided only in `src/domain/month-status.ts`.
+The three unreachable `MonthExclusion` values are correctly identified: the row set stops at
+`current`, a schedule's start month is refused below the subscription's first month, and a schedule
+naming the owner is refused at both write paths. Phase 4 change 3 draws the label and the toggle from
+that one call and puts the toggle only on counted and excepted rows, which is a tighter answer than
+the review asked for. The server side moves too: phase 1 change 4 re-expresses `recurringReceived`
+over the helper, so the three conditions still inline in its loop at `src/domain/calc.ts` after
+`b805445` leave it, and criterion 1.9 asserts the two answers as the same set of months rather than
+the same total.
+
+D-008 and D-009 are a matched pair, not two claims to the same ground. D-009's own resolution leaves
+exactly one question open, that `src/domain/` would hold two month-classification helpers once S-03
+lands, and answers it conditionally with composition; D-008 closes it in the affirmative and names
+the narrowed first parameter as the mechanism. The narrowing is sound: `memberMonthStatus` reads only
+`state.settings.startMonth` and `state.breakMonths`, so
+`Pick<SubscriptionState, 'settings' | 'breakMonths'>` is exactly its surface and every landed caller
+satisfies it structurally. D-009 keeps the price out of the member-month half and D-008 inherits that,
+which is what D-007's six conditions require: an unpriced month still counts as received.
+
+F2 through F9 all hold. Prerequisites are per phase, with phases 2 and 3 correctly naming S-02 phase 3
+for the state loader and the summary route. `ScheduleCandidate` carries a nullable id with the create
+path spelled out. `patchScheduleSchema` names its four fields, and the PATCH contract reads the
+overlap with `listForMember` for the merged member and re-runs the owner refusal. Both repositories
+state an ordering. The owner-payment sentence is corrected and `manualCollectedThisMonth` gains the
+non-owner filter with a unit case. Criterion 1.5 is retired for 1.10, scoped to the real search
+result, with the fallback branch that contradicted D-006 removed. All three grounding errors are
+fixed, including the route count in both documents and the risk-4 table row. The `schedule_id` to
+`recurringId` mapping is named in the repository contract, the loader contract and Key findings, and
+`10.6.0` and `10.7.0` are reserved against the assignments `tests/integration/accounts.ts` actually
+records.
+
+The Progress contract still holds mechanically: one `## Progress` heading, five phase headings whose
+titles match the body exactly, per-phase criterion counts equal to row counts in both the Automated
+and Manual splits (7/2, 6/2, 7/2, 3/11, 2/1), no checkbox outside the section, and 1.5 left as a gap
+rather than reused.
+
+**One non-blocking nit, for the next edit rather than for a re-review.** The first clause of the
+scope bullet, "No change to any calculation signature from S-02", is now literally false: phase 1
+change 3 narrows `memberMonthStatus`'s first parameter and adds `'excepted'` to the exported
+`MonthExclusion` union, both in a module S-02 landed. The bullet then enumerates what does move and
+names only `recurringReceived` and `manualCollectedThisMonth`. Neither change is hidden, both are
+specified where they happen and recorded in D-008, and no existing caller is affected, so nothing in
+the work changes. The bullet should say that the two calculation signatures that do move are
+source-compatible with every landed caller, so the sentence stops contradicting the phase it
+introduces.
