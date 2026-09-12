@@ -1,0 +1,7 @@
+# Copy to .dev.vars for local development. Never commit the real file.
+# Names only; values are set locally and, for deployment, with `wrangler secret put`.
+BETTER_AUTH_SECRET=
+SEED_OWNER_EMAIL=
+SEED_OWNER_PASSWORD=
+SEED_REVIEWER_EMAIL=
+SEED_REVIEWER_PASSWORD=
