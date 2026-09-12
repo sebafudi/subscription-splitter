@@ -58,7 +58,7 @@ that matches a hand calculation, and nothing else in the product matters if that
 | F-01 | product-foundation-docs | (foundation) plan every later item against a named anchor | - | FR-001 to FR-026, US-01 to US-05 | ready |
 | S-01 | runtime-auth-slice | sign in, see their own subscription, and be refused everyone else's | F-01 | US-05, FR-001, FR-002, FR-003, FR-004, FR-005 | done |
 | S-02 | members-and-price-history | record participants and prices and read this month's share and balances | S-01 | US-01, US-03, US-04, FR-006 to FR-014, FR-022, FR-023, FR-024 | planning |
-| S-03 | payments-and-recurring | record payments and standing orders and watch balances move | S-02 | US-02, FR-015 to FR-021, FR-025, FR-026 | proposed |
+| S-03 | payments-and-recurring | record payments and standing orders and watch balances move | S-02 | US-02, FR-015 to FR-021, FR-025, FR-026 | planning |
 | S-04 | verification-and-release | use the certified flow on a deployed instance | S-03 | US-01, US-02, US-03, US-04, US-05, MS-02 | proposed |
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | in-progress |
 
@@ -164,7 +164,7 @@ not recreate them.
   is correct. The risk is the assumed-receipt rule: counting a standing order for a month that was
   skipped, not yet elapsed, or outside the participant's active range would overstate what has been
   collected and quietly understate what is owed.
-- **Status:** proposed
+- **Status:** planning
 
 ### S-04: Use the certified flow on a deployed instance
 
