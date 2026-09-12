@@ -8,7 +8,7 @@ Project context lives in `context/` (foundation documents, changes, decisions). 
 
 ## Stack
 
-TypeScript throughout. A Hono API and a React client build into one Cloudflare Worker: the Vite plugin builds the client to static assets that the same Worker serves, with client-side routing falling back to the app shell. Storage is D1 through the `DB` binding. Sign-in is Better Auth on that same binding (decision D-001), not yet wired up.
+TypeScript throughout. A Hono API and a React client build into one Cloudflare Worker: the Vite plugin builds the client to static assets that the same Worker serves, with client-side routing falling back to the app shell. Storage is D1 through the `DB` binding. Sign-in is Better Auth on that same binding (decision D-001).
 
 ## Setup
 
@@ -21,6 +21,8 @@ npm install
 The install approves the `workerd` and `esbuild` build scripts recorded in `package.json`; without them the dev server and the integration test runner cannot start.
 
 Copy `.dev.vars.example` to `.dev.vars` and fill in the values for local development. `.dev.vars` is ignored by git. Deployment secrets go through `wrangler secret put`, never into source.
+
+`.dev.vars` needs, at minimum: `BETTER_AUTH_SECRET` (any local string), `APP_ORIGINS` (the origins you will sign in from, comma-separated - `http://localhost:8787` for `wrangler dev`, `http://localhost:5173` for `vite dev`), `COOKIE_SECURE` (leave unset locally unless a browser refuses the session cookie over plain http, then set it to `false`; every deployed environment leaves it unset), `SEED_ENABLED` and `SEED_TOKEN` (needed only to run the seed call below), and the four `SEED_OWNER_*` / `SEED_REVIEWER_*` values the seed call reads.
 
 ## Run
 
@@ -51,7 +53,23 @@ npm run db:migrate:local
 npm run db:migrate:remote
 ```
 
-Migrations are sequential SQL files in `migrations/`, named `0001_<slug>.sql` upward. The first one lands with the runtime-auth slice. `npm run seed:local` is a placeholder until the same slice adds account seeding.
+Migrations are sequential SQL files in `migrations/`, named `0001_<slug>.sql` upward.
+
+First-run setup, against a clean local database:
+
+```
+npm run db:migrate:local   # applies 0001_auth.sql then 0002_subscriptions.sql
+npm run dev:worker          # or npm run dev, in a separate terminal, so the seed call has a server to reach
+npm run seed:local
+```
+
+`npm run seed:local` reads `.dev.vars` directly and calls the gated seed route, `POST /api/dev/seed`
+(decision D-005), once for the owner account and once for the reviewer account, against
+`http://localhost:8787` by default (override with `SEED_TARGET_URL` if the server is running
+elsewhere, for instance `vite dev`'s `http://localhost:5173`). The call is idempotent: running it
+again reports each account as unchanged rather than failing. The same route and the same procedure,
+with `SEED_ENABLED` and `SEED_TOKEN` set on the deployed Worker and then removed once seeding is
+done, is how the remote database is seeded under slice S-04.
 
 ## Deploy
 

@@ -1,7 +1,16 @@
 # Copy to .dev.vars for local development. Never commit the real file.
 # Names only; values are set locally and, for deployment, with `wrangler secret put`.
 BETTER_AUTH_SECRET=
+APP_ORIGINS=
+COOKIE_SECURE=
+SEED_ENABLED=
+SEED_TOKEN=
 SEED_OWNER_EMAIL=
 SEED_OWNER_PASSWORD=
 SEED_REVIEWER_EMAIL=
 SEED_REVIEWER_PASSWORD=
+
+# COOKIE_SECURE is left unset in every deployed environment, so the session
+# cookie always carries Secure. Set it to "false" only in local development,
+# and only if a browser refuses the cookie over plain http (Safari does;
+# Chrome and Firefox do not).
