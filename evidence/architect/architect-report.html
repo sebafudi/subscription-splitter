@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Architect module report</title>
+<style>
+  @page { size: A4; margin: 12mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.32;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  h1 { font-size: 15pt; margin: 0 0 6pt 0; }
+  h2 { font-size: 11.5pt; margin: 10pt 0 3pt 0; border-bottom: 1px solid #ccc; padding-bottom: 1pt; }
+  p { margin: 0 0 6pt 0; text-align: justify; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt 0; font-size: 9.5pt; }
+  th, td { border: 1px solid #ccc; padding: 2.5pt 4pt; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; }
+  code { font-family: "SF Mono", Menlo, monospace; font-size: 9.3pt; background: #f2f2f2; padding: 0 2pt; border-radius: 2pt; }
+  strong { font-weight: 600; }
+  .intro { font-size: 10pt; color: #333; margin-bottom: 8pt; }
+</style>
+</head>
+<body>
+
+<h1>Architect module report</h1>
+<p class="intro">All four module artifacts below (L2 map, L3 feature research, L4 refactor plan, L5 domain notes) analyze <strong>honojs/hono</strong>, a TypeScript web framework, at pinned commit <code>edd138ee3049749190de3dcd7e32d7bcbf224e41</code> (<code>git describe --tags</code>: <code>v4.13.7-7-gedd138ee</code>), cloned separately from this repository. The Builder application for this course round, <strong>subscription-splitter</strong> (Hono on Cloudflare Workers and D1), is a separate, freshly-built project and was not the analysis target for any of the four artifacts below.</p>
+
+<h2>1. Projects analyzed</h2>
+<table>
+<tr><th>Project</th><th>Stack</th><th>Scale</th><th>Used in</th></tr>
+<tr><td>honojs/hono</td><td>TypeScript, zero runtime dependencies</td><td>~289 <code>src/</code> files, 2815 total commits, 76 public export subpaths</td><td>L2, L3, L4, L5</td></tr>
+<tr><td>subscription-splitter (Builder app)</td><td>Hono, Cloudflare Workers, D1</td><td>New build, separate course project</td><td>Not analyzed here</td></tr>
+</table>
+
+<h2>2. Project map (L2)</h2>
+<p>Source: <code>context/map/repo-map.md</code>. All 76 public export subpaths funnel into a small, stable core (<code>types.ts</code> fan-in 53, <code>context.ts</code> fan-in 46 across 188 <code>src/</code> modules). That core is flagged as the top risk zone by three independent signals at once: git co-change, dependency-graph fan-in, and cycle membership. Layer boundaries (utils, router, middleware, adapter, client) are clean, zero violations found across 568 dependency edges. Core-spine knowledge is concentrated in one contributor, with a documented revert of a prior change there. Unknown: the dependency graph is scoped to <code>src/</code>; <code>runtime-tests/</code>, <code>perf-measures/</code>, and <code>benchmarks/</code> have no import graph, only git co-change evidence.</p>
+
+<h2>3. Feature analysis (L3)</h2>
+<p>Source: <code>context/changes/hono-request-dispatch-analysis/research.md</code>. Studied flow: request dispatch (<code>Hono.fetch</code> into <code>#dispatch</code>, router match, <code>compose()</code>, <code>Context</code>, <code>Response</code>), chosen because the map's risk zones and first-day list both point at this exact core. Feature overview: a request enters through <code>fetch()</code>, the path is matched against registered routes, a single matched handler runs directly while multiple handlers run through <code>compose()</code>, which advances a per-step route index as it walks the chain, and the resulting <code>Context</code> produces the final <code>Response</code>. Technical debt, at least one item ast-grep confirmed: <code>compose()</code>'s per-step route-index advancement has no test through a real multi-handler chain (confirmed: zero <code>matchResult</code> references in <code>compose.test.ts</code> against 30 <code>Context</code> constructions); the response's cookie-header-merge logic is implemented twice with opposite behavior, not in agreement as first assumed; the fast dispatch path lacks a safety guard the general dispatch path already has (confirmed as the guard's only occurrence in <code>src/</code>).</p>
+
+<h2>4. Refactor plan (L4)</h2>
+<p>Source: <code>context/changes/hono-refactor-opportunities/{research.md,plan.md}</code>, <code>context/decisions/D-004-hono-refactor-selection.md</code>. Originally selected: encapsulating a raw, public routing-state field behind an accessor. An independent plan review tested that choice with a counter-question and refuted three of its four supporting claims directly against the code (the field is documented for user reads, the cited precedent does not match its shape, and the historical bug it was meant to fix was actually caused elsewhere). The plan was re-ranked: that accessor is now deferred, and the selected changes are (1) a characterization test proving the route index advances correctly through a real multi-handler chain, and (2) adding the missing safety guard to the fast dispatch path, with its performance cost verified by the project's own benchmark rather than assumed free. Explicitly <strong>not</strong> doing: the deferred accessor (blocked, it would be a breaking change to a documented public property), normalizing the router's matching-result shape (a verified deliberate performance decision), or consolidating the cookie-merge duplication (needs its own characterization step first, since the two implementations were found to disagree, not just duplicate). Each phase is a separately reversible commit with automated (typecheck, test, lint, format, and a bundle-size check where relevant) and manual (benchmark comparison against the pinned commit) verification.</p>
+
+<h2>5. Domain notes (L5)</h2>
+<p>Source: <code>context/domain/01-domain-distillation.md</code>, <code>02-invariant-aggregate-refactor.md</code>, <code>03-anti-corruption-layer.md</code>. Ubiquitous language: Hono, Context, Handler, Middleware, Router, runtime Adapter, and the "built on Web Standards" commitment; the sharpest model-vs-code gap is that the project's own README lists two runtimes (Node.js, Fastly Compute) that this repository's own adapters do not actually ship. Invariant #1: response cookies must be preserved when headers are merged, found not merely weakly tested but <strong>actively violated today</strong>, since the response's two header-merge code paths implement opposite cookie policies (one drops new cookies on reassignment, the other keeps both), independently corroborating the L4 finding. Anti-corruption layer: checked the AWS Lambda, Lambda@Edge, and Cloudflare Pages adapter boundaries plus the validation-library boundary; grep/ast-grep scoped outside each adapter directory found zero cross-boundary imports in every case, a genuine absent-leak result.</p>
+
+<h2>6. Decisions that belong to me</h2>
+<p>Choosing Hono, rather than the Builder application, as the module 4 analysis target was my call: the Builder app is a fresh build with no real commit history to mine, so analyzing it would have meant inventing contributor and co-change evidence that does not exist. Within Hono, I chose the request-dispatch flow specifically because two independent artifacts (map risk zones, first-day reading list) converged on it, not because it looked interesting. When the independent plan review refuted the top-ranked refactor candidate's supporting claims, I deferred that candidate rather than defending or patching the original justification, the corrected evidence changed what was actually worth doing, so the plan changed with it. Once the cookie-merge duplication turned out to be a behavioral disagreement rather than harmless repetition, I chose to defer consolidating it behind a characterization step rather than proposing a quick merge that could silently change one code path's behavior. For the anti-corruption-layer check, I chose to recommend a preventive CI check rather than any remediation, because the boundary was already clean; recommending a fix for a problem that does not exist would have been the wrong call.</p>
+
+</body>
+</html>
