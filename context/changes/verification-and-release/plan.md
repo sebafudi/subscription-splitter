@@ -1068,27 +1068,27 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 
 #### Automated
 
-- [ ] 2.1 The tree is clean at the moment of capture
-- [ ] 2.2 Typecheck passes
-- [ ] 2.3 The whole suite passes from a clean install
-- [ ] 2.4 The production build succeeds
-- [ ] 2.5 The deploy is valid as a dry run
-- [ ] 2.6 The migration dry run names exactly the four unapplied files
-- [ ] 2.7 The snapshot exists, is non-empty and is gitignored
-- [ ] 2.8 Hosted CI is green for the release candidate SHA
-- [ ] 2.13 The release SHA is at or after the commit that resolved those findings
-- [ ] 2.19 The suite counts are at or above the last recorded repository-wide figures
-- [ ] 2.14 A Time Travel bookmark is recorded
-- [ ] 2.15 The passing-tests capture exists
-- [ ] 2.16 Sign-in against the current live build confirms APP_ORIGINS resolves
+- [x] 2.1 The tree is clean at the moment of capture
+- [x] 2.2 Typecheck passes
+- [x] 2.3 The whole suite passes from a clean install
+- [x] 2.4 The production build succeeds
+- [x] 2.5 The deploy is valid as a dry run
+- [x] 2.6 The migration dry run names exactly the four unapplied files
+- [x] 2.7 The snapshot exists, is non-empty and is gitignored
+- [x] 2.8 Hosted CI is green for the release candidate SHA
+- [x] 2.13 The release SHA is at or after the commit that resolved those findings
+- [x] 2.19 The suite counts are at or above the last recorded repository-wide figures
+- [x] 2.14 A Time Travel bookmark is recorded
+- [x] 2.15 The passing-tests capture exists
+- [x] 2.16 Sign-in against the current live build confirms APP_ORIGINS resolves
 
 #### Manual
 
-- [ ] 2.9 The snapshot was confirmed to contain both seeded accounts
-- [ ] 2.10 The rollback note describes a recovery that could actually be performed
-- [ ] 2.11 The secret list shows no seeding secret
-- [ ] 2.17 Time Travel's retention was confirmed against this account rather than read from help text
-- [ ] 2.18 The SHA visible in the passing-tests capture equals the release SHA
+- [x] 2.9 The snapshot was confirmed to contain both seeded accounts
+- [x] 2.10 The rollback note describes a recovery that could actually be performed
+- [x] 2.11 The secret list shows no seeding secret
+- [x] 2.17 Time Travel's retention was confirmed against this account rather than read from help text
+- [x] 2.18 The SHA visible in the passing-tests capture equals the release SHA
 
 ### Phase 3: Remote migration, deploy, and the live verification transcript
 
