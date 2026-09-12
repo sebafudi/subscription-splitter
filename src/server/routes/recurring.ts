@@ -149,7 +149,7 @@ app.patch('/api/subscriptions/:id/schedules/:scheduleId', async (c) => {
   })
   if (conflict) return c.json(overlapRefusal(conflict), 409)
 
-  const updated = await update(c.env.DB, subscriptionId, scheduleId, user.id, parsed.data)
+  const updated = await update(c.env.DB, subscriptionId, scheduleId, user.id, merged)
   if (!updated) return c.json({ error: 'not found' }, 404)
   return c.json(updated)
 })

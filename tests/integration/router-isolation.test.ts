@@ -2,7 +2,9 @@ import { env } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
 import breakMonthsRoutes from '../../src/server/routes/break-months'
 import membersRoutes from '../../src/server/routes/members'
+import paymentsRoutes from '../../src/server/routes/payments'
 import pricesRoutes from '../../src/server/routes/prices'
+import recurringRoutes from '../../src/server/routes/recurring'
 import summaryRoutes from '../../src/server/routes/summary'
 
 /**
@@ -22,6 +24,8 @@ const routers = [
   { name: 'prices', router: pricesRoutes, url: 'http://example.com/api/subscriptions/any/prices' },
   { name: 'break-months', router: breakMonthsRoutes, url: 'http://example.com/api/subscriptions/any/break-months' },
   { name: 'summary', router: summaryRoutes, url: 'http://example.com/api/subscriptions/any/summary' },
+  { name: 'payments', router: paymentsRoutes, url: 'http://example.com/api/subscriptions/any/payments' },
+  { name: 'recurring', router: recurringRoutes, url: 'http://example.com/api/subscriptions/any/schedules' },
 ]
 
 describe('each new router carries its own session middleware', () => {

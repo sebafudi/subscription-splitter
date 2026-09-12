@@ -184,6 +184,17 @@ own registration stays green. Proving that needs the router asked on its own, wh
   product change. Re-evaluate if its comments start blocking merges.
 - **Browser matrix and accessibility audits** - named as non-goals in the requirements. Re-evaluate
   if the product gains users beyond the organizer.
+- **React component behaviour** - there is no component-test harness and this is a gap rather than a
+  principled exclusion, so it is recorded here rather than left to be rediscovered. The unit runner
+  collects `src/**/*.test.ts` only, so a `.tsx` test would not run, and no DOM environment
+  (`jsdom`, `happy-dom`) or testing library is installed. The cost showed up once already: both
+  payment and schedule forms seeded their participant select from state before the participants had
+  loaded, so the select displayed a name while submitting an empty id, and only the S-03 phase 4
+  browser walkthrough caught it. The fix is in both files with a comment, and nothing tests it. This
+  is a different gap from the browser flow above, which is about the parts connecting; this one is
+  about a component's own state. Re-evaluate when a slice next adds client behaviour whose failure is
+  invisible from the server, and decide deliberately whether to bring a harness rather than
+  rediscovering the absence.
 
 ## 8. Freshness Ledger
 

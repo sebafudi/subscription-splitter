@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { requireSession, type SessionVariables } from '../middleware/require-session'
 import { validateActiveRanges } from '../../domain/members'
 import type { ActiveRange } from '../../domain/types'
-import { create, get, hasDependents, list, remove, update } from '../db/members'
+import { create, get, list, remove, update } from '../db/members'
 import { get as getSubscription } from '../db/subscriptions'
 import { createMemberSchema, patchMemberSchema } from '../validation/members'
 
@@ -115,12 +115,13 @@ app.delete('/api/subscriptions/:id/members/:memberId', async (c) => {
     return c.json({ error: 'the owner member cannot be deleted; every subscription keeps exactly one' }, 409)
   }
 
-  if (await hasDependents(c.env.DB, subscriptionId, memberId, user.id)) {
+  // The dependents refusal lives inside `remove`, so it cannot be skipped by a
+  // path that forgets to ask; this maps its answer to a status code.
+  const outcome = await remove(c.env.DB, subscriptionId, memberId, user.id)
+  if (outcome === 'has-dependents') {
     return c.json({ error: 'this member has records attached and is archived rather than deleted' }, 409)
   }
-
-  const deleted = await remove(c.env.DB, subscriptionId, memberId, user.id)
-  if (!deleted) return c.json({ error: 'not found' }, 404)
+  if (outcome === 'not-found') return c.json({ error: 'not found' }, 404)
   return c.body(null, 204)
 })
 

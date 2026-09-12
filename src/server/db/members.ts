@@ -212,27 +212,42 @@ export async function update(
   return get(db, subscriptionId, memberId, userId)
 }
 
-/** False when the member is missing, foreign or reached through the wrong subscription. */
+/**
+ * Why this is a union rather than the boolean its three siblings return: both
+ * `payments.member_id` and `recurring_schedules.member_id` cascade on delete,
+ * so a member delete that reaches SQL has already destroyed the history the
+ * refusal exists to protect. Returning `'has-dependents'` from here rather than
+ * checking it in the caller makes the refusal unskippable by construction, so a
+ * second call site cannot cascade past it.
+ */
+export type MemberRemoval = 'deleted' | 'has-dependents' | 'not-found'
+
+/**
+ * `'not-found'` when the member is missing, foreign or reached through the
+ * wrong subscription; `'has-dependents'` when a payment or a standing order
+ * names it, which the route answers with 409; `'deleted'` otherwise.
+ */
 export async function remove(
   db: D1Database,
   subscriptionId: string,
   memberId: string,
   userId: string,
-): Promise<boolean> {
+): Promise<MemberRemoval> {
+  if (await hasDependents(db, subscriptionId, memberId, userId)) return 'has-dependents'
+
   const result = await db
     .prepare(`delete from members where id in (${OWNED_MEMBER_IDS})`)
     .bind(memberId, subscriptionId, userId)
     .run()
-  return (result.meta.changes ?? 0) > 0
+  return (result.meta.changes ?? 0) > 0 ? 'deleted' : 'not-found'
 }
 
 /**
  * Whether anything else in the subscription would lose its parent if this
  * member were deleted: a recorded payment or a standing order, which is
- * everything the requirements call history. The check lives here rather than in
- * the route because both `payments.member_id` and
- * `recurring_schedules.member_id` cascade on delete, so a member delete that
- * reaches SQL has already destroyed the history it was meant to protect.
+ * everything the requirements call history. `remove` applies it itself, so the
+ * refusal does not depend on a caller remembering to ask first; the export
+ * stays so a caller that wants to explain the refusal before attempting it can.
  */
 export async function hasDependents(
   db: D1Database,

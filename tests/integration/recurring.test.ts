@@ -1,4 +1,4 @@
-import { SELF } from 'cloudflare:test'
+import { SELF, env } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
 import { signedInCookie as signedInCookieWithPrefix } from './accounts'
 
@@ -166,6 +166,13 @@ describe('standing order round trip', () => {
     expect(deleted.status).toBe(204)
     expect((await SELF.fetch(schedulesUrl(planId, schedule.id), { headers: { cookie } })).status).toBe(404)
     expect(await listSchedules(cookie, planId)).toHaveLength(0)
+
+    // Read straight from the table: an orphaned exception row is invisible to
+    // both reads above, because each one goes through the schedule that is gone.
+    const orphans = await env.DB.prepare('select count(*) as n from recurring_exceptions where schedule_id = ?')
+      .bind(schedule.id)
+      .first<{ n: number }>()
+    expect(orphans?.n).toBe(0)
   })
 })
 
@@ -412,6 +419,26 @@ describe('the unpaid toggle', () => {
     // Widening it again does not resurrect the correction made against the old range.
     expect((await patchSchedule(cookie, planId, schedule.id, { end_month: '2026-08' })).status).toBe(200)
     expect((await readSchedule(cookie, planId, schedule.id)).exceptionMonths).toEqual(['2026-02'])
+  })
+
+  it('drops them on the start-month side of the range too, and lowering the start does not bring one back', async () => {
+    const cookie = await signedInCookie('23', 'recurring-narrowed-start@example.com')
+    const { planId, member } = await planWithMember(cookie)
+    const schedule = await createSchedule(cookie, planId, {
+      member_id: member.id,
+      amount: 1000,
+      start_month: '2026-01',
+      end_month: '2026-08',
+    })
+    for (const month of ['2026-02', '2026-07']) {
+      expect((await SELF.fetch(exceptionUrl(planId, schedule.id, month), { method: 'PUT', headers: { cookie } })).status).toBe(204)
+    }
+
+    expect((await patchSchedule(cookie, planId, schedule.id, { start_month: '2026-05' })).status).toBe(200)
+    expect((await readSchedule(cookie, planId, schedule.id)).exceptionMonths).toEqual(['2026-07'])
+
+    expect((await patchSchedule(cookie, planId, schedule.id, { start_month: '2026-01' })).status).toBe(200)
+    expect((await readSchedule(cookie, planId, schedule.id)).exceptionMonths).toEqual(['2026-07'])
   })
 })
 

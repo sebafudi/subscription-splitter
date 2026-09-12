@@ -33,6 +33,11 @@ type Props = {
  * a start month below the plan's first month is refused, and an arrangement
  * naming the owner is refused at both write paths. The other phrases exist so
  * the mapping needs no fallback branch, not because a row can carry them.
+ *
+ * A row that does not count always carries a reason, so the phrase is looked
+ * up only when there is one. Defaulting a missing reason to a named condition
+ * would turn an absence into a specific claim about the organizer's own
+ * action.
  */
 const REASON_PHRASE: Record<MonthExclusion, string> = {
   'break-month': 'the plan was paused that month',
@@ -134,7 +139,7 @@ export function RecurringSection({
                             <span className="month-state">
                               {status.counts
                                 ? `${money(schedule.amount)} assumed received`
-                                : `not counted, ${REASON_PHRASE[status.reason ?? 'excepted']}`}
+                                : `not counted${status.reason ? `, ${REASON_PHRASE[status.reason]}` : ''}`}
                             </span>
                             {togglable && (
                               <button

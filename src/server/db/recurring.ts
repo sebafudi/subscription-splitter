@@ -1,5 +1,5 @@
 import type { MonthStr, RecurringException, RecurringSchedule } from '../../domain/types'
-import type { CreateScheduleInput, PatchScheduleInput } from '../validation/recurring'
+import type { CreateScheduleInput } from '../validation/recurring'
 
 type ScheduleRow = {
   id: string
@@ -201,8 +201,11 @@ export async function create(
 }
 
 /**
- * Writes the merged row and, in the same batch, drops every exception the new
- * range no longer contains. Leaving them would make the row inert while the
+ * Writes the row it is given and, in the same batch, drops every exception that
+ * row's range no longer contains. The merge happens once, in the route, and
+ * this function writes exactly what the route validated: deriving it a second
+ * time here would let every rule be checked against one row while a different
+ * row was written, with the exception bounds taken from the unchecked one. Leaving them would make the row inert while the
  * range is narrow and bring it back if the organizer later widened the
  * arrangement, applying a correction made against a different set of months.
  * D1 has no interactive transaction, so the batch is what makes the two one
@@ -213,19 +216,8 @@ export async function update(
   subscriptionId: string,
   scheduleId: string,
   userId: string,
-  patch: PatchScheduleInput,
+  next: RecurringSchedule,
 ): Promise<ScheduleView | null> {
-  const existing = await get(db, subscriptionId, scheduleId, userId)
-  if (!existing) return null
-
-  const next: RecurringSchedule = {
-    id: existing.id,
-    memberId: patch.member_id ?? existing.memberId,
-    amount: patch.amount ?? existing.amount,
-    startMonth: patch.start_month ?? existing.startMonth,
-    endMonth: patch.end_month !== undefined ? patch.end_month : existing.endMonth,
-  }
-
   const memberOwned = await db
     .prepare(`select 1 as ok from (${OWNED_MEMBER_EXISTS})`)
     .bind(next.memberId, subscriptionId, userId)
