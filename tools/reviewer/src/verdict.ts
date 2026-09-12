@@ -35,9 +35,7 @@ export type ReviewOutcome =
 const PASS_THRESHOLD = 6;
 
 function criterionResults(review: Review): CriterionResult[] {
-  return CRITERIA.map(
-    (criterion) => review[criterion.key as keyof Review] as unknown as CriterionResult,
-  );
+  return CRITERIA.map((criterion) => review[criterion.key]);
 }
 
 /**

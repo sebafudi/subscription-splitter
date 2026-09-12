@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import type { LanguageModel } from "ai";
-import { renderComment } from "./format.js";
+import { COMMENT_MARKER, renderComment } from "./format.js";
 import { reviewDiff, type ReviewInput } from "./review.js";
 
 export interface CliInput {
@@ -54,7 +55,7 @@ function readStdin(): Promise<string> {
   });
 }
 
-function parseArgs(argv: string[]): { diffPath?: string; outPath?: string } {
+export function parseArgs(argv: string[]): { diffPath?: string; outPath?: string } {
   let diffPath: string | undefined;
   let outPath: string | undefined;
   for (let i = 0; i < argv.length; i++) {
@@ -68,23 +69,47 @@ function parseArgs(argv: string[]): { diffPath?: string; outPath?: string } {
   return { diffPath, outPath };
 }
 
-async function main(): Promise<void> {
-  const { diffPath, outPath } = parseArgs(process.argv.slice(2));
-  const diff = diffPath ? readFileSync(diffPath, "utf8") : await readStdin();
-  const title = process.env.PR_TITLE ?? "";
-  const body = process.env.PR_BODY ?? "";
-
-  const result = await runCli({ title, body, diff });
-
-  if (outPath) {
-    writeFileSync(outPath, result.comment, "utf8");
+/** Loads `.env` from the current working directory when present. A missing file is not an error. */
+function loadDotEnvIfPresent(): void {
+  if (existsSync(".env")) {
+    process.loadEnvFile(".env");
   }
-
-  console.log(result.exitCode === 0 ? "pass" : result.exitCode === 1 ? "fail" : "error");
-  process.exitCode = result.exitCode;
 }
 
-const isMainModule = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+async function main(): Promise<void> {
+  loadDotEnvIfPresent();
+  const { diffPath, outPath } = parseArgs(process.argv.slice(2));
+
+  try {
+    const diff = diffPath ? readFileSync(diffPath, "utf8") : await readStdin();
+    const title = process.env.PR_TITLE ?? "";
+    const body = process.env.PR_BODY ?? "";
+
+    const result = await runCli({ title, body, diff });
+
+    if (outPath) {
+      writeFileSync(outPath, result.comment, "utf8");
+    }
+
+    console.log(result.exitCode === 0 ? "pass" : result.exitCode === 1 ? "fail" : "error");
+    process.exitCode = result.exitCode;
+  } catch (error) {
+    // Write a comment even on a crash the reviewer could not have avoided (a bad diff path, an
+    // unreadable stdin stream), so a caller that unconditionally reads --out never finds it absent.
+    if (outPath) {
+      const message = error instanceof Error ? error.message : String(error);
+      const fallback =
+        `${COMMENT_MARKER}\n\n## AI review: error\n\n` +
+        `No verdict was produced. Reason: \`unexpected_failure\`.\n\n${message}\n`;
+      writeFileSync(outPath, fallback, "utf8");
+    }
+    console.error(error);
+    process.exitCode = 2;
+  }
+}
+
+const isMainModule =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMainModule) {
   main().catch((error) => {
     console.error(error);

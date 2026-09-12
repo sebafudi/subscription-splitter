@@ -21,6 +21,13 @@ providers:
       model: anthropic/claude-sonnet-4.6
 
 defaultTest:
+  options:
+    # promptfoo's default grading provider is chosen by sniffing for an OpenAI, Anthropic, Azure,
+    # Google, Mistral, xAI or Codex credential and falls through to OpenAI when none is present.
+    # OPENROUTER_API_KEY is not one of the sniffed keys, so every llm-rubric assertion below would
+    # otherwise fail on a machine provisioned exactly as D-003 describes. Naming the grader route
+    # explicitly keeps grading on OpenRouter like everything else in this package.
+    provider: openrouter:openai/gpt-5-mini
   assert:
     # Tripwires only. research.md records that promptfoo's own cost accounting may not reflect the
     # OpenRouter charge for a custom provider; the authoritative spend figure is read from

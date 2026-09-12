@@ -61,7 +61,7 @@ jobs:
 
       - name: Install reviewer dependencies
         working-directory: tools/reviewer
-        run: npm ci
+        run: npm ci --omit=dev --ignore-scripts
 
       - name: Compute the diff against the merge base
         env:

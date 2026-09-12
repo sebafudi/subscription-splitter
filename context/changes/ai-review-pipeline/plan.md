@@ -130,6 +130,20 @@ install time, plus `promptfoo` `0.123.0` added in Phase 3. Scripts: `test`, `typ
 CLI through `tsx`), and `eval` (added in Phase 3). No workspace configuration at the repository root;
 the package is installed and run from its own directory.
 
+Addendum, noted by the implementation review: `package.json` also carries an `allowScripts` block
+that no phase contract mentions. The npm in this environment defers a dependency's install-time
+lifecycle scripts until approved; `esbuild`'s script is approved here the same way the root
+`package.json` already records for `workerd` and `esbuild`. It is harmless and environment-specific,
+not a planned addition, and `--ignore-scripts` on the workflow's own `npm ci` (Phase 4 §1) means CI
+never runs it either way.
+
+Second addendum, also from the implementation review: `tsx` moved from `devDependencies` to
+`dependencies`, since it is the one package the CLI actually needs at runtime, so the workflow's
+`npm ci` can run with `--omit=dev` (Phase 4 §1) and skip `promptfoo`'s own dependency tree
+(`onnxruntime-node`, `@playwright/browser-chromium`, and the rest) on every pull request. Verified:
+`npm ci --omit=dev --ignore-scripts` installs 16 packages instead of 886, and the CLI still runs and
+produces the same `missing_credential` outcome with no credential set.
+
 **File**: `tools/reviewer/package-lock.json`
 
 **Purpose**: Phase 4 runs `npm ci`, which fails hard without a committed lockfile.
@@ -481,6 +495,21 @@ read from the provider's own `usage.cost`, aggregated in `evidence/champion/eval
 cross-checked against the OpenRouter activity page. The promptfoo `cost` assertion is a tripwire only:
 `research.md` §Unknown records that it may report promptfoo's own estimate rather than the OpenRouter
 charge, so it can pass trivially and must not be the mechanism the ceiling depends on.
+
+Note added after the implementation review: promptfoo's default grading provider is chosen by
+sniffing for an OpenAI, Anthropic, Azure, Google, Mistral, xAI or Codex credential, and falls through
+to OpenAI when none is present; `OPENROUTER_API_KEY` is not among the sniffed keys, so every
+`llm-rubric` assertion would fail with only that credential set. `defaultTest.options.provider` is set
+to `openrouter:openai/gpt-5-mini` so grading, like every model call in this package, goes through
+OpenRouter.
+
+Note on the `file://` paths in this section and in Phase 3 §2: the contract as originally written
+names `file://eval/provider.ts` and `file://eval/asserts/verdict.js`. Running `npx promptfoo validate`
+showed that promptfoo resolves a `file://` provider or assertion path relative to the configuration
+file's own directory, not the working directory; since `promptfooconfig.yaml` lives in `eval/`, the
+paths that actually work are `file://provider.ts` and `file://asserts/verdict.js`, which is what is
+committed. This paragraph is the correction; the phase text above is left as originally reviewed, per
+the same immutability convention as the Progress step titles.
 
 **File**: `tools/reviewer/package.json`
 

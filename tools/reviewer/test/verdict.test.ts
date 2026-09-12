@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CRITERIA } from "../src/criteria.js";
-import type { CriterionResult, Review } from "../src/schema.js";
+import type { Review } from "../src/schema.js";
 import { deriveVerdict } from "../src/verdict.js";
 
 const THIRD_KEY = CRITERIA[2]!.key;
@@ -18,10 +18,6 @@ function reviewWithScores(scores: number[], overall: Review["overall"] = null): 
   return review as Review;
 }
 
-function criterionByKey(review: Review, key: string): CriterionResult {
-  return (review as unknown as Record<string, CriterionResult>)[key]!;
-}
-
 describe("deriveVerdict", () => {
   it("returns fail for a 5 among four 10s", () => {
     expect(deriveVerdict(reviewWithScores([5, 10, 10, 10, 10]))).toBe("fail");
@@ -29,7 +25,7 @@ describe("deriveVerdict", () => {
 
   it("returns fail for five 10s with one blocking finding", () => {
     const review = reviewWithScores([10, 10, 10, 10, 10]);
-    (criterionByKey(review, THIRD_KEY).findings as unknown[]) = [
+    (review[THIRD_KEY].findings as unknown[]) = [
       { file: "a.ts", line: 1, severity: "blocking", message: "bad" },
     ];
     expect(deriveVerdict(review)).toBe("fail");
@@ -37,7 +33,7 @@ describe("deriveVerdict", () => {
 
   it("returns pass for five 6s with only minor findings", () => {
     const review = reviewWithScores([6, 6, 6, 6, 6]);
-    (criterionByKey(review, FIRST_KEY).findings as unknown[]) = [
+    (review[FIRST_KEY].findings as unknown[]) = [
       { file: "a.ts", line: 1, severity: "minor", message: "nit" },
     ];
     expect(deriveVerdict(review)).toBe("pass");

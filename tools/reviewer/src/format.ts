@@ -1,16 +1,12 @@
 import { CRITERIA } from "./criteria.js";
-import type { CriterionResult, Review } from "./schema.js";
+import type { Review } from "./schema.js";
 import type { ReviewOutcome } from "./verdict.js";
 
 export const COMMENT_MARKER = "<!-- ai-code-review -->";
 
-function criterionResult(review: Review, key: string): CriterionResult {
-  return (review as unknown as Record<string, CriterionResult>)[key]!;
-}
-
 function renderScoreTable(review: Review): string {
   const rows = CRITERIA.map((criterion) => {
-    const result = criterionResult(review, criterion.key);
+    const result = review[criterion.key];
     return `| ${criterion.title} (\`${criterion.key}\`) | ${result.score} |`;
   });
   return ["| Criterion | Score |", "|---|---|", ...rows].join("\n");
@@ -19,7 +15,7 @@ function renderScoreTable(review: Review): string {
 function renderFindings(review: Review): string {
   const sections: string[] = [];
   for (const criterion of CRITERIA) {
-    const result = criterionResult(review, criterion.key);
+    const result = review[criterion.key];
     if (result.findings.length === 0) continue;
     const lines = result.findings.map((finding) => {
       const location = finding.line !== null ? `${finding.file}:${finding.line}` : finding.file;

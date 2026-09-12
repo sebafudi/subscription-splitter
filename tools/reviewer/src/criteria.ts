@@ -6,7 +6,7 @@ export interface CriterionDefinition {
   readonly highAnchor: string;
 }
 
-export const CRITERIA: readonly CriterionDefinition[] = Object.freeze([
+export const CRITERIA = Object.freeze([
   {
     key: "domain-money-correctness",
     title: "Domain money correctness",
@@ -93,6 +93,6 @@ export const CRITERIA: readonly CriterionDefinition[] = Object.freeze([
       "every risk the change touches is defended at the layer the test plan names, with the " +
       "boundaries the plan calls out and expected values taken from the requirements.",
   },
-]);
+] as const satisfies readonly CriterionDefinition[]);
 
 export type CriterionKey = (typeof CRITERIA)[number]["key"];

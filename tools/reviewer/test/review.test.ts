@@ -1,3 +1,4 @@
+import { APICallError } from "@ai-sdk/provider";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import { CRITERIA } from "../src/criteria.js";
@@ -96,6 +97,21 @@ describe("reviewDiff", () => {
     }
   });
 
+  it("maps a 401 APICallError to reason missing_credential, since a rejected key is the same operator mistake as an absent one", async () => {
+    const rejection = new APICallError({
+      message: "Unauthorized",
+      url: "https://openrouter.ai/api/v1/chat/completions",
+      requestBodyValues: {},
+      statusCode: 401,
+    });
+    const model = mockModelRejecting(rejection);
+    const outcome = await reviewDiff(baseInput, { model });
+    expect(outcome.status).toBe("error");
+    if (outcome.status === "error") {
+      expect(outcome.reason).toBe("missing_credential");
+    }
+  });
+
   it("returns status error with reason missing_credential when no model is injected and no credential is set", async () => {
     const originalEnv = process.env.OPENROUTER_API_KEY;
     delete process.env.OPENROUTER_API_KEY;
@@ -124,5 +140,10 @@ describe("reviewDiff", () => {
     const outcome = await reviewDiff({ ...baseInput, diff: bigDiff, maxDiffBytes: 100 }, { model });
     expect(outcome.status).toBe("pass");
     expect(model.doGenerateCalls.length).toBe(1);
+    if (outcome.status === "pass" || outcome.status === "fail") {
+      expect(outcome.truncation.truncated).toBe(true);
+      expect(outcome.truncation.originalBytes).toBe(5000);
+      expect(outcome.truncation.includedBytes).toBeLessThanOrEqual(100);
+    }
   });
 });

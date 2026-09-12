@@ -42,6 +42,13 @@ function criterionEntries(outcome) {
   return Object.entries(outcome.review).filter(([key]) => key !== "summary" && key !== "overall");
 }
 
+/**
+ * A fixture whose seeded defect touches domain or server code and carries no test at all is,
+ * correctly, also low on test-adequacy - that criterion is not the one under test here and would
+ * otherwise contend with it for lowest score. When the fixture's own expected criterion is not
+ * test-adequacy, test-adequacy is excluded from the "among the lowest" comparison so a reviewer
+ * that (rightly) flags the missing test too is not penalized for reading the fixture correctly.
+ */
 function checkExpectedCriterion(outcome, expectedCriterion) {
   const entries = criterionEntries(outcome);
   if (!entries) {
@@ -59,14 +66,18 @@ function checkExpectedCriterion(outcome, expectedCriterion) {
       reason: `expected criterion "${expectedCriterion}" to score below 6, got ${expected.score}`,
     };
   }
-  const lowestScore = Math.min(...scored.map((entry) => entry.score));
+  const comparisonPool =
+    expectedCriterion === "test-adequacy"
+      ? scored
+      : scored.filter((entry) => entry.key !== "test-adequacy");
+  const lowestScore = Math.min(...comparisonPool.map((entry) => entry.score));
   if (expected.score !== lowestScore) {
     return {
       pass: false,
       score: 0,
       reason:
-        `expected criterion "${expectedCriterion}" to be among the lowest-scoring ` +
-        `(lowest is ${lowestScore}), got ${expected.score}`,
+        `expected criterion "${expectedCriterion}" to be among the lowest-scoring, excluding ` +
+        `test-adequacy (lowest is ${lowestScore}), got ${expected.score}`,
     };
   }
   return { pass: true, score: 1, reason: "criterion check passed" };

@@ -169,8 +169,16 @@ distinguishable from `fail` in the comment, the label and the exit code.
   itself to instruction level, defeating the guardrail without having to defeat the model's judgement.
 - No shell ever interpolates the title or body directly; values reach a step through an intermediate
   environment variable.
-- Nothing from the pull request is executed. The workflow installs the reviewer package's own
-  dependencies and runs the reviewer; it never runs the pull request's build, tests or scripts.
+- The workflow never runs the pull request's own build, tests or scripts, and dependency installs use
+  `npm ci --ignore-scripts`, so no lifecycle script from the reviewer's dependency tree runs either.
+  What does run, precisely: `actions/checkout` has no `ref` override, so `tools/reviewer/` on disk is
+  the pull request's own copy, and the workflow installs and runs that copy's `src/cli.ts` with
+  `OPENROUTER_API_KEY` and a `pull-requests: write` token in scope. A same-repository pull request
+  that edits the reviewer's own source, its `package.json` or its lockfile has that code executed
+  with the job's token and secret. This is not a new privilege: the job `if` restricts the run to
+  same-repository pull requests, and anyone who can push a branch to this repository can already
+  reach the same secret by editing any workflow on that branch, which is GitHub's own trust boundary
+  for write access. A fork pull request has no secret to reach, because `pull_request` withholds it.
 - Workflow permissions are `contents: read` and `pull-requests: write`, and nothing else. GitHub's
   permissions reference lists the comment and label endpoints under both the Issues and the Pull
   requests repository permissions, and the target here is always a pull request, so `issues: write` is

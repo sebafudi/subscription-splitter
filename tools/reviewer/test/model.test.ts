@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MissingCredentialError, resolveModel } from "../src/model.js";
+import { DEFAULT_MODEL_ID, MissingCredentialError, resolveModel } from "../src/model.js";
 
 describe("resolveModel", () => {
   it("raises a named configuration error when OPENROUTER_API_KEY is absent", () => {
@@ -24,9 +24,8 @@ describe("resolveModel", () => {
     expect(model.modelId).toBe("openai/gpt-5-mini");
   });
 
-  it("falls back to a documented default model when REVIEWER_MODEL is unset", () => {
+  it("falls back to DEFAULT_MODEL_ID when REVIEWER_MODEL is unset", () => {
     const model = resolveModel({ OPENROUTER_API_KEY: "sk-or-v1-test" });
-    expect(typeof model.modelId).toBe("string");
-    expect(model.modelId.length).toBeGreaterThan(0);
+    expect(model.modelId).toBe(DEFAULT_MODEL_ID);
   });
 });

@@ -8,7 +8,7 @@ and posts the result as a pull request comment and a label. It never blocks a me
 ```bash
 cd tools/reviewer
 npm ci
-cp env.example .env   # fill in OPENROUTER_API_KEY, optionally REVIEWER_MODEL
+cp env.example .env   # fill in OPENROUTER_API_KEY, optionally REVIEWER_MODEL - loaded automatically
 npm test               # offline, no credential needed
 npm run typecheck
 PR_TITLE="..." PR_BODY="..." npm run review -- path/to.diff --out comment.md
