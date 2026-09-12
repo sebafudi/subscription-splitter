@@ -1107,17 +1107,17 @@ Two choices the phase-2 text left open, both taken the smaller way:
 
 #### Automated
 
-- [x] 3.1 Integration tests pass
-- [x] 3.2 Unit tests pass
-- [x] 3.3 Typecheck passes
-- [x] 3.4 All four migrations apply in order to a clean local database
-- [x] 3.5 The worked example is asserted through the API and matches to the minor unit
-- [x] 3.8 The earliest price delete is refused without confirmation and recomputes correctly with it
+- [x] 3.1 Integration tests pass — b805445
+- [x] 3.2 Unit tests pass — b805445
+- [x] 3.3 Typecheck passes — b805445
+- [x] 3.4 All four migrations apply in order to a clean local database — b805445
+- [x] 3.5 The worked example is asserted through the API and matches to the minor unit — b805445
+- [x] 3.8 The earliest price delete is refused without confirmation and recomputes correctly with it — b805445
 
 #### Manual
 
-- [x] 3.6 The summary read through the API agrees with the domain unit tests
-- [x] 3.7 The current month matches the subscription's time zone rather than the machine's
+- [x] 3.6 The summary read through the API agrees with the domain unit tests — b805445
+- [x] 3.7 The current month matches the subscription's time zone rather than the machine's — b805445
 
 #### Notes
 
