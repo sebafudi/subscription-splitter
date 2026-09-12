@@ -24,11 +24,9 @@ screenshots (B12), and the live half of D05. It does not touch the items that re
 
 ## Current state analysis
 
-`main` is at `b91762c`. `payments-and-recurring` is implemented and closed out through its own phase
-5; `members-and-price-history` and `runtime-auth-slice` are archived. Repository-wide gates were last
-recorded green at `09b763b` (typecheck clean, unit 15 files/185 tests, integration 10 files/103
-tests) and the production build succeeded at `8e9a5ee`. Hosted CI has been green on every push to
-`main`.
+`payments-and-recurring`, `members-and-price-history` and `runtime-auth-slice` are all archived.
+Repository-wide gates were last recorded green at `904ebcc`: typecheck clean, unit 15 files and 185
+tests, integration 11 files and 112 tests, build ok. Hosted CI has been green on every push to `main`.
 
 The deployment is two slices behind. `context/STATUS.md` Deployment and `evidence/runs/deploy-1.md`
 record release version `e259b7b3-d932-4b3b-8b84-7446cab7d636` at commit
@@ -48,15 +46,13 @@ either, and could not have: `0003_members.sql` was not applied remotely when it 
 migration lands it becomes the one state the shipped build can no longer produce, and the detail
 screen draws it as the degraded no-owner case.
 
-S-03's implementation review landed at `a55720b` with verdict "approve with required changes", and its
-fixes and archive followed at `0ff74bd`: `payments-and-recurring` is now under `context/archive/` with
-`status: archived` and a `## Resolution` section in its `reviews/impl-review.md`. That sequence is why
-phase 2 gates on the resolution commit rather than on "S-03 is closed out". S-02 showed the same
-shape, its plan was closed out before its review fixes landed, and the fixes arrived two commits
-later. A release pinned at either of those in-between points would put the deployed instance behind
-`main` again within a commit or two, which is the exact failure this slice exists to end. The gate is
-satisfied as of `0ff74bd`; phase 2 still checks it, because the release SHA has to be provably at or
-after that commit.
+S-03's implementation review landed at `a55720b` with verdict "approve with required changes", three
+commits after its plan had been closed out. Its fixes landed at `904ebcc`, its resolution at
+`5d1cb80`, and its archive at `0ff74bd`. That sequence is why phase 2 gates on `0ff74bd` rather than
+on "S-03 is closed out": S-02 showed the same shape, and a release pinned at any of the in-between
+points would put the deployed instance behind `main` again within a commit or two, which is the exact
+failure this slice exists to end. The gate is satisfied; phase 2 still checks it, because the release
+SHA has to be provably at or after that commit and other agents keep pushing.
 
 The documentation has outrun its own text in two places: `AGENTS.md` still says "Only the scaffold
 exists so far", and `README.md`'s first-run recipe still names two migrations and describes the
@@ -169,13 +165,13 @@ that both halves of the evidence provably describe the same build.
 
 ### Prerequisites
 
-- **Phase 1** needs nothing beyond `main`. It can start immediately and in parallel with S-03's
-  implementation review being resolved under that change's `reviews/`.
+- **Phase 1** needs nothing beyond `main`.
 - **Phase 2** needs phase 1 committed, because the release SHA it pins must be the tree whose
-  documentation the release describes. It also needs a hard gate that phase 1 does not: the three
-  required findings of `context/archive/payments-and-recurring/reviews/impl-review.md` are resolved
-  and `payments-and-recurring` is archived, and the release SHA is read at or after the commit that
-  resolves them. "S-03 is implemented and closed out" is not that gate, and was not for S-02 either.
+  documentation the release describes. It also needs a hard gate that phase 1 does not: the release
+  SHA must be at or after `0ff74bd`, the commit that archived `payments-and-recurring` after its
+  implementation review was resolved. "S-03 is implemented and closed out" is not that gate, and was
+  not for S-02 either; the fixes (`904ebcc`) and the resolution (`5d1cb80`) both landed after the
+  slice had already been closed out.
 - **Phase 3** needs phase 2's dry run and snapshot, and needs the Cloudflare account already
   authenticated in the executing shell (`npx wrangler whoami`). It also needs the operator to read
   `evidence/private/reviewer-credentials.md`, which is gitignored and stays uncommitted.
@@ -378,14 +374,15 @@ and read the SHA from it. The first deployment's evidence records that it could 
 those, and the release SHA it quoted did not exactly describe the deployed bundle; S-02 and S-03 both
 show why the third matters.
 
-**Contract**: The gate comes first: `context/archive/payments-and-recurring/reviews/impl-review.md`
-carries a `## Resolution` section resolving its three required findings, and
-`payments-and-recurring` is archived under `context/archive/`. The release SHA is read at or after the
-commit that resolved them, not merely from a clean tree. Then, from a clean checkout of `main`:
-`git status --porcelain` empty, `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and
-`npx wrangler deploy --dry-run` all succeed, and `git rev-parse HEAD` is captured as the release
-candidate SHA. The test counts are captured verbatim, not summarised. Hosted CI is confirmed green for
-that same SHA.
+**Contract**: The gate comes first and it is now a single concrete condition: the release SHA is at or
+after `0ff74bd`, which archived `payments-and-recurring` once its implementation review was resolved
+(`904ebcc` applied the findings, `5d1cb80` recorded the resolution). A clean tree alone is not the
+gate. Then, from a clean checkout of `main`: `git status --porcelain` empty, `npm ci`,
+`npm run typecheck`, `npm test`, `npm run build`, and `npx wrangler deploy --dry-run` all succeed, and
+`git rev-parse HEAD` is captured as the release candidate SHA. The test counts are captured verbatim,
+not summarised, and compared against the last recorded repository-wide figures so a drop is noticed
+rather than shipped: at `904ebcc`, typecheck clean, unit 15 files and 185 tests, integration 11 files
+and 112 tests, build ok. Hosted CI is confirmed green for the release SHA itself.
 
 #### 2. The passing-tests capture
 
@@ -484,10 +481,10 @@ this phase.
 
 #### Automated verification:
 
-- S-03's review is resolved and archived: `context/archive/payments-and-recurring/` exists and its
-  `reviews/impl-review.md` carries a `## Resolution` section
-- The release SHA is at or after the commit that resolved those findings:
-  `git merge-base --is-ancestor <resolution sha> <release sha>`
+- The release SHA is at or after the S-03 archive commit:
+  `git merge-base --is-ancestor 0ff74bd <release sha>`
+- The suite counts are at or above the last recorded repository-wide figures: unit 15 files/185 tests,
+  integration 11 files/112 tests
 - The tree is clean at the moment of capture: `git status --porcelain` produces no output
 - Typecheck passes: `npm run typecheck`
 - The whole suite passes from a clean install: `npm ci && npm test`
@@ -1066,8 +1063,8 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 - [ ] 2.6 The migration dry run names exactly the four unapplied files
 - [ ] 2.7 The snapshot exists, is non-empty and is gitignored
 - [ ] 2.8 Hosted CI is green for the release candidate SHA
-- [ ] 2.12 S-03's review is resolved and payments-and-recurring is archived
 - [ ] 2.13 The release SHA is at or after the commit that resolved those findings
+- [ ] 2.19 The suite counts are at or above the last recorded repository-wide figures
 - [ ] 2.14 A Time Travel bookmark is recorded
 - [ ] 2.15 The passing-tests capture exists
 - [ ] 2.16 Sign-in against the current live build confirms APP_ORIGINS resolves

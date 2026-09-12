@@ -19,8 +19,9 @@ two seeded accounts and one artefact, a throwaway subscription created by the fi
 run, which cannot be re-dated or deleted because `start_month` is not patchable and no subscription
 delete route exists, and which has no owner member because it predates `0003`. The gated seed route is
 closed and creates accounts only, so it cannot produce demo data. The documentation still says the
-scaffold is all that exists. S-03's implementation review has landed, been resolved and been archived
-at `0ff74bd`, which is the gate this slice's release SHA has to be at or after.
+scaffold is all that exists. S-03's implementation review has landed, been resolved (`904ebcc`,
+`5d1cb80`) and been archived (`0ff74bd`), and that archive commit is the gate this slice's release SHA
+has to be at or after.
 
 ## Desired end state
 
@@ -42,7 +43,7 @@ actually shipped.
 | Rollback for the remote migration | `d1 time-travel restore` to a bookmark recorded before the apply | It restores the same database in place, so no new database id, no config edit and no redeploy | Research |
 | The `d1 export` snapshot | Kept, but as an off-Cloudflare backup rather than the undo | It is the only copy of the two accounts that survives losing the account or the database | Research |
 | Dry run before applying | `d1 migrations list --remote` must name exactly the four expected files | It catches the case where the remote database is not where the evidence says | Research |
-| When the release SHA may be pinned | Only at or after the commit resolving S-03's implementation review, with the slice archived | S-02 showed that "closed out" precedes the review fixes by two commits | Plan |
+| When the release SHA may be pinned | Only at or after `0ff74bd`, the commit that archived S-03 after its implementation review was resolved | S-02 and S-03 both show that "closed out" precedes the review fixes by several commits | Plan |
 | Where infrastructure is documented | A new short `context/foundation/infrastructure.md` | B09 names it and the information exists but is scattered between the README and the stack document | Plan |
 | Ordering | Documentation, preparation, migration, deploy, browser, evidence | `mvp-check` grades documentation from the repository, and the snapshot has to precede the only irreversible step | Plan |
 
@@ -80,8 +81,7 @@ for a subscription or an owner member.
 | 4. Acceptance walkthrough and screenshots | The demo plan's money recorded in the browser, error and isolation states exercised, ten named captures | The build deployed does not match the SHA quoted, as happened on the first deployment |
 | 5. mvp-check, evidence index, hand-off | The five-criterion report and its fixes, index and work-log rows, the status hand-off | Claiming a criterion passed without opening the file that proves it |
 
-**Prerequisites:** S-03's implementation review resolved and `payments-and-recurring` archived, with
-the release SHA read at or after that commit; `main` green; the Cloudflare account authenticated in
+**Prerequisites:** a release SHA at or after `0ff74bd`, the S-03 archive commit; `main` green; the Cloudflare account authenticated in
 the executing shell; the gitignored reviewer credentials readable by whoever runs the live pass.
 **Estimated effort:** five phases, roughly one session each, with phases 3 and 4 best run as one live
 session.

@@ -467,3 +467,23 @@ gap. Added: 2.12 to 2.18 in phase 2, 3.12 to 3.15 in phase 3, 4.11 and 4.12 in p
 Nothing in the review was rejected or deferred. F2 was resolved by a third option rather than either
 of the two offered, for the reason recorded above; the review's ranking of Fix A over Fix B was sound
 on the evidence it had, and the owner-member delete refusal is the fact that changes it.
+
+### Addendum: F3's gate made concrete
+
+S-03's fixes (`904ebcc`), resolution (`5d1cb80`) and archive (`0ff74bd`) all landed on `main` after
+the resolution above was written, so the gate is no longer a condition to be evaluated by reading
+files. Phase 2's contract, its Prerequisites entry and its automated criterion now name the commit:
+the release SHA must be at or after `0ff74bd`, checked with
+`git merge-base --is-ancestor 0ff74bd <release sha>`. The narrative in Current state analysis records
+the sequence that made the gate necessary, that the review landed three commits after the slice was
+closed out and its fixes three commits after that.
+
+The same landing supplies the baseline the release counts are compared against, which the plan
+previously lacked: repository-wide gates at `904ebcc` are typecheck clean, unit 15 files and 185
+tests, integration 11 files and 112 tests, build ok. Phase 2 now compares the release candidate's
+counts against those figures so a regression is noticed rather than shipped.
+
+Progress: row 2.12, whose title described the gate as a file-reading check, is removed and leaves a
+gap; row 2.19 is added for the counts comparison. Row 2.13 keeps its title and now carries the
+concrete ancestry check. Per-phase row counts still equal the criterion bullets in both splits:
+7/3, 13/5, 9/6, 3/8, 7/4.
