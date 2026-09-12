@@ -730,19 +730,19 @@ means re-reading its core table definitions in the installed package and editing
 
 #### Automated
 
-- [x] 4.1 Typecheck passes across all three projects
-- [x] 4.2 Production build succeeds
-- [x] 4.3 The suite still passes
+- [x] 4.1 Typecheck passes across all three projects — 3707615
+- [x] 4.2 Production build succeeds — 3707615
+- [x] 4.3 The suite still passes — 3707615
 
 #### Manual
 
-- [x] 4.4 Sign in lands on the home screen showing the account email
-- [x] 4.5 Creating a subscription shows it in the list
-- [x] 4.6 Reload keeps the session and the subscription
-- [x] 4.7 Sign out returns to login and leaves nothing reachable
-- [x] 4.8 The reviewer account sees none of the owner's subscriptions
-- [x] 4.9 The layout is usable at a narrow phone width
-- [x] 4.10 The session cookie is accepted by the browser over local http
+- [x] 4.4 Sign in lands on the home screen showing the account email — 3707615
+- [x] 4.5 Creating a subscription shows it in the list — 3707615
+- [x] 4.6 Reload keeps the session and the subscription — 3707615
+- [x] 4.7 Sign out returns to login and leaves nothing reachable — 3707615
+- [x] 4.8 The reviewer account sees none of the owner's subscriptions — 3707615
+- [x] 4.9 The layout is usable at a narrow phone width — 3707615
+- [x] 4.10 The session cookie is accepted by the browser over local http — 3707615
 
 ### Phase 5: The gate
 
