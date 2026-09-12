@@ -200,8 +200,10 @@ session rows. Neither may reach a committed file. The transcript follows the pre
 `__Secure-better-auth.session_token=<redacted>` and keeps the rest of the header intact so the
 `HttpOnly; Secure; SameSite=Lax` attributes remain visible as evidence.
 
-**Current-month sensitivity.** The assumed-receipt rule counts a standing-order month only once it has
-elapsed in the subscription's own time zone. The demo plan's start month therefore has to be several
+**Current-month sensitivity.** The assumed-receipt rule counts a standing-order month once that month
+has begun in the subscription's own time zone, excluding only months after the current one: the
+current month itself counts, because `memberMonthStatus` excludes on `month > current`. The demo
+plan's start month therefore has to be several
 months behind the current one for the standing order to show counted months at all, and the screens
 captured in phase 4 will look different if they are recaptured in a later month. The captures are
 dated by release version id rather than by calendar, and the walkthrough's input values are recorded

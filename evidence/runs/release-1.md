@@ -62,12 +62,13 @@ suite. The tree was still clean after the build, because `dist/` is gitignored.
 `8ed342278443e371819c1be58a8042b94c507254` and both pass counts legible. The SHA visible in the image
 is the release SHA recorded above.
 
-How it was produced, stated so nobody has to guess: the commands were run for real in the clean
-checkout and their combined stdout captured; that captured text was then rendered into a terminal
-frame and photographed with headless Chrome, which is the same tool this repository already uses to
-render `evidence/architect/architect-report.pdf`. The content is genuine command output, not a
-reconstruction. The only edit is that the scratch checkout's long absolute path is shortened to
-`~/release-8ed3422` so the counts stay legible at readable type.
+How it was produced: the four commands were typed into a real Terminal window sitting in the clean
+checkout at the release SHA, and that window was photographed once they finished. The typed command
+line is the first thing in frame, the full SHA is the first line of output, and the SHA is echoed
+again at the bottom under `--- release SHA again ---` so the run is bracketed by the commit it
+describes. Nothing in the image is typeset, composed or edited; the capture is of that one window
+only, by its window id, so nothing else on the machine is in frame. The long scratch path is visible
+as it really is.
 
 ## Cloudflare account and token scope
 
@@ -352,8 +353,9 @@ Full record in `evidence/runs/release-1-live-smoke.txt`. Outcomes:
 - Cleanup in dependency order: payment, schedule, then the participant, whose delete succeeded once it
   had no dependents. The summary after cleanup is identical to the hand-calculated baseline in every
   field, which is the proof that the demonstration left nothing behind
-- A rename moved no money; correcting Casey's leave month from S+3 to S+4 moved Blake from 25999 to a
-  different figure and Casey correspondingly, and putting it back restored the baseline exactly
+- A rename moved no money; correcting Casey's leave month from S+3 to S+4 moved Blake from 27999 down
+  to 25999 and Casey from 9999 up to 13999, because S+4 then splits three ways at 4000 instead of two
+  ways at 6000, and putting the leave month back restored the baseline exactly
 - Deleting the opening price entry was refused 409, naming the three months that would be left
   unpriced. It was deliberately not repeated with `confirm=true`: the guard is the point, and the demo
   plan keeps its price history
@@ -396,8 +398,10 @@ Stated rather than left to inference, in the same spirit as the first deployment
   or a standing order. Both are covered by the integration suite against a local database, and
   neither was reproduced against the deployment.
 - The refusal to delete an owner member, and the refusal of a second owner on one subscription. The
-  first was reasoned about rather than provoked, because provoking it means attempting a delete that
-  must not succeed on a live demo plan.
+  first was left unprovoked to keep the live pass free of deletes aimed at permanent rows: the
+  dependents refusal was provoked live without incident, so the reason is not that a 409 was
+  doubted, it is that the only way to ask for this one is to send a delete at a row that can never
+  be recreated if the refusal ever failed to hold. `tests/integration` covers both refusals.
 - Deleting a price entry with `confirm=true`, and deleting a break month. The guard was exercised;
   the destructive half deliberately was not.
 - A payment dated before the plan's first month, and a future-dated payment. Both are covered by unit
@@ -558,7 +562,17 @@ fields and their required status are recorded separately in
 Alongside them, for a reviewer who opens the instance: the owner account holds the demo plan, and the
 second account is deliberately empty because an empty second account is the ownership-isolation
 demonstration rather than an oversight. Which account is which, and why the second one holds nothing,
-belongs in the submission comment. Credentials reach a reviewer only through the authorized private
+belongs in the submission comment, and so does the second subscription on the owner account. The
+wording to copy into that comment:
+
+> The owner account holds two plans. "Family music plan" is the demo: three participants, a price
+> change, a skipped month, recorded payments and a standing order with one month marked as not
+> received. "First deployment artefact (not the demo plan)" is exactly what it says: the row the very
+> first deployment's smoke test created, before the members migration had been applied to the remote
+> database. It is kept rather than removed because the product deliberately exposes no delete for a
+> subscription, and it was given an owner member so it reads as an ordinary empty plan rather than a
+> broken one. The second account is empty on purpose: that is the ownership-isolation demonstration,
+> not an unfinished feature. Credentials reach a reviewer only through the authorized private
 channel named in decision D-010 and are never written into a committed file, a screenshot or a form
 field that is not a credential field; they live only in the gitignored
 `evidence/private/reviewer-credentials.md`.

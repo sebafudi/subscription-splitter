@@ -283,3 +283,29 @@ criterion bullets in both splits, 7/3, 13/5, 9/6, 3/8, 7/4.
   subscription is the first deployment's artefact, kept because the product intentionally exposes no
   delete for a subscription.
 - **Decision**: PENDING
+
+## Resolution
+
+All four required findings are resolved and all three observations were taken rather than noted. Each
+was re-checked against the repository before being acted on, and every citation in the review held.
+
+| Finding | Decision | What changed |
+|---|---|---|
+| F1 | Accepted, retaken | `evidence/screenshots/release-05-tests-passing.png` is now a photograph of a real Terminal window, not a rendered frame. The four commands were typed into one window sitting in the clean checkout at `8ed3422`, and the window was captured by its window id once they finished, so nothing else on the machine is in frame. The typed command line is the first thing visible, the full SHA is the first line of output, and the SHA is echoed again at the bottom under `--- release SHA again ---`, so the run is bracketed by the commit it describes. Counts in frame: typecheck clean, unit 15 files and 185 tests, integration 11 files and 112 tests, identical to the figures this review reproduced independently. The disclosure paragraph in `evidence/runs/release-1.md` was rewritten to describe a capture rather than a rendering, and the rendered frame with its em-dash title is gone entirely, so that half of the fix is moot rather than applied. |
+| F2 | Accepted | The sentence read the correction backwards. It now says what the transcript shows: correcting Casey's leave month from S+3 to S+4 moved Blake from 27999 down to 25999 and Casey from 9999 up to 13999, because S+4 then splits three ways at 4000 instead of two ways at 6000, and putting the leave month back restored the baseline exactly. |
+| F3 | Accepted | Both occurrences in `context/STATUS.md` now read `impl_reviewed`, matching `change.md`. The self-contradicting sentence the review also caught, "the change moves to `implemented` at the end of this phase", is replaced by the actual sequence: implemented at `2d9de6a`/`8c8c5e5`, reviewed at `668e708`, findings resolved here. |
+| F4 | Accepted | The B02 row in `evidence/index.md` names `2d9de6a`, the phase 5 commit that added it, in place of "commit for this phase". |
+| F5 | Accepted | The plan's Current-month sensitivity note now says the rule counts a month once it has begun, excluding only months after the current one, and names `memberMonthStatus`'s `month > current` as the reason. |
+| F6 | Accepted, reworded | The omission reason was the weakest of the four and the review said so correctly. It now states the real reason: the refusal was left unprovoked to keep the live pass free of deletes aimed at permanent rows, and since the dependents refusal was provoked live without incident, the reason is not that a 409 was doubted but that the only way to ask for this one is to send a delete at a row that could never be recreated if the refusal failed to hold. The omissions themselves are unchanged, as the review advised. |
+| F7 | Accepted | The package inventory's reviewer-instruction bullet now carries the exact wording to copy into the submission comment, explaining what the second subscription is, why it is kept, and why the second account is empty. |
+
+Nothing in the review was rejected or deferred.
+
+**One thing worth recording about F1, because it is the kind of side effect that is easy to leave
+behind.** Driving Terminal by AppleScript, the first attempt resized the wrong window: `do script`
+created a new window but `window 1` still resolved to a pre-existing one, which was then given the
+large bounds meant for the new one. The commands ran correctly in the new window throughout, so no
+evidence was affected, and the pre-existing window held an idle shell with nothing in progress. The
+second attempt addressed the target window by its own id instead. The window this work created was
+closed afterwards and the pre-existing one was left at ordinary bounds, but its original geometry was
+not recorded before it was changed and therefore could not be restored exactly.
