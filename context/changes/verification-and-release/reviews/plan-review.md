@@ -490,9 +490,9 @@ concrete ancestry check. Per-phase row counts still equal the criterion bullets 
 
 ## Re-verification
 
-- **Plan revision**: commits `851670a` and `7381251`, re-checked against the tree at `7381251` with
-  `payments-and-recurring` archived at `0ff74bd` (`904ebcc` applied its review findings, `5d1cb80`
-  recorded the resolution)
+- **Plan revision**: commits `851670a`, `7381251` and `bbbb63e`, re-checked against the tree at
+  `bbbb63e` with `payments-and-recurring` archived at `0ff74bd` (`904ebcc` applied its review
+  findings, `5d1cb80` recorded the resolution)
 - **Verdict**: approved
 
 Every resolution was verified against the revised plan, the shipped routes and the migration files,
@@ -563,6 +563,21 @@ heading, five `### Phase N` titles identical to the body headers, per-phase rows
 criterion bullets in both splits (7/3, 13/5, 9/6, 3/8, 7/4), no checkbox outside the section, 4.10
 left as a gap rather than reused, one em dash and it is the mandated ` — <commit sha>` token, no
 calendar dates.
+
+`bbbb63e` and its addendum hold too, and they are what make F3's gate checkable rather than
+narrative. The ancestry check is an automated criterion in its own right, `git merge-base
+--is-ancestor 0ff74bd <release sha>`, carried by row 2.13, which keeps its title while its contract
+changed from reading files to naming a commit. The regression baseline the plan previously lacked is
+correct as quoted: repository-wide gates at `904ebcc` are typecheck clean, unit 15 files and 185
+tests, integration 11 files and 112 tests, which `context/STATUS.md`, `evidence/work-log.md` and
+`evidence/index.md` all record independently, and `tests/integration/` holds eleven test files on
+disk. Reading the criterion as "at or above" is the right direction for a regression gate. Row 2.12
+is gone with no occurrence left anywhere in the plan and its index is not reused; 2.19 is new for the
+counts comparison; no index is duplicated in any phase. The per-phase totals were recounted from the
+criterion bullets rather than taken from the addendum and come to 7/3, 13/5, 9/6, 3/8, 7/4, matching
+it exactly. Phase 2's Progress rows are not in ascending numeric order, 2.13 and 2.19 sitting between
+2.8 and 2.14, which the format contract does not require and which keeps the added rows beside the
+criteria they belong to.
 
 **Two non-blocking nits, for the next edit rather than for a re-review.**
 
