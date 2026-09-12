@@ -430,3 +430,40 @@ that file lives outside this repository.
 Lean Execution passes without a finding. Nothing is built, no phase could be removed without losing
 evidence a goal row needs, and the one thing a release slice would normally be tempted to add, a
 `DELETE /api/subscriptions/:id` to tidy the stray row, is refused by name with the domain reason.
+
+## Resolution
+
+Every finding was re-checked against the repository before being acted on, and every citation held.
+`npx wrangler d1 time-travel --help`, `restore --help` and `info --help` were run against the pinned
+`4.131.1` binary and confirm the two subcommands, `--bookmark`, `--timestamp` "within the last 30
+days", and the "This command acts on remote D1 Databases" line; no command was run against an account.
+The migration statements were recounted directly: seven `CREATE TABLE` and five index statements,
+including the partial `CREATE UNIQUE INDEX "members_one_owner_idx"` the original count omitted. The
+owner-less consequence was traced through `src/server/db/subscriptions.ts`, whose `create` inserts the
+subscription, its owner member and the owner's opening range in one `db.batch`. One fact the review
+did not have was found while resolving F2 and changes its Fix A: `src/server/routes/members.ts`
+answers 409 to a delete of the owner member, before the dependents check, so the member Fix A proposed
+creating on the stray subscription could never have been cleaned up. Resolved in `plan.md`,
+`plan-brief.md`, `research.md` and
+`context/decisions/D-010-live-demo-data-and-reviewer-access.md`.
+
+| Finding | Decision | What changed |
+|---|---|---|
+| F1 | Accepted, all three parts | Time Travel is now the rollback. Phase 2 gains change 4, `d1 time-travel info` immediately before the phase closes, with the returned bookmark and the exact restore command recorded in the release summary, plus a manual criterion confirming the retention window against this account rather than reading it from help text, and a stop condition if Time Travel is unavailable. The rollback note (phase 2 change 6) now carries three ordered paths: restore in place to the bookmark, redeploy the previous version id for a bad build over an intact schema, and rebuilding from the export as a last resort for a lost database only, with the `d1_migrations` uncertainty stated. The step that replayed the export into the existing database is gone, and the note states the interaction the review found: once the database is rebuilt under a new id, the previous release version id stops being a valid fallback. The export survives unchanged as phase 2 change 5, retitled "The off-Cloudflare snapshot" so its job is not mistaken for the undo. The same rewrite lands in Key findings, Migration notes, the brief's decision table and architecture paragraph, and `research.md`. |
+| F2 | Accepted, and resolved past both fixes | Fix A is not buildable as written: the owner member it creates on the stray subscription can never be deleted. Fix B's weakness, that the transcript's residue lands in the demo plan, is avoidable. The plan now does what neither option did. Phase 3 gains change 3, which creates the demo subscription, its two participants, its price and price change and its break month through the API, and adds a third non-owner participant for the CRUD cycle alone, removed in dependency order before the phase closes. Phase 3 change 4 repairs the stray subscription with an owner member and relabels it, with the refusal path recorded rather than worked around. Every transcript entry now names the subscription and member it acts on. Phase 4 no longer creates the plan; it records the money in the browser. Permanence is stated three times where it can be acted on: in the Overview, in phase 3 change 3, and in Migration notes, together with the rule that anything created to demonstrate a verb hangs off a deletable participant. D-010 was rewritten around this and now carries the owner-less fact, the two-half split, the permanence rule and the rejected "reuse the smoke-test subscription" option with its reason. |
+| F3 | Accepted, both halves | Phase 1 change 6 no longer touches S-03: its status flip and `## Done` entry are left to its own archive procedure, and the contract now names the roadmap's own vocabulary and says S-04's edit here is the single step from `planning` to `in-progress`, since the status writer has already made the first move. Phase 2 change 1 gains the gate as its first clause: `reviews/impl-review.md` carries a `## Resolution` resolving its three required findings and `payments-and-recurring` is archived, and the release SHA is read at or after that commit. Two automated criteria pin it, one of them `git merge-base --is-ancestor`. Current state analysis records why, naming S-02's identical sequence, and the brief's prerequisite line was replaced. |
+| F4 | Accepted | `release-05-tests-passing.png` moves to phase 2 as change 2, taken in the clean checkout with `git rev-parse HEAD` and the `npm test` run in one frame. Phase 4's screenshot contract now reads "nine captures taken in the browser from the live URL with the address bar visible, plus `release-05-tests-passing.png`", naming it as the one capture that is not a browser capture. A criterion in each phase asserts the SHA in the image equals the release SHA. |
+| F5 | Accepted | The line-counting criterion is replaced by two: one `rg` matching each of the five criteria by name exactly once, and one asserting a pass or fail marker per criterion plus a percentage line. Phase 5 change 1 now says the report is written in English with the criteria named in English, following the prompt's structure rather than its language, and says why. |
+| F6 | Accepted | Corrected to seven tables and five index statements in the plan's Key findings and Migration notes, in the brief, and in `research.md`, which now lists the three statements in `0003` individually. All four documents add the half-sentence the review asked for: the partial unique index is the only statement whose outcome could depend on existing rows, and it is created on a table created a few lines above it, so there are none. |
+| F7 | Accepted | Phase 2 change 5 became change 7 and was reworded to claim only what `wrangler secret list` can prove, that the seeding secrets are absent and the other two exist. The origin check is now separate and before the migration: one owner sign-in against the current live build, recorded as a status code, with `src/server/auth.ts`'s throw-on-empty named as the reason it cannot wait for phase 3. An automated criterion covers it. |
+| F8 | Accepted, both halves | Phase 5 gains change 3, a cold re-read in a fresh session with no cookie carried over, re-reading the demo plan's summary and payment list and asserting they equal what phase 4 recorded, with an automated criterion and a new manual testing step. The risk-mapping row for risk 3 now separates the migration half, closed by phases 2 and 3, from the reload half, closed here. Phase 5 change 4 now handles B01, B02 and B04 explicitly: each either gains a row citing the release artifacts or is stated as deliberately unchanged with the reason, because F01 asks for the missing goals to be listed explicitly. |
+
+**Progress rows**: existing step titles are unchanged and no index was reused or renumbered. One row
+was removed and eleven added. Removed: 4.10, whose stray-subscription work moved to phase 3, leaving a
+gap. Added: 2.12 to 2.18 in phase 2, 3.12 to 3.15 in phase 3, 4.11 and 4.12 in phase 4, and 5.9 to
+5.11 in phase 5. Row counts match the criterion bullets in both splits for every phase: 7/3, 13/5,
+9/6, 3/8, 7/4.
+
+Nothing in the review was rejected or deferred. F2 was resolved by a third option rather than either
+of the two offered, for the reason recorded above; the review's ranking of Fix A over Fix B was sound
+on the evidence it had, and the owner-member delete refusal is the fact that changes it.
