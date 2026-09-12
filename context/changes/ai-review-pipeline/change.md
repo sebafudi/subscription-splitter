@@ -21,3 +21,7 @@ network.
 
 Artifacts in this folder: `opportunity-map.md` (build-versus-buy decision), `requirements.md` (review
 contract), `research.md` (library and platform evidence), `plan.md` and `plan-brief.md`.
+
+The implementation review (`reviews/impl-review.md`, phases 1 to 4) is resolved: all five required
+fixes and all four observations were applied, mapped in that file's `## Resolution` section. Phase 5
+remains pending on `OPENROUTER_API_KEY`.
