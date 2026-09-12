@@ -8,31 +8,47 @@ months of those standing orders that did not arrive. Every balance moves accordi
 interface never shows assumed money as confirmed money. This is roadmap item S-03, source refs
 US-02, FR-015 to FR-021, FR-025 and FR-026.
 
-The slice adds no new kind of problem. Three tables hang off records S-02 created, nine routes follow
-conventions S-01 and S-02 fixed, and the calculation they feed is already written and already unit
-tested against a literal state. What is new is that the assumed-receipt rule becomes reachable from
-outside, which is the half of test-plan risk 4 that S-02 left open by design.
+Three tables hang off records S-02 created, twelve routes follow conventions S-01 and S-02 fixed, and
+the calculation they feed is already written and already unit tested against a literal state. Two
+things are new. The assumed-receipt rule becomes reachable from outside, which is the half of
+test-plan risk 4 that S-02 left open by design. And the screen shows, for the first time, a number the
+domain derives rather than one the server hands it: which months of a standing order counted, and
+which did not. That second one decides whether FR-026 holds, and the screen can get it wrong on its
+own, so the rule that answers it lives in one function that both the calculation and the screen read.
+Decision D-008.
 
 ## Current state analysis
 
 S-01 is on main: sessions, two seeded accounts, the `subscriptions` table with its repository and
 four routes, and the ownership rule enforced inside the repository's SQL.
 
-S-02 is planned and under independent review; none of its code is on disk. Its plan is authoritative
-here and this slice consumes it rather than re-deciding any of it. From it come the domain module
-(`types.ts`, `months.ts`, `money.ts`, `members.ts`, `calc.ts`), the `members` and `active_ranges`
-tables, the `price_history` and `break_months` tables, their repositories and routes, the state
-loader, the summary route, the owner member created with its subscription, and the subscription
-detail screen. Critically, S-02 already declares `Payment`, `RecurringSchedule` and
-`RecurringException`, already writes `recurringReceived`, `balanceForMember` and `computeSummary`
-against them, already leaves `hasDependents` as the seam a delete rule asks, and already returns the
-three ledger arrays empty from `loadState` with a note saying this slice fills them.
+S-02 lands in phases, and two of them are on disk. Its phase 1 brought the whole domain module
+(`types.ts`, `months.ts`, `money.ts`, `members.ts`, `calc.ts`), with `Payment`, `RecurringSchedule`
+and `RecurringException` declared and `recurringReceived`, `balanceForMember` and `computeSummary`
+already written against them. Its phase 2 brought `migrations/0003_members.sql` with `members` and
+`active_ranges`, the members repository, routes and validation, and `hasDependents` in
+`src/server/db/members.ts` with exactly the `(db, subscriptionId, memberId, userId)` signature this
+slice consumes, returning `false` with every parameter unused. The member DELETE route in
+`src/server/routes/members.ts` already answers 409 on it, so that branch exists and is unreachable
+until this slice gives the seam its clauses.
 
-So nothing in the calculation has to change. There is no `payments` table, no `recurring_schedules`
-table, no `recurring_exceptions` table, no route that can write one, and no screen that can show one.
-A standing order cannot be stored, so the stored half of test-plan risk 4 cannot be tested. The
-member DELETE 409 branch for a member with history exists and is unreachable, because nothing can
-give a member history.
+Its phase 3 brought `migrations/0004_prices_and_breaks.sql`, the price and break-month repositories
+and routes, `src/server/db/subscription-state.ts` returning the three ledger arrays empty with a note
+saying this slice fills them, `src/server/routes/summary.ts`, `tests/integration/summary.test.ts`, and
+`src/domain/month-status.ts`, whose `memberMonthStatus` this slice builds its own month helper over.
+What is left is S-02 phase 4, the detail screen, and phase 5. Its plan stays authoritative for those
+and this slice consumes it rather than re-deciding any of it. Which phase of this slice waits on which
+is in Prerequisites below, per phase rather than as one gate.
+
+No calculation signature has to change and the summary keeps its shape. Two things inside the
+calculation do change, both inside function bodies. `recurringReceived` is re-expressed over the
+schedule-level month helper this slice adds, which itself defers to S-02's `memberMonthStatus`, so
+the last conditions still written inline in its loop, the arrangement's two months and the
+exception, stop being written twice. `manualCollectedThisMonth` starts excluding the owner, so
+`collectedThisMonth` cannot move for money no balance on the screen explains. Otherwise there is no
+`payments` table, no `recurring_schedules` table, no `recurring_exceptions` table, no route that can
+write one, and no screen that can show one. A standing order cannot be stored, so the stored half of
+test-plan risk 4 cannot be tested.
 
 The prototype at `spotify-family-split` has a complete tested version of this accounting and was read
 as a source of semantics only. Nothing is copied from it. Its rules, the four boundaries that make
@@ -84,7 +100,26 @@ account asking for any of the new records, by any route and any verb, is told th
   member, and a member from another subscription are one answer.
 - The payment column is `tag` and the S-02 domain field is `kind`. The repository maps between them at
   the boundary, exactly as it maps `start_month` to `startMonth`. The wire and the domain agree; only
-  SQL differs.
+  SQL differs. The exceptions table has the same shape of mismatch and it is the dangerous one: the
+  column is `schedule_id` and the domain field is `recurringId`, which `src/domain/calc.ts` reads as
+  `exception.recurringId === schedule.id`. A repository that returns `schedule_id` produces an
+  exception list that matches nothing, which looks exactly like a participant who never missed a month.
+- Six conditions decide whether a month of a standing order counted, and S-02 phase 3 has already
+  moved three of them out: `memberMonthStatus` in `src/domain/month-status.ts` answers whether a month
+  counts for a member and names the condition that failed, and `recurringReceived` defers to it for the
+  elapsed bound, the break month and the active range. What stays inline in `recurringReceived` is the
+  arrangement's own start and end months and the exception. The screen needs the same answer per month
+  and the reason a month did not count, and it can get neither from the summary: `MemberSummary`
+  carries a single `paid` field with no recorded-versus-assumed split, and the response has no
+  per-month anything. So this slice finishes the move rather than starting it: `scheduleMonthStatuses`
+  adds the arrangement's three conditions and the exception on top of `memberMonthStatus`,
+  `recurringReceived` sums over it, and the screen labels from it. Decisions D-008 and D-009.
+- `computeSummary` derives `manualCollectedThisMonth` from `state.payments` filtered by date alone,
+  with no member filter, while `totalCollected` sums only the non-owner rows and
+  `recurringCollectedThisMonth` iterates the non-owner members. A payment recorded against the owner
+  would therefore move `collectedThisMonth` and move nothing else, so the collected-versus-expected
+  card would read higher than any balance on the screen explains. The route refusal is the primary
+  guard; the filter is what makes the invariant true in the layer the unit tests reach.
 
 ## What we are NOT doing
 
@@ -101,8 +136,13 @@ account asking for any of the new records, by any route and any verb, is told th
   counter-argument as answered.
 - No reminder, no notification and no participant-facing view of a payment. Participants are records,
   not users.
-- No change to any calculation signature from S-02, no change to the summary route's shape, and no
-  new domain concept. The three arrays stop being empty; nothing else moves.
+- No change to any calculation signature from S-02 and no change to the summary route's shape.
+  `MemberSummary` keeps its single `paid` field: the recorded-versus-assumed distinction is drawn on
+  the screen from the month-status helper rather than added to the response, which was the alternative
+  D-008 rejected. Two things inside the calculation do move, and neither is a signature or a response
+  shape: `recurringReceived` is re-expressed over that helper, and `manualCollectedThisMonth` gains the
+  non-owner filter `totalCollected` already has. The month status is a new named concept in the
+  domain, and it is the only one this slice adds.
 - No deployment, no remote database and no browser end-to-end test. S-04 owns all three; this slice's
   browser pass is a manual checklist with captured evidence.
 
@@ -129,15 +169,45 @@ back correspondingly" true by construction rather than by a recomputation step t
 
 ### Prerequisites
 
-S-02 must be on disk before phase 1 starts. This plan names S-02 files it extends and S-02 functions
-it calls, and none of them exists yet. Three things are checked in the first minutes of phase 1 and
-adjusted in place if they moved:
+S-02 lands in phases, so the gate is per phase rather than one blanket condition. Phases 1 to 3 are on
+disk and verified against the tree rather than assumed: `migrations/0003_members.sql` carries `members`
+and `active_ranges` and `migrations/0004_prices_and_breaks.sql` carries prices and break months, so the
+`0005` and `0006` identifiers are settled rather than provisional; `hasDependents` exists with the
+four-argument signature this slice consumes and returns `false` with every parameter unused, behind a
+member DELETE route that already answers 409 on it; `src/server/db/subscription-state.ts` returns the
+three ledger arrays empty with a note naming this slice; `src/server/routes/summary.ts` and
+`tests/integration/summary.test.ts` exist; and `src/domain/month-status.ts` exports
+`memberMonthStatus`, which change 3 builds on. S-02 phase 4, the detail screen, is what remains.
 
-- The migration identifiers. `0005` and `0006` assume S-02 landed `0003` and `0004`.
-- Which recurring and payment cases S-02's unit suite already pins. This slice extends those files and
-  does not duplicate a case that is already there.
-- The detail screen's shape, its data fetching and its mutation refresh. The new sections adapt to
-  what S-02 landed rather than rewriting it.
+- **Phase 1** needs S-02 phase 1 only, which is on disk. It is startable now and runs in parallel with
+  S-02 phase 3. Its first act is the helper check below.
+- **Phase 2** needs S-02 phase 3 as well as phase 2: `src/server/db/subscription-state.ts` to gain the
+  payments read, and `src/server/routes/summary.ts` for the last integration case, which asserts the
+  summary reflects a stored payment. Both have landed, and prices and break months took `0004`, so
+  this phase's migration is `0005` and the numbering hedge is spent.
+- **Phase 3** needs S-02 phase 3 for the same two files, plus `tests/integration/summary.test.ts`,
+  which has landed and which this phase extends rather than creates.
+- **Phase 4** needs S-02 phase 4: `src/client/screens/SubscriptionDetail.tsx` and whatever shape
+  `src/client/api.ts` landed with. Its first act is to confirm that screen already reads the members
+  with their active ranges and the subscription's break months, because the month-status helper needs
+  both. S-02's plan gives the screen a members section and a break-months section, so it should; if
+  either read is missing, phase 4 adds it, which is one more call through the existing client module.
+- **Phase 5** needs phases 1 to 4 of this slice and nothing further from S-02.
+
+**The month-status helper is S-02's, and this slice builds on it rather than beside it.** S-02 phase 3
+landed the per-month classification: `src/domain/month-status.ts` exports
+`memberMonthStatus(state, member, month, current)` returning `{ counts, reason }` with a named
+`MonthExclusion` per condition, and `recurringReceived` already defers the elapsed bound, the break
+month and the active range to it, keeping only the arrangement's start month, its end month and the
+exception inline. Decision D-009 records it and says in as many words that S-03's helper should be
+built over it rather than re-deriving those conditions. Change 3 does exactly that, and criterion 1.8
+asserts afterwards that exactly one export in `src/domain/` decides whether a month counts for a
+member.
+
+Two things phase 1 checks in its first minutes and adjusts in place if they moved: which recurring and
+payment cases S-02's unit suite already pins, so this slice extends those files without duplicating a
+case; and whether any caller of `ownerResidualForMonth` appeared outside `src/domain/money.test.ts`,
+which change 5 treats as a finding to raise rather than a branch to take.
 
 ## Critical implementation details
 
@@ -149,6 +219,22 @@ of its own, and the screen takes the current month from the summary response rat
 browser. A second source would let an open-ended arrangement claim a month that has not arrived, in a
 way no test of the rule itself would see, and `AGENTS.md` already forbids the derivation that
 produces it.
+
+**One function decides whether a month of a standing order counted, and it says why.**
+`scheduleMonthStatuses` in `src/domain/recurring.ts` enumerates an arrangement's elapsed months and
+resolves each one through `memberMonthStatus`, adding the one condition that module does not own, the
+exception. `recurringReceived` adds the amounts of the months it reports as counting, and the
+standing-order section draws both its toggle grid and its per-month labels from the same call. D-009
+already says this helper should be built over `memberMonthStatus` rather than re-deriving the break
+month and the active range for itself, and that is what keeps both decisions' one-place claim true at
+once. The alternative, which is what this plan specified before review, was a
+`scheduleMonths` list carrying no status at all. The screen would then have applied the start month,
+the end month and the current month, and possibly the exceptions, which the API view attaches to the
+schedule; nothing would have given it break months or the member's active ranges. A month the server
+excluded would have been drawn as a counted month labelled assumed received, visually identical to one
+that counted, and the organizer would read five assumed months against a balance reflecting three with
+no way to tell which two were dropped or why. That is the FR-026 failure this slice exists to prevent,
+and it is the one the screen can cause without the server being wrong about anything. Decision D-008.
 
 **Every new route module registers its own session middleware.** Routers are mounted at `'/'` and own
 their absolute paths, so middleware does not cascade between them. Both new modules register
@@ -167,18 +253,29 @@ interactive transaction.
 their whole history with it. The refusal is `hasDependents`, which this slice gives its two clauses,
 and it is checked in the repository rather than in the route so no future path can skip it.
 
-**A payment or a schedule naming the owner is refused.** The owner is never owed from and does not
-appear in the per-member summary list, so money recorded against them would be counted nowhere and
-visible nowhere. The route answers 400 naming the member field, which is the same shape as any other
-value the rules do not allow.
+**A payment or a schedule naming the owner is refused, and the calculation stops being asymmetric
+about it.** The owner is never owed from and does not appear in the per-member summary list, so money
+recorded against them moves no balance the screen shows. It does not disappear, though, which is what
+this plan claimed before review. `computeSummary` derives `manualCollectedThisMonth` from
+`state.payments` filtered by date alone, with no member filter, while `totalCollected` and
+`recurringCollectedThisMonth` are both non-owner only. An owner payment dated in the current month
+therefore raises the collected-versus-expected card and moves nothing else, and the two cannot be
+reconciled by looking at them. The route answers 400 naming the member field, which is the same shape
+as any other value the rules do not allow, and that stays the primary guard. `manualCollectedThisMonth`
+also gains the non-owner filter its two siblings already have, so the invariant holds in the layer the
+unit tests reach rather than resting on a single route check with no test beneath it.
 
 ## Phase 1: The ledger rules in the domain
 
 ### Overview
 
-The three pure predicates the routes need before any of them can refuse anything, and the unit cases
-that pin the assumed-receipt rule at its four boundaries. Pure, with no import from D1 or Hono.
-Written test-first, because test-plan rollout phase 3 exists for exactly these cases.
+The pure predicates the routes need before any of them can refuse anything, the one helper the screen
+and the calculation both read, and the unit cases that pin the assumed-receipt rule at its four
+boundaries. Pure, with no import from D1 or Hono. Written test-first, because test-plan rollout phase
+3 exists for exactly these cases.
+
+**Prerequisite**: S-02 phase 1, which is on disk. This phase is startable now and runs in parallel
+with S-02 phase 3. It begins with the month-status helper check in Prerequisites.
 
 ### Required changes:
 
@@ -214,52 +311,134 @@ the message set says so by omission.
 
 **File**: `src/domain/recurring.ts`
 
-**Purpose**: Two questions the routes ask and one the screen asks, all decided by the same range
-arithmetic, in one place so they cannot disagree.
+**Purpose**: Two questions the routes ask and one the screen and the calculation both ask. The first
+two are range arithmetic over a schedule; the third is the arrangement's range plus everything
+`memberMonthStatus` already decides, in one place so the screen and the server cannot disagree.
+
+**Precondition**: `scheduleMonthStatuses` below is written over `memberMonthStatus` in
+`src/domain/month-status.ts`, which S-02 phase 3 landed. This change reads that module before it
+writes, and if its names or shape have moved since, it adopts what is there rather than restating the
+contract below.
 
 **Contract**: `isMonthInSchedule(schedule: RecurringSchedule, month: MonthStr): boolean`, true when
 `schedule.startMonth <= month` and either `endMonth` is null or `month <= endMonth`. The end month is
 inclusive, so a schedule whose two ends are equal covers exactly one month.
 
-`findScheduleOverlap(existing: RecurringSchedule[], candidate: RecurringSchedule): RecurringSchedule | null`
-returns the first stored schedule for the same member whose month range intersects the candidate's,
-ignoring any stored schedule with the candidate's own id so an edit does not collide with itself. Two
-ranges intersect when each one's start is at or before the other's end, with a null end treated as
-unbounded. Two schedules that touch, where one starts in the month the other ended, are an overlap
-rather than a continuation, for the same reason S-02 gives for active ranges: the month is the unit
-of account and an arrangement cannot stop and restart inside one.
+`findScheduleOverlap(existing: RecurringSchedule[], candidate: ScheduleCandidate): RecurringSchedule | null`,
+where `ScheduleCandidate` is
+`{ id: string | null; memberId: string; startMonth: MonthStr; endMonth: MonthStr | null }`. It returns
+the first stored schedule for the same member whose month range intersects the candidate's, ignoring
+any stored schedule with the candidate's own id so an edit does not collide with itself. A null id
+matches no stored row, which is the create path: `create` generates the identifier with
+`crypto.randomUUID()` inside the repository, so `POST` has no id to pass and must not have to invent a
+placeholder or move generation into the route. Two ranges intersect when each one's start is at or
+before the other's end, with a null end treated as unbounded. Two schedules that touch, where one
+starts in the month the other ended, are an overlap rather than a continuation, for the same reason
+S-02 gives for active ranges: the month is the unit of account and an arrangement cannot stop and
+restart inside one.
 
-`scheduleMonths(schedule: RecurringSchedule, currentMonth: MonthStr): MonthStr[]` enumerates the
-elapsed months of the arrangement, from its start month to the earlier of its end month and the
-current month, inclusive, and empty when the arrangement has not started. This is the list the screen
-draws an unpaid toggle for, and it is in the domain rather than in the client so the screen and the
-rule cannot disagree about which months an arrangement covers.
+`scheduleMonthStatuses(inputs, member, schedule, exceptionMonths, current)` returns
+`{ month: MonthStr; counts: boolean; reason: MonthExclusion | null }[]`, one row per elapsed month of
+the arrangement, ascending. This is the single answer to which months of a standing order counted, and
+it is what both the calculation and the screen read; nothing else applies any of the six conditions.
 
-#### 4. The residual helper S-02 left behind
+It is built over `memberMonthStatus` rather than beside it, which is what D-009 asks for. The row set
+is the arrangement's own three conditions: from its start month to the earlier of its end month and
+`current`, inclusive, and empty when the arrangement has not started. Each row is then
+`memberMonthStatus(inputs, member, month, current)`, and a month that survives it and appears in
+`exceptionMonths` becomes `excepted`. So `break-month` and `outside-active-range` are reported by the
+module that already owns them, in the order it already checks them, and this slice adds exactly one
+condition and one reason.
+
+`MonthExclusion` in `src/domain/month-status.ts` gains `'excepted'`. That is an additive change to a
+union the landed module exports; no existing value moves and no caller of `memberMonthStatus` can
+produce the new one.
+
+Three of that union's members are unreachable from this helper and the plan says so rather than
+leaving it to be discovered: `not-yet-elapsed` cannot occur because the row set already stops at
+`current`; `before-start-month` cannot, because a schedule's start month is refused below the
+subscription's first month; and `owner-member` cannot, because a schedule naming the owner is refused
+at `POST` and at `PATCH`. The reasons a row can actually carry are `break-month`,
+`outside-active-range` and `excepted`, which are exactly the three the screen renders in words.
+
+`inputs` is the same first argument `memberMonthStatus` takes, and phase 1 narrows that parameter's
+type from `SubscriptionState` to `Pick<SubscriptionState, 'settings' | 'breakMonths'>`, which is all
+either function reads. `SubscriptionState` satisfies it structurally, so every caller in the
+calculation compiles unchanged and nothing about the server path moves. The reason is the browser: the
+detail screen has the subscription's settings and its break months, and it has no price history and no
+payment list, so a parameter typed as the whole state would have forced it to synthesise one with
+fabricated empty fields, and the fabrication would keep compiling on the day someone adds a condition
+that reads one of them.
+
+#### 4. The calculation reads the month status, and stops counting owner money as collected
+
+**File**: `src/domain/calc.ts`
+
+**Purpose**: Finish the move S-02 phase 3 started, so that no condition deciding whether a month
+counted is written in two places, and close the asymmetry that lets `collectedThisMonth` move for
+money no balance explains. Both are changes inside function bodies: no signature moves, and `Summary`
+and `MemberSummary` keep their shapes.
+
+**Contract**: `recurringReceived(state, member, months, current)` keeps the signature and the meaning
+S-02 gave it. It already defers the elapsed bound, the break month and the active range to
+`memberMonthStatus`; what is still written inline in its loop is the arrangement's start month, its end
+month and the exception lookup. All three move into `scheduleMonthStatuses`. For each of the member's
+schedules the function calls that helper with `state`, which satisfies the narrowed `inputs` type
+structurally, the months of `state.recurringExceptions` whose `recurringId` equals that schedule's id,
+and `current`, then adds the schedule's amount for every
+returned row that counts and whose month is in `months`. The row set already applies the arrangement's
+range and the current month, so filtering by `months` is the caller's window and nothing more.
+
+The set of months selected is identical to the set the conditions select today, and that is not left
+as a claim: criterion 1.9 asserts the two sets are equal for a state carrying a break month, a
+departure and an exception.
+
+`computeSummary` derives `manualCollectedThisMonth` from the payments whose date falls in `current`
+**and** whose `memberId` names a member that is not the owner, matching `totalCollected`, which
+already sums non-owner rows only, and `recurringCollectedThisMonth`, which already iterates the
+non-owner members. Nothing else in the function changes.
+
+#### 5. The residual helper S-02 left behind
 
 **File**: `src/domain/money.ts`
 
-**Purpose**: Answer the question S-02 hands to this slice. Its plan leaves `ownerResidualForMonth`
-with no caller and with an `activeCount - 1` expression that assumes the owner is always one of the
-active members, wrong for any month the owner sits out and inert only for as long as nothing calls
-it, and says explicitly that whether to delete it is settled here.
+**Purpose**: Answer the question S-02 hands to this slice. `ownerResidualForMonth` is exported from
+`src/domain/money.ts` with an `activeCount - 1` expression that assumes the owner is always one of the
+active members, wrong for any month the owner sits out and inert only for as long as nothing calls it.
 
-**Contract**: Remove `ownerResidualForMonth` and its unit cases. The owner's share of a month is
-produced inside `computeSummary`, which is the value the screen renders and the tests assert, so the
-helper has no caller to gain and payments give it none. A dead export in a pure module that encodes a
-false assumption is a trap for the first person who needs a residual and reaches for the one that is
-already there. The precondition is a search: if S-02 landed a caller after all, the helper stays, it
-gains the charged-count argument D-006 describes, and this change becomes that instead. That search
-is the first thing phase 1 does to this file.
+**Contract**: Remove `ownerResidualForMonth`, and with it the two assertions in
+`src/domain/money.test.ts` that call it. The owner's share of a month is produced inside
+`computeSummary` as `ownerShareThisMonth`, which is the value the screen renders and the tests assert,
+so the helper has no caller to gain and payments give it none. A dead export in a pure module that
+encodes a false assumption is a trap for the first person who needs a residual and reaches for the one
+that is already there.
 
-#### 5. Unit tests
+The only callers on disk are in its own unit file: `src/domain/money.test.ts` uses it in the
+month-balances assertion and in the zero-active assertion. Both properties survive the deletion
+because both are already asserted through the shipped path in `src/domain/calc.test.ts`, where
+`ownerShareThisMonth` is 10000 for a priced month with nobody active and
+`expectedThisMonth + ownerShareThisMonth` equals the price. The deletion therefore loses no coverage,
+and that is recorded here so it is not re-litigated during implementation.
+
+D-006 records the other branch as rejected after review: widening the helper with a charged-count
+argument was refused because nothing in the shipped path would have called it, which would have proved
+one expression while the interface computed another. So a caller appearing outside
+`src/domain/money.test.ts` is a finding to raise, not a branch to take, and criterion 1.10 is scoped
+to exactly that.
+
+#### 6. Unit tests
 
 **Files**: `src/domain/months.test.ts`, `src/domain/payments.test.ts`,
 `src/domain/recurring.test.ts`, `src/domain/calc.test.ts`
 
 **Purpose**: Prove test-plan risk 4 at the cheapest layer and close the acceptance example with a
-payment in it. Written before the functions they exercise. The first three extend files S-02 created;
-a case S-02 already pins is not repeated.
+payment in it. Written before the functions they exercise.
+
+Two of the four files exist and are extended: `src/domain/months.test.ts` and
+`src/domain/calc.test.ts`, where a case S-02 already pins is not repeated. The other two are new,
+because `src/domain/payments.ts` and `src/domain/recurring.ts` are created by this slice, so nothing
+in them can duplicate an S-02 case. The exception is the month-status helper: if S-02 phase 3 landed
+it with a test file of its own, that file is the one extended and only the cases it lacks are added.
 
 **Contract**: Cases:
 
@@ -272,10 +451,20 @@ a case S-02 already pins is not repeated.
   is unbounded above when the end is null
 - `findScheduleOverlap` finds a contained range, a straddling range, two ranges that touch in one
   month and an open-ended range that swallows a later one; returns null for two ranges separated by a
-  month, for a different member, and for the candidate matching its own stored id
-- `scheduleMonths` stops at the current month for an open-ended arrangement, stops at the end month
-  when it is earlier, is empty when the arrangement starts next month, and is one month long when it
-  starts and ends in the current one
+  month and for a different member; returns null for a candidate whose id matches the stored row it
+  intersects, which is the edit path; and returns that same stored row for a candidate with a null id
+  and otherwise identical months, which is the create path
+- `scheduleMonthStatuses` returns rows for the elapsed months only: it stops at the current month for
+  an open-ended arrangement, stops at the end month when that is earlier, is empty when the
+  arrangement starts next month, and is one row long when it starts and ends in the current month
+- `scheduleMonthStatuses` reports why a month did not count, one case per reachable reason against the
+  same arrangement so the difference is the condition alone: a month outside every active range of the
+  member is `outside-active-range`, a break month is `break-month`, a month in the exception list is
+  `excepted`, and an ordinary month counts with a null reason
+- a month that is both outside the member's ranges and a break month reports `outside-active-range`,
+  which is `memberMonthStatus`'s own order rather than a second one invented here
+- an excepted month that is also a break month reports `break-month`, because the exception is the last
+  condition applied and a month already excluded is never re-labelled
 - the assumed-receipt rule through `recurringReceived`, one test per disqualifying condition and each
   written as a pair against the same state so the difference is the condition alone: a month inside
   the range counts; an exception for that schedule and month removes it; a break month removes it; a
@@ -292,6 +481,12 @@ a case S-02 already pins is not repeated.
   `collectedThisMonth` counts the first and not the second
 - `collectedThisMonth` adds a manual payment in the current month to the assumed receipt for the same
   month for the same member
+- a payment in the current month naming the owner member does not move `collectedThisMonth`, while the
+  same payment naming a participant does
+- `recurringReceived` selects exactly the months `scheduleMonthStatuses` reports as counted, for one
+  state carrying a break month, a departure and an exception, asserted as the two sets of months
+  rather than as a single total, so a re-expression that quietly drops or adds a condition fails here
+  rather than netting out
 - a payment with kind `annual` is counted exactly as one with kind `manual`, with no spreading
 - the acceptance example: a price of 10000 minor units with the owner and two participants active
   gives each participant an owed of 3333, and with one participant's payment of 2000 in the state
@@ -308,8 +503,15 @@ a case S-02 already pins is not repeated.
 - Typecheck passes: `npm run typecheck`
 - Integration tests still pass: `npm run test:integration`
 - Nothing under `src/domain/` imports from `src/server/`, `hono` or a D1 type
-- A search for `ownerResidualForMonth` across `src/` returns nothing, or it returns the caller that
-  kept it alive and the helper carries its charged-count argument
+- Exactly one export in `src/domain/` decides whether a month counts for a member, and both
+  `recurringReceived` and `scheduleMonthStatuses` resolve through it rather than repeating a condition
+  inline; no start month, end month, break month, active range or exception check appears in
+  `recurringReceived`'s own body
+- The months `recurringReceived` counts equal the months `scheduleMonthStatuses` reports as counted,
+  for a state carrying a break month, a departure and an exception
+- A search for `ownerResidualForMonth` across `src/` returns nothing. Before the change it returns
+  only `src/domain/money.ts` and `src/domain/money.test.ts`; any other path is a finding to raise
+  rather than a reason to keep the helper
 
 #### Manual verification:
 
@@ -330,6 +532,10 @@ confirmation before moving to the next phase.
 The first ledger table, its repository, its five routes and the ownership tests that prove a second
 account cannot reach any of it. Written test-first, because a leak looks like success from the
 outside.
+
+**Prerequisite**: S-02 phase 3, for `src/server/db/subscription-state.ts`, which change 5 extends, and
+`src/server/routes/summary.ts`, which the last integration case reads. Both have landed, and prices
+and break months took `0004`, so this phase's migration is `0005`.
 
 ### Required changes:
 
@@ -468,8 +674,17 @@ missing or foreign including a member id from another subscription, 201 on creat
 Written before the routes.
 
 **Contract**: The integration test uses the shared helpers in `tests/integration/accounts.ts`, seeds
-two accounts with emails unique to the test and a client address unique to the test, and creates a
-subscription with a member for each. Cases:
+two accounts with emails unique to the test, and passes `10.6.0` as its client-address prefix to
+`signedInCookieWithPrefix`, one address per seeded account rather than one address for the whole
+file. Sign-in is rate limited at ten
+requests per sixty seconds per client address, the limiter is database-backed, and the integration
+database is shared across files and never reset, so a shared prefix or a single reused address reads
+as a flaky sign-in rather than as a throttle. The comment at the top of that module records the
+assignments: `10.0.0.x` to `10.3.0.x` are in use and `10.4.0.x` went to `prices.test.ts` and `10.5.0.x` to
+`summary.test.ts` when S-02 phase 3 landed, so this slice takes `10.6.0.x` here and `10.7.0.x` in
+phase 3. This phase
+extends that comment with its own line. It then creates a subscription with a member for each account.
+Cases:
 
 - a payment created by account A is listed for A and returned by a later, separate request with its
   date, amount, note and kind intact, which is what proves it persisted rather than being held in
@@ -524,6 +739,10 @@ empty patch.
 The arrangement that stops needing monthly data entry, the single-month correction that keeps it
 honest, and the tests that close the stored half of test-plan risk 4. Written test-first.
 
+**Prerequisite**: S-02 phase 3, which has landed, for `src/server/db/subscription-state.ts`, which
+change 5 extends, and `tests/integration/summary.test.ts`, which change 8 extends rather than
+creates.
+
 ### Required changes:
 
 #### 1. Recurring migration
@@ -555,12 +774,23 @@ was entered.
 **Purpose**: One declared schema per write, in the same shape as the other validation modules.
 
 **Contract**: `createScheduleSchema` requires `member_id` as a non-empty string, `amount` as a
-positive integer in minor units, `start_month` on the month pattern the subscription schema uses, and
-accepts `end_month` as nullable on the same pattern, refined so that when it is present it is at or
-after `start_month`. `patchScheduleSchema` is the partial strict form rejecting an empty body, where
-`end_month` may be set to null to reopen an arrangement, and the same ordering refinement applies to
-whichever of the two months the merged result carries, checked by the route against the stored row
-rather than by the schema against a partial body. Both are `.strict()`.
+positive integer in minor units, `start_month` on the month pattern the subscription schema uses,
+and accepts `end_month` as nullable on the same pattern, refined so that when it is present it is at
+or after `start_month`. `patchScheduleSchema` is the partial strict form rejecting an empty body,
+and its patchable fields are named rather than left open: `member_id`, `amount`, `start_month` and
+`end_month`, which is every column of the row. `end_month` may be set to null to reopen an
+arrangement. The ordering refinement applies to whichever of the two months the merged result
+carries, checked by the route against the stored row rather than by the schema against a partial
+body. Both are `.strict()`, so a body naming anything else is a 400 naming the field.
+
+`member_id` is patchable because an arrangement entered against the wrong participant is an ordinary
+correction, and the payments PATCH already allows the same move. Two rules then have to run on the
+merged row rather than the stored one, and both are load-bearing: the overlap is read with
+`listForMember` for the **merged** member, or moving an arrangement onto a participant who already has
+one passes the check and double-counts that participant's months; and the owner refusal re-runs, or a
+schedule can be moved onto the owner by PATCH after being refused at POST. One integration case
+covers each. Exceptions are keyed by schedule and month, not by member, so a member change drops none
+of them; only a narrowed month range does that.
 
 A month in a path parameter is validated with the same month schema before it reaches SQL, so a
 malformed month in an exception route is a 400 rather than a silent miss. The overlap rule and the
@@ -582,10 +812,22 @@ enforcement point for ownership over both.
 `subscriptions` and filters `s.id = ?` and `s.user_id = ?`, so a foreign schedule, a schedule reached
 through a foreign member and one reached through a foreign subscription are one answer.
 
+`list` orders by `member_id` then `start_month` ascending, and `listForMember` by `start_month`
+ascending, for the same reason the payments repository orders by date: the screen draws one block per
+participant from that list and does no sorting of its own, and a query whose order comes from the
+current plan rather than from an `ORDER BY` is stable until an index or a row count changes. Neither
+table carries `created_at`, so entry order is not available and is not wanted.
+
 `list` and `get` return each schedule with its exception months attached as a string array, so the
 screen draws its toggles from one read. That is an API view shape; the domain's `RecurringException`
 type is unchanged and `loadState` still returns the two collections separately, because the
 calculation reads them that way.
+
+The exceptions column is `schedule_id` and the domain field is `recurringId`; `src/domain/calc.ts`
+matches on `exception.recurringId === schedule.id`. This module maps between them at the boundary,
+exactly as the payments repository maps `tag` to `kind`. A repository that returns `schedule_id`
+produces an exception list that matches nothing, and a participant whose corrections are all silently
+ignored looks exactly like one who never missed a month, so nothing in the suite would fail.
 
 `update` writes the schedule row and, in the same `db.batch([...])`, deletes every exception whose
 month falls outside the new range. `listForMember` is what the route uses to check for an overlap
@@ -612,9 +854,11 @@ requirements call history.
 
 **Contract**: `loadState` reads the subscription's recurring schedules and their exceptions through
 the same ownership predicate and returns them in `state.recurring` and `state.recurringExceptions`,
-mapped to the domain shapes. No other line changes, no calculation signature changes, and the summary
-route is untouched. From here the summary counts assumed receipts because the state finally contains
-them.
+mapped to the domain shapes, with each exception's `schedule_id` becoming `recurringId`, which is
+the field `recurringReceived` matches on. An exception list that keeps the column name matches
+nothing and fails silently, so this mapping is asserted by the summary cases rather than assumed. No
+other line changes, no calculation signature changes, and the summary route is untouched. From here
+the summary counts assumed receipts because the state finally contains them.
 
 #### 6. Recurring routes
 
@@ -631,10 +875,12 @@ other schedules and refuses an overlap with 409 naming the rule and the conflict
 creates and returns 201.
 
 `GET`, `PATCH` and `DELETE /api/subscriptions/:id/schedules/:scheduleId` read, update and remove one
-arrangement. `PATCH` merges the patch onto the stored row before checking the month ordering, the
-start-month rule and the overlap, so an edit is judged on its result rather than on its diff, and the
-overlap check ignores the arrangement's own id. `DELETE` answers 204 and its exceptions go with it by
-cascade.
+arrangement. `PATCH` merges the patch onto the stored row before checking anything, so an edit is
+judged on its result rather than on its diff: the month ordering, the start-month rule, the owner
+refusal and the overlap all run against the merged row. The overlap is read with `listForMember` for
+the merged member, which is the patched one when the body carries `member_id`, and it ignores the
+arrangement's own id so an edit does not collide with itself. `DELETE` answers 204 and its
+exceptions go with it by cascade.
 
 `PUT /api/subscriptions/:id/schedules/:scheduleId/exceptions/:month` marks that month unpaid and
 `DELETE` on the same path unmarks it. Both validate the month, both answer 404 when the schedule is
@@ -663,7 +909,8 @@ exception routes.
 holds against stored data rather than against a literal, and prove the member delete rule.
 
 **Contract**: The integration test mirrors the payments file, seeding two accounts through the shared
-helpers. Cases:
+helpers and passing `10.7.0` as its client-address prefix, one address per seeded account, for the
+reason phase 2 records. Cases:
 
 - a schedule created by account A is listed for A and returned by a later, separate request with its
   amount, start month and end month intact
@@ -676,6 +923,12 @@ helpers. Cases:
   schedule for a different member covering the same months is accepted
 - editing a schedule so that it no longer overlaps is accepted, and editing it onto another
   arrangement returns 409
+- moving a schedule onto a participant who already has one covering the same months returns 409, which
+  is the overlap read for the merged member rather than the stored one
+- moving a schedule onto the owner member returns 400 naming the member field, the same refusal `POST`
+  gives, so the rule cannot be walked around by creating then patching
+- a patch naming a field outside `member_id`, `amount`, `start_month` and `end_month` returns 400
+  naming it
 - a start month before the subscription's first month returns 400 naming the field, and an end month
   before the start month returns 400
 - a schedule naming the owner member returns 400 naming the member field
@@ -730,6 +983,11 @@ refinement, rejection of unknown keys and rejection of an empty patch.
 The two sections the requirements describe, added to the screen S-02 built, and the browser pass that
 confirms the balance moves where the organizer can see it.
 
+**Prerequisite**: S-02 phase 4, for `src/client/screens/SubscriptionDetail.tsx` and the shape
+`src/client/api.ts` landed with. The first act of this phase is change 4's check: the standing-order
+section cannot label a month without the members' active ranges and the subscription's break months,
+so the screen must already hold both.
+
 ### Required changes:
 
 #### 1. API client
@@ -769,12 +1027,33 @@ screen are the server's answer rather than a local guess.
 it, and never let assumed money read as confirmed money.
 
 **Contract**: One block per participant with an arrangement, showing the amount, the month it started
-and the month it ends or that it is still running. A form adds an arrangement and edits one, including
-ending it by setting an end month and reopening it by clearing one. Under each arrangement, the
-elapsed months from the domain's `scheduleMonths`, called with the current month taken from the
-summary response and never computed in the browser, each with a control that marks the month unpaid
-and unmarks it, writing and deleting the exception. A month that is marked shows as not received and is
-visibly different from one that is counted. Every counted month is labelled assumed received, and the
+and the month it ends or that it is still running, in the order the list arrives, which the repository
+sorts by participant and then by start month.
+
+Under each arrangement, the months come from one call to the domain's `scheduleMonthStatuses`, and
+that call is the only thing that decides how a month is drawn. It is given the arrangement, the member
+with their active ranges, the subscription's break months, the exception months the schedule carries
+in the API view, and the current month taken from the summary response and never computed in the
+browser. A row the helper reports as counting is drawn as counted and labelled assumed received. A row it
+reports as not counting is drawn as not counted and carries its reason in words, one phrase per
+reachable `MonthExclusion`: `break-month` is the plan was paused that month, `outside-active-range` is
+the participant was not on the plan that month, and `excepted` is marked as not received. The other
+three values of the union cannot reach this screen, for the reasons phase 1 change 3 records, so the
+mapping is total rather than needing a fallback phrase. The screen applies none of the six conditions
+itself, so a month the server excluded can never appear as assumed received; the two answers come from
+the same function and cannot disagree.
+
+Only the rows whose reason is `excepted`, and the rows that count, carry the toggle, because the
+exception is the one condition the organizer owns: the
+control marks a month unpaid and unmarks it, writing and deleting the exception, and after either the
+section and the summary are re-read. A month excluded as a break month or as outside the participant's
+active range is not togglable, because marking it would change nothing and the screen would be
+offering an action with no effect.
+
+A form adds an arrangement and edits one, including moving it to another participant, ending it by
+setting an end month and reopening it by clearing one. Field-level messages from a 400 are shown
+against the field the response names, and the 409 from an overlap is shown as the message the route
+returns, naming the conflicting arrangement. Every counted month is labelled assumed received, and the
 label appears wherever an assumed amount is totalled, never only once at the top of the section.
 
 #### 4. The detail screen
@@ -786,6 +1065,15 @@ label appears wherever an assumed amount is totalled, never only once at the top
 **Contract**: The screen gains the payments section and the standing-order section below the members
 and prices it already shows, and re-reads the summary after any mutation in either so the headline
 cards and the per-participant balances move together. Nothing about the existing sections changes.
+
+It also supplies the standing-order section with what `scheduleMonthStatuses` needs and the summary
+response does not carry: the members with their active ranges, and the subscription's settings and
+break months, which together are the narrowed `Pick<SubscriptionState, 'settings' | 'breakMonths'>`
+that phase 1 gives `memberMonthStatus`. `MemberSummary` carries none of it, so it comes from the reads
+S-02's own members and break-months sections already make, plus the subscription the screen already
+holds. Nothing is fabricated to satisfy a type. The first act of this phase is to confirm those reads
+are there and reach this screen; if one is missing, this change adds it through the existing client
+module rather than fetching from a component.
 
 #### 5. Layout
 
@@ -820,6 +1108,10 @@ a month toggle grid that wraps. No design system, no icon font, no external styl
   and the balance moves by one month's amount
 - Confirm a recorded receipt and an assumed one are told apart on the screen without reading the
   amounts
+- Add a break month covering one month of a standing order, and a participant departure covering
+  another, and confirm both months are drawn as not counted with the reason named, that neither is
+  labelled assumed received, and that the assumed total on the screen matches the balance the summary
+  returns
 - Try to delete a participant who has a payment and read the refusal
 - Sign in as the reviewer account and confirm none of the payments or standing orders are reachable
 - The layout is usable at a narrow phone width
@@ -833,6 +1125,8 @@ a month toggle grid that wraps. No design system, no icon font, no external styl
 ### Overview
 
 Capture the verification trail this project requires.
+
+**Prerequisite**: phases 1 to 4 of this slice, and nothing further from S-02.
 
 ### Required changes:
 
@@ -892,7 +1186,9 @@ phases.
 - Schedule range membership, inclusive at both ends and unbounded above when the end is null
 - Schedule overlap: contained, straddling, touching in one month, open-ended swallowing a later one,
   and the three cases that are not overlaps
-- The elapsed months of an arrangement, bounded by the current month and by the end month
+- The elapsed months of an arrangement, bounded by the current month and by the end month, and the
+  reason reported for each month that did not count, with the order of the reasons pinned
+- The months `recurringReceived` counts equal the months `scheduleMonthStatuses` reports as counted
 - The assumed-receipt rule, one paired test per disqualifying condition, plus the end month itself and
   the month after it
 - The not-yet-elapsed bound asserted twice: against the rule with the current month as its own
@@ -900,7 +1196,8 @@ phases.
 - Drift: a standing order larger than the share accumulates credit and is never clamped
 - Payments in balances: future-dated counted now, `annual` counted as ordinary, edit and delete
   recomputed from inputs
-- `collectedThisMonth` combining a manual payment and an assumed receipt for the same month
+- `collectedThisMonth` combining a manual payment and an assumed receipt for the same month, and not
+  moving at all for a payment naming the owner
 - The acceptance example with a payment: a balance of -13.33 against a share of 33.33
 - Both validation schema modules: formats, defaults, unknown keys, empty patch
 
@@ -936,8 +1233,7 @@ phases.
 
 | Test-plan risk | Covered by | Phase |
 |---|---|---|
-| 4, a standing order counted for a month it should not cover | the paired unit cases in `src/domain/recurring.test.ts` and `calc.test.ts`, one per disqualifying condition, the not-yet-elapsed bound asserted against the rule and again through `computeSummary`, and the
-stored half in `tests/integration/recurring.test.ts` and `summary.test.ts`. This closes the half S-02 left open | 1, 3 |
+| 4, a standing order counted for a month it should not cover | the paired unit cases in `src/domain/recurring.test.ts` and `calc.test.ts`, one per disqualifying condition; the not-yet-elapsed bound asserted against the rule and again through `computeSummary`; the equality of the months `recurringReceived` counts and the months `scheduleMonthStatuses` reports as counted, which is what keeps the screen's labels and the server's total from drifting; and the stored half in `tests/integration/recurring.test.ts` and `summary.test.ts`. This closes the half S-02 left open | 1, 3, 4 |
 | 3, a record lost or half-applied | the create-then-refetch cases for both tables, the edit and delete cases, the narrowed-range exception cleanup, the member delete refusal, and all six migrations applying in order | 2, 3 |
 | 2, a record reached across accounts | ownership and 401 cases in `tests/integration/payments.test.ts` and `recurring.test.ts`, including a child reached through a foreign member, through a foreign parent, and through a member filter naming another account's member | 2, 3 |
 | 1, a balance wrong by rounding, by a month or by a price | the acceptance example with a payment asserted in the domain and read back through the summary route; the rest of risk 1 is S-02's and is not re-proven here | 1, 3 |
@@ -958,9 +1254,9 @@ would be to bound the enumerated range rather than to cache a derived number tha
 Two migrations, applied in order after the four that precede them, on tables that have never held
 data. Nothing is migrated from an earlier shape and nothing existing changes shape.
 
-The identifiers `0005` and `0006` assume S-02 lands `0003_members.sql` and
-`0004_prices_and_breaks.sql`. If its numbering moves, these move with it; the first act of phase 2 is
-to look.
+The identifiers `0005` and `0006` are settled rather than provisional: `migrations/0003_members.sql`
+and `migrations/0004_prices_and_breaks.sql` are both on disk, so these two are the next free
+numbers.
 
 One behaviour changes for records that already exist: a member who could be deleted before this slice
 can no longer be deleted once they have a payment or a standing order. That is FR-012 and it is the
@@ -970,6 +1266,9 @@ intended consequence, not a regression.
 
 - Related research: `context/changes/payments-and-recurring/research.md`
 - Decision: `context/decisions/D-007-recurring-and-payment-semantics.md`
+- Decision: `context/decisions/D-008-one-source-for-a-counted-month.md`, which this plan's phase 1 and
+  phase 4 both implement
+- The review this plan was revised against: `context/changes/payments-and-recurring/reviews/plan-review.md`
 - The slice this one builds on: `context/changes/members-and-price-history/plan.md`, whose domain
   types, `recurringReceived`, `balanceForMember`, `computeSummary`, `hasDependents` and `loadState`
   are consumed unchanged
@@ -993,7 +1292,9 @@ intended consequence, not a regression.
 - [ ] 1.2 Typecheck passes
 - [ ] 1.3 Integration tests still pass
 - [ ] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
-- [ ] 1.5 A search for ownerResidualForMonth returns nothing, or returns the caller that kept it alive
+- [ ] 1.8 Exactly one export in src/domain decides whether a month counts for a member and both callers resolve through it
+- [ ] 1.9 The months recurringReceived counts equal the months scheduleMonthStatuses reports as counted
+- [ ] 1.10 A search for ownerResidualForMonth across src returns nothing
 
 #### Manual
 
@@ -1053,6 +1354,7 @@ intended consequence, not a regression.
 - [ ] 4.11 Deleting a participant with history is refused
 - [ ] 4.12 The reviewer account reaches none of the payments or standing orders
 - [ ] 4.13 The layout is usable at a narrow phone width
+- [ ] 4.14 A break month and a departure inside a standing order are drawn as not counted with the reason named
 
 ### Phase 5: Evidence
 
