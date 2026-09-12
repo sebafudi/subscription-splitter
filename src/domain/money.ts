@@ -21,3 +21,8 @@ export function ownerResidualForMonth(priceMinor: number, activeCount: number): 
   const nonOwners = Math.max(activeCount - 1, 0)
   return priceMinor - share * nonOwners
 }
+
+/** Formats a minor-unit amount for display only; never used inside the calculation. */
+export function formatMoney(minor: number, locale: string, currency: string): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(minor / 100)
+}

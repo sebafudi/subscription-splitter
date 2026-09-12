@@ -1,7 +1,7 @@
 ---
 change_id: members-and-price-history
 title: Record participants and prices, and read what each one owes
-status: plan_reviewed
+status: implementing
 archived_at: null
 ---
 

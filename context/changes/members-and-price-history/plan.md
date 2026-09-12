@@ -1058,16 +1058,16 @@ with every child table added after this one.
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass
-- [ ] 1.2 Typecheck passes
-- [ ] 1.3 Integration tests still pass
-- [ ] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
-- [ ] 1.7 All three of US-01's numeric acceptance criteria are asserted through the shipped paths
+- [x] 1.1 Unit tests pass
+- [x] 1.2 Typecheck passes
+- [x] 1.3 Integration tests still pass
+- [x] 1.4 Nothing under src/domain imports the server, Hono or a D1 type
+- [x] 1.7 All three of US-01's numeric acceptance criteria are asserted through the shipped paths
 
 #### Manual
 
-- [ ] 1.5 Each new unit test failed first for the stated reason
-- [ ] 1.6 The worked example was computed by hand before the assertion was written
+- [x] 1.5 Each new unit test failed first for the stated reason
+- [x] 1.6 The worked example was computed by hand before the assertion was written
 
 ### Phase 2: Members, their active ranges and the owner
 
