@@ -60,8 +60,8 @@ risk is defended at the first moment it can be.
 
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
-| 1 | Ownership and session integration | Prove risks #2 and #6 against a local database with two seeded accounts, as part of roadmap S-01 | #2, #6 | integration | not started | - |
-| 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | not started | - |
+| 1 | Ownership and session integration | Prove risks #2 and #6 against a local database with two seeded accounts, as part of roadmap S-01 | #2, #6 | integration | complete | `context/archive/runtime-auth-slice/` |
+| 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | complete | `context/changes/members-and-price-history/` |
 | 3 | Persistence and recurring rules | Prove risks #3 and #4 through real write, edit, delete and re-read paths, as part of roadmap S-03 | #3, #4 | unit + integration | not started | - |
 | 4 | Smoke flow and gates | One browser walkthrough of sign-in to balance, and the gates wired in CI, as part of roadmap S-04 | cross-cutting | e2e + gates | not started | - |
 
@@ -106,7 +106,21 @@ ships; before that, the sub-section reads "TBD - see §3 Phase N."
 
 ### 6.1 Adding a unit test for the calculation
 
-- TBD - see §3 Phase 2.
+- The file goes beside the module it exercises, `src/domain/<module>.test.ts`, and the unit runner
+  picks it up from `src/**/*.test.ts`. Nothing under `src/domain/` imports D1, Hono or the server, so
+  the test needs no bindings and no setup file.
+- Build the input as a `SubscriptionState` value through a small local `state()` helper that fills
+  the whole shape and takes a `Partial` override, so each case names only the one thing it is about.
+  Members, prices and break months are plain synthetic literals; never read a fixture out of a
+  database or a prototype.
+- Assert in integer minor units. `10000` is 100.00, and the expected number is computed by hand
+  before the assertion is written, never read out of the implementation or copied from a failing
+  run's actual value. A test that agrees with the code by construction proves nothing.
+- Pass the current month explicitly wherever the rule takes one. The not-yet-elapsed boundary is its
+  own failure mode, so a case that means "this month" says so rather than leaning on a month list
+  that happens to stop in the right place.
+- Write the case so it fails first, and read the failure. A money test that passes on the first run
+  is usually asserting something other than what it names.
 
 ### 6.2 Adding an integration test against the local database
 
@@ -114,8 +128,26 @@ ships; before that, the sub-section reads "TBD - see §3 Phase N."
 
 ### 6.3 Adding an ownership test for a new resource
 
-- TBD - see §3 Phase 1. Every new child resource gets one, and it asserts absence for a foreign
-  identifier rather than a permission error.
+Every new child resource gets this test, and it asserts absence rather than a permission error: a
+foreign identifier is 404, never 403. The slice that added members, prices and break months wrote it
+three times; copy that shape.
+
+- Seed two accounts in one file and sign both in, taking a client-address prefix of your own from
+  `tests/integration/accounts.ts`. The sign-in limiter is database-backed per address and the test
+  database is shared and never reset, so a file that reuses another file's prefix fails as what looks
+  like a flaky sign-in.
+- Four cross-account cases: account B naming A's parent, and A's child, gets 404 from every verb the
+  resource offers, reads and writes alike, not only from the one the route was written for.
+- One wrong-parent case inside a single account: that account creates two subscriptions and names the
+  first one's child through the second one's id, expecting 404 from every verb. This is the case that
+  matters most. A repository that keeps `s.user_id = ?` and drops `s.id = ?` passes all four
+  cross-account cases and fails only this one.
+- One 401 case per route, asserted per route rather than once. Note that routers mounted at `'/'`
+  share their middleware patterns, so a 401 can come from another module's registration; register the
+  session middleware in the new module regardless, and say in a comment what the assertion does and
+  does not prove.
+- Assert the owner's own records are still there afterwards, so a test that passes by having deleted
+  everything cannot pass quietly.
 
 ### 6.4 Extending the browser smoke flow
 

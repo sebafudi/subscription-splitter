@@ -1,0 +1,107 @@
+members-and-price-history: captured verification run
+====================================================
+
+Commit:   e5f0116 (docs(members-and-price-history): record phase 4 evidence and commit sha)
+Phases:   1 to 4 of context/changes/members-and-price-history/plan.md
+Tree:     a clean worktree checked out at that commit, so the counts belong to
+          this slice alone. Later commits on main belong to the next slice
+          (payments-and-recurring) and are deliberately not included here.
+Runner:   the three commands below, in one run, from a clean worktree.
+
+Counts, for reading at a glance:
+  typecheck          clean across tsconfig.worker.json, tsconfig.app.json and tsconfig.node.json
+  npm run test:unit          11 files, 111 tests passed
+  npm run test:integration    7 files,  52 tests passed
+
+The three commands
+------------------
+
+$ npm run typecheck
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+
+$ npm run test:unit
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+
+
+ Test Files  11 passed (11)
+      Tests  111 passed (111)
+   Start at  20:47:45
+   Duration  520ms (transform 372ms, setup 0ms, import 833ms, tests 99ms, environment 1ms)
+
+
+$ npm run test:integration
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+
+ Test Files  7 passed (7)
+      Tests  52 passed (52)
+   Start at  20:47:47
+   Duration  8.69s (transform 13.33s, setup 35.26s, import 179ms, tests 8.45s, environment 0ms)
+
+
+
+The same gate as one command
+----------------------------
+
+$ npm run typecheck && npm test
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+
+> test
+> npm run test:unit && npm run test:integration
+
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+
+
+ Test Files  11 passed (11)
+      Tests  111 passed (111)
+   Start at  20:48:07
+   Duration  416ms (transform 331ms, setup 0ms, import 705ms, tests 77ms, environment 1ms)
+
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/verify-p5
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+
+ Test Files  7 passed (7)
+      Tests  52 passed (52)
+   Start at  20:48:08
+   Duration  8.23s (transform 12.78s, setup 33.26s, import 221ms, tests 9.35s, environment 1ms)
+
