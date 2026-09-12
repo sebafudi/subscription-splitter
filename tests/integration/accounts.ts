@@ -57,3 +57,25 @@ export async function signedInCookie(prefix: string, testId: string, email: stri
   })
   return extractSessionCookie(res)
 }
+
+/**
+ * Inserts a subscription row straight into the test database, with no owner
+ * member and no ranges. Phase 2 made the owner part of every create, so no
+ * route can produce this state any more, and the summary's 409 for a
+ * subscription that predates that rule is the one behaviour that still needs
+ * it as a precondition. Nothing else should reach around the API this way.
+ */
+export async function insertOwnerlessSubscription(cookie: string, startMonth = '2026-01'): Promise<string> {
+  const meRes = await SELF.fetch('http://example.com/api/me', { headers: { cookie } })
+  const me = await meRes.json<{ user: { id: string } }>()
+
+  const id = crypto.randomUUID()
+  await env.DB.prepare(
+    `insert into subscriptions (id, user_id, name, currency, locale, time_zone, start_month, created_at)
+     values (?, ?, 'Legacy plan', 'PLN', 'pl-PL', 'Europe/Warsaw', ?, ?)`,
+  )
+    .bind(id, me.user.id, startMonth, new Date().toISOString())
+    .run()
+
+  return id
+}

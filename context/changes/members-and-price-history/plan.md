@@ -1107,17 +1107,37 @@ Two choices the phase-2 text left open, both taken the smaller way:
 
 #### Automated
 
-- [ ] 3.1 Integration tests pass
-- [ ] 3.2 Unit tests pass
-- [ ] 3.3 Typecheck passes
-- [ ] 3.4 All four migrations apply in order to a clean local database
-- [ ] 3.5 The worked example is asserted through the API and matches to the minor unit
-- [ ] 3.8 The earliest price delete is refused without confirmation and recomputes correctly with it
+- [x] 3.1 Integration tests pass
+- [x] 3.2 Unit tests pass
+- [x] 3.3 Typecheck passes
+- [x] 3.4 All four migrations apply in order to a clean local database
+- [x] 3.5 The worked example is asserted through the API and matches to the minor unit
+- [x] 3.8 The earliest price delete is refused without confirmation and recomputes correctly with it
 
 #### Manual
 
-- [ ] 3.6 The summary read through the API agrees with the domain unit tests
-- [ ] 3.7 The current month matches the subscription's time zone rather than the machine's
+- [x] 3.6 The summary read through the API agrees with the domain unit tests
+- [x] 3.7 The current month matches the subscription's time zone rather than the machine's
+
+#### Notes
+
+- The month conditions the summary and the standing-order rule both depend on
+  were pulled into `src/domain/month-status.ts` and recorded as D-009, so S-03
+  consumes one source of truth rather than re-deriving `break` and `inactive`
+  for its own toggle grid. `shareForMember` gained a `current` argument as part
+  of that, matching the rule D-007 already sets for the received side; the
+  phase-1 suite is otherwise unchanged and doubles as the refactor's regression
+  test. `priceForMonth` moved to `src/domain/prices.ts` with it, to keep the
+  import direction one-way.
+- The refusal to delete the earliest price entry names the affected months
+  bounded by the later of the last price entry and the current month, not by
+  the next entry alone. The plan's phrasing covers the case where a later entry
+  exists; when the deleted entry is also the last one, every month after it
+  loses its price too, and a message that did not say so would understate what
+  the caller was about to lose.
+- A break month in the path is validated against the same month rule as one in
+  a body before it reaches SQL, so `DELETE .../break-months/not-a-month` is a
+  400 rather than a silent miss answered as 404.
 
 ### Phase 4: The detail screen
 

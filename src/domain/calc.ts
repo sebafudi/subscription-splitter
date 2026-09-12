@@ -1,27 +1,9 @@
 import { enumerateMonths } from './months'
 import { shareForMonth } from './money'
 import { activeMembersInMonth, chargedMembersInMonth, rangeCovers } from './members'
+import { chargedMonthStatus, memberMonthStatus } from './month-status'
+import { priceForMonth } from './prices'
 import type { Member, MemberSummary, Minor, MonthStr, Summary, SubscriptionState } from './types'
-
-/**
- * The price for `month`. A break month short-circuits to zero without
- * consulting the price history at all; otherwise the latest entry whose
- * `effectiveFrom` is at or before the month wins, or zero when no entry
- * applies yet.
- */
-export function priceForMonth(state: SubscriptionState, month: MonthStr): Minor {
-  if (state.breakMonths.includes(month)) return 0
-
-  let price = 0
-  for (const entry of [...state.priceHistory].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? -1 : 1))) {
-    if (entry.effectiveFrom <= month) {
-      price = entry.amount
-    } else {
-      break
-    }
-  }
-  return price
-}
 
 /**
  * The rounded share of `month`'s price across everyone active that month,
@@ -37,10 +19,14 @@ export function perPersonShare(state: SubscriptionState, month: MonthStr): Minor
   return shareForMonth(price, activeCount)
 }
 
-/** Zero for the owner and for a member whose ranges do not cover the month; otherwise `perPersonShare`. */
-export function shareForMember(state: SubscriptionState, member: Member, month: MonthStr): Minor {
-  if (member.isOwner) return 0
-  if (!rangeCovers(member, month)) return 0
+/** Zero unless the month charges this member; `chargedMonthStatus` is the one place that decides. */
+export function shareForMember(
+  state: SubscriptionState,
+  member: Member,
+  month: MonthStr,
+  current: MonthStr,
+): Minor {
+  if (!chargedMonthStatus(state, member, month, current).counts) return 0
   return perPersonShare(state, month)
 }
 
@@ -62,9 +48,7 @@ export function recurringReceived(
     for (const month of months) {
       if (month < schedule.startMonth) continue
       if (schedule.endMonth !== null && month > schedule.endMonth) continue
-      if (month > current) continue
-      if (state.breakMonths.includes(month)) continue
-      if (!rangeCovers(member, month)) continue
+      if (!memberMonthStatus(state, member, month, current).counts) continue
       const excepted = state.recurringExceptions.some(
         (exception) => exception.recurringId === schedule.id && exception.month === month,
       )
@@ -83,7 +67,7 @@ export function balanceForMember(
   months: MonthStr[],
   current: MonthStr,
 ): { owed: Minor; paid: Minor; balance: Minor } {
-  const owed = months.reduce((total, month) => total + shareForMember(state, member, month), 0)
+  const owed = months.reduce((total, month) => total + shareForMember(state, member, month, current), 0)
   const manual = state.payments
     .filter((payment) => payment.memberId === member.id)
     .reduce((total, payment) => total + payment.amount, 0)
@@ -108,7 +92,7 @@ export function computeSummary(state: SubscriptionState, current: MonthStr): Sum
       name: member.name,
       archived: member.archived,
       activeThisMonth: rangeCovers(member, current),
-      currentShare: shareForMember(state, member, current),
+      currentShare: shareForMember(state, member, current, current),
       owed,
       paid,
       balance,
@@ -123,7 +107,10 @@ export function computeSummary(state: SubscriptionState, current: MonthStr): Sum
   const currentPerPersonShare = perPersonShare(state, current)
 
   const chargedThisMonth = chargedMembersInMonth(state, current)
-  const expectedThisMonth = chargedThisMonth.reduce((total, member) => total + shareForMember(state, member, current), 0)
+  const expectedThisMonth = chargedThisMonth.reduce(
+    (total, member) => total + shareForMember(state, member, current, current),
+    0,
+  )
   const ownerShareThisMonth = currentMonthly - expectedThisMonth
 
   const owedToYouNow = memberResults.filter((m) => m.balance < 0).reduce((total, m) => total - m.balance, 0)

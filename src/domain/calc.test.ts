@@ -3,11 +3,10 @@ import {
   balanceForMember,
   computeSummary,
   perPersonShare,
-  priceForMonth,
   recurringReceived,
   shareForMember,
 } from './calc'
-import type { Member, PriceEntry, RecurringSchedule, SubscriptionState } from './types'
+import type { Member, RecurringSchedule, SubscriptionState } from './types'
 
 function owner(over: Partial<Member> = {}): Member {
   return {
@@ -44,29 +43,6 @@ function state(over: Partial<SubscriptionState> = {}): SubscriptionState {
   }
 }
 
-describe('priceForMonth', () => {
-  it('uses the latest entry at or before the month, across a change', () => {
-    const priceHistory: PriceEntry[] = [
-      { id: 'p1', effectiveFrom: '2026-01', amount: 10000 },
-      { id: 'p2', effectiveFrom: '2026-03', amount: 12000 },
-    ]
-    const s = state({ priceHistory })
-    expect(priceForMonth(s, '2026-02')).toBe(10000)
-    expect(priceForMonth(s, '2026-03')).toBe(12000)
-  })
-
-  it('is zero before the first entry', () => {
-    const s = state({ priceHistory: [{ id: 'p1', effectiveFrom: '2026-05', amount: 10000 }] })
-    expect(priceForMonth(s, '2026-02')).toBe(0)
-  })
-
-  it('a break month is zero, and the price entry still applies to the month after it', () => {
-    const s = state({ breakMonths: ['2026-02'] })
-    expect(priceForMonth(s, '2026-02')).toBe(0)
-    expect(priceForMonth(s, '2026-03')).toBe(10000)
-  })
-})
-
 describe('perPersonShare', () => {
   it('splits an evenly divisible price across three active members including the owner', () => {
     const s = state({ priceHistory: [{ id: 'p1', effectiveFrom: '2026-01', amount: 9000 }] })
@@ -82,12 +58,12 @@ describe('perPersonShare', () => {
 describe('shareForMember', () => {
   it('is always zero for the owner, whatever their ranges say', () => {
     const s = state()
-    expect(shareForMember(s, s.members[0], '2026-01')).toBe(0)
+    expect(shareForMember(s, s.members[0], '2026-01', '2026-06')).toBe(0)
   })
 
   it('is zero for a member whose ranges do not cover the month', () => {
     const s = state({ members: [owner(), nonOwner('a', 'Alice', { activeRanges: [{ joinedMonth: '2026-03', leftMonth: null }] })] })
-    expect(shareForMember(s, s.members[1], '2026-01')).toBe(0)
+    expect(shareForMember(s, s.members[1], '2026-01', '2026-06')).toBe(0)
   })
 
   it('a member with two ranges and a gap owes for the covered months only', () => {
@@ -98,16 +74,16 @@ describe('shareForMember', () => {
       ],
     })
     const s = state({ members: [owner(), gapMember] })
-    expect(shareForMember(s, gapMember, '2026-01')).toBeGreaterThan(0)
-    expect(shareForMember(s, gapMember, '2026-02')).toBe(0)
-    expect(shareForMember(s, gapMember, '2026-03')).toBeGreaterThan(0)
+    expect(shareForMember(s, gapMember, '2026-01', '2026-06')).toBeGreaterThan(0)
+    expect(shareForMember(s, gapMember, '2026-02', '2026-06')).toBe(0)
+    expect(shareForMember(s, gapMember, '2026-03', '2026-06')).toBeGreaterThan(0)
   })
 
   it('a member whose left month has passed stops accruing', () => {
     const left = nonOwner('a', 'Alice', { activeRanges: [{ joinedMonth: '2026-01', leftMonth: '2026-02' }] })
     const s = state({ members: [owner(), left] })
-    expect(shareForMember(s, left, '2026-02')).toBeGreaterThan(0)
-    expect(shareForMember(s, left, '2026-03')).toBe(0)
+    expect(shareForMember(s, left, '2026-02', '2026-06')).toBeGreaterThan(0)
+    expect(shareForMember(s, left, '2026-03', '2026-06')).toBe(0)
   })
 })
 
