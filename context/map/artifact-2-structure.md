@@ -34,18 +34,20 @@ Result: **188 modules, 568 dependencies cruised** inside `src/` (test files excl
 - The package additionally exposes **76 subpath exports** in `package.json`'s `exports` map (e.g. `./cache`, `./cookie`, `./basic-auth`, `./cloudflare-workers`, `./tiny`) - one thin entry file per adapter/middleware/helper, each importing from the same small core.
 - Fan-in ranking (how many modules import each file) shows the real deep hubs:
 
-| Rank | Module | Fan-in (modules importing it) |
+| Rank | Module | Fan-in (distinct modules importing it) |
 |---|---|---|
 | 1 | `src/types.ts` | 53 |
-| 2 | `src/context.ts` | 46 |
-| 3 | `src/router.ts` | 23 |
-| 4 | `src/jsx/base.ts` | 22 |
-| 5 | `src/utils/html.ts` | 18 |
-| 6 | `src/hono.ts` | 17 |
-| 7 | `src/jsx/context.ts` | 16 |
-| 8 | `src/http-exception.ts` | 12 |
+| 2 | `src/context.ts` | 40 |
+| 3 | `src/jsx/base.ts` | 17 |
+| 3 | `src/hono.ts` | 17 |
+| 5 | `src/router.ts` | 15 |
+| 6 | `src/utils/html.ts` | 12 |
+| 6 | `src/http-exception.ts` | 12 |
+| 8 | `src/jsx/context.ts` | 11 |
 
-`src/types.ts` and `src/context.ts` are the two clearest deep centers of the whole codebase - roughly a quarter to a third of all modules in `src/` import them directly. This lines up with `artifact-1-territory.md`'s finding that these same files are cross-cutting "spine" files in the commit history.
+**Correction (independent accuracy review of `context/architect-report.md`, applied here so the two documents agree)**: the original run of this table counted raw dependency-cruiser edges rather than distinct importing modules. Six modules (`src/hono-base.ts`, `src/index.ts`, `src/helper/streaming/text.ts`, `src/middleware/jwk/jwk.ts`, `src/middleware/jwt/jwt.ts`, `src/middleware/timing/timing.ts`) each import `context.ts` via two separate statements (a type-only import and a value import), which the raw edge count double-counted; re-counting by distinct importer gives `context.ts` a fan-in of 40, not 46, and the same double-counting inflated `router.ts`, `jsx/base.ts`, `utils/html.ts`, and `jsx/context.ts` above. `types.ts`, `hono.ts`, and `http-exception.ts` have no such duplicate edges and are unchanged. Re-verified directly against the same `full.json` this artifact's `depcruise` command produces.
+
+`src/types.ts` and `src/context.ts` are the two clearest deep centers of the whole codebase - roughly a fifth to a third of all modules in `src/` import them directly. This lines up with `artifact-1-territory.md`'s finding that these same files are cross-cutting "spine" files in the commit history.
 
 Fan-out ranking (how many things a module itself imports) shows the opposite end - modules that pull in the most, i.e. the ones most likely to be hard to unit-test in isolation:
 

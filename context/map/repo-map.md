@@ -44,7 +44,7 @@ flowchart TB
 
 ## 2. Terrain - where the system lives
 
-- **Deep, stable core**: `types.ts` (fan-in 53) and `context.ts` (fan-in 46) are imported by roughly a quarter to a third of all modules under `src/`; `router.ts` has instability 0 (nothing else depends on to build it, but is depended upon heavily) - see `artifact-2-structure.md`. These four-to-six files are the real foundation, not the directory names.
+- **Deep, stable core**: `types.ts` (fan-in 53) and `context.ts` (fan-in 40) are imported by roughly a fifth to a third of all modules under `src/`; `router.ts` has instability 0 (nothing else depends on to build it, but is depended upon heavily) - see `artifact-2-structure.md`. These four-to-six files are the real foundation, not the directory names.
 - **Thin, active periphery**: the busiest directories by commit count (`src/middleware`, `src/utils`, `src/jsx`, `src/adapter`, `src/client`, `src/helper` - `artifact-1-territory.md`) are almost all low-fan-out consumers of the core (e.g. `middleware/etag` fan-out 2, `middleware/cors` fan-out 2). The directory structure and the real "where work happens" map line up well here - unlike some legacy repos, activity isn't hiding in a folder that looks peripheral.
 - **Activity over time**: `src/middleware` and `src/utils` were active in every one of the last four quarters (sustained, not a spike). `src/router` was proportionally busier a year ago; `src/client` grew sharply in the most recent quarter - a possible signal of renewed investment in the RPC/type-inference client.
 - **Release noise excluded**: root `package.json` shows 90 touches in 12 months, but ~all are automated version-bump commits (one per patch release), not feature work - excluded from all territory rankings.
