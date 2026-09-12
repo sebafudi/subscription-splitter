@@ -809,10 +809,12 @@ repository rather than a command that can be invoked.
 
 **Contract**: The prompt is followed as written and its report produced in the structure it specifies:
 a checklist with an explicit pass or fail marker for each of its five criteria, a percentage line, and
-prioritized improvements for anything that fails. The marker is the literal word `PASS` or `FAIL`,
-pinned here so the criterion below can grep for a token that is decided rather than guessed; the
-prompt's own format uses tick and cross marks, and the same reasoning that writes the report in
-English writes its markers as words. The report is written in English, with the five
+prioritized improvements for anything that fails. The marker is the prompt's own: `✅` for a met
+criterion and `❌` for an unmet one, which is what `archive/toolkit/.ai/prompts/mvp-check.md` states
+twice, in its per-criterion instructions and again in its output format. It is pinned here so the
+criterion below greps for a token that is decided rather than guessed. Following the prompt's
+structure rather than its language means the prose is English and the markers are the prompt's, which
+are symbols and carry no language either way. The percentage is the prompt's too, `X/5 * 100`. The report is written in English, with the five
 criteria named in English, because its audience is the evidence index and a reviewer reading this
 repository; the prompt itself is in Polish and names its sections there, and following its structure
 rather than its language is the deliberate choice. Every pass cites a file path or a function name
@@ -918,10 +920,11 @@ writer by naming the evidence paths; this slice does not edit `GOALS.md`.
   `rg -c` over five `-e` alternatives cannot express this, because it counts matching lines rather
   than matches per pattern, and a word like "Documentation" recurs in the improvements section by
   design
-- The report carries a pass or fail marker against each of the five criteria and a percentage line.
-  The marker token is whatever phase 5 change 1 pins, and the check greps for that token rather than
-  assuming one: the prompt's own format uses tick and cross marks, so a check written against `PASS`
-  or `FAIL` would pass or fail for the wrong reason. A line matching `[0-9]+%` exists
+- The report carries a marker against each of the five criteria and a percentage line, both in the
+  prompt's own vocabulary: `rg --count-matches "✅|❌" context/changes/verification-and-release/mvp-check.md`
+  returns at least five with one marker per criterion in the checklist, and a line matching `[0-9]+%`
+  exists for the prompt's `X/5 * 100`. Greping for `PASS` or `FAIL` would answer for the wrong reason,
+  because those words are not what the prompt asks the report to emit
 - The cold re-read returns the same balances: the summary read in a fresh session equals the figures
   phase 4 recorded
 - The evidence index names the release artifacts: the transcript, the summary, the screenshot prefix
