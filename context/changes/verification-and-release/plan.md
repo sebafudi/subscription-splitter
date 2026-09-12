@@ -1099,7 +1099,7 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 - [x] 3.3 The live API is the new build, proven by a successful summary request — a323474
 - [x] 3.4 Unauthenticated access is refused — a323474
 - [x] 3.5 The seed route answers 404 with and without a token — a323474
-- [x] 3.6 A payment survives create, re-read, patch, re-read, delete and a final 404
+- [x] 3.6 A payment survives create, re-read, patch, re-read, delete and a final 404 — a323474
 - [x] 3.7 The transcript contains no credential — a323474
 - [x] 3.12 The demo plan has an owner member and the stray subscription's repair succeeded or is recorded as refused — a323474
 - [x] 3.13 The transcript's own participant is gone and the owner's members are the demo participants — a323474
