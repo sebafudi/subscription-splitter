@@ -1,7 +1,7 @@
 ---
 change_id: runtime-auth-slice
 title: Sign in, own one subscription, and be refused everyone else's
-status: implementing
+status: impl_reviewed
 archived_at: null
 ---
 

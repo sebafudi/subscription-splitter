@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listSubscriptions, signOut, type SessionUser, type Subscription } from '../api'
+import { SignedOutError, listSubscriptions, signOut, type SessionUser, type Subscription } from '../api'
 import { SubscriptionForm } from './SubscriptionForm'
 
 type Props = {
@@ -17,13 +17,18 @@ export function Home({ user, onSignedOut }: Props) {
       .then((rows) => {
         if (!cancelled) setSubscriptions(rows)
       })
-      .catch(() => {
-        if (!cancelled) setLoadError('Could not load subscriptions.')
+      .catch((error) => {
+        if (cancelled) return
+        if (error instanceof SignedOutError) {
+          onSignedOut()
+          return
+        }
+        setLoadError('Could not load subscriptions.')
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [onSignedOut])
 
   async function handleSignOut() {
     await signOut()
@@ -50,7 +55,7 @@ export function Home({ user, onSignedOut }: Props) {
           <ul className="subscription-list">
             {subscriptions.map((subscription) => (
               <li key={subscription.id}>
-                <strong>{subscription.name}</strong> — {subscription.currency}, starting {subscription.startMonth}
+                <strong>{subscription.name}</strong>, {subscription.currency}, starting {subscription.startMonth}
               </li>
             ))}
           </ul>
@@ -58,7 +63,10 @@ export function Home({ user, onSignedOut }: Props) {
       </section>
 
       <section>
-        <SubscriptionForm onCreated={(created) => setSubscriptions((rows) => [...rows, created])} />
+        <SubscriptionForm
+          onCreated={(created) => setSubscriptions((rows) => [...rows, created])}
+          onSignedOut={onSignedOut}
+        />
       </section>
     </main>
   )

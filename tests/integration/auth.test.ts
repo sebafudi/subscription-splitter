@@ -124,7 +124,7 @@ describe('session lifecycle against local D1', () => {
     expect(meRes.status).toBe(401)
   })
 
-  it('refuses the public sign-up endpoint while server-side seeding still works', async () => {
+  it('refuses the public sign-up endpoint with the disabled code while server-side seeding still works', async () => {
     const signUpRes = await SELF.fetch('http://example.com/api/auth/sign-up/email', {
       method: 'POST',
       headers: headersFor('6'),
@@ -134,13 +134,15 @@ describe('session lifecycle against local D1', () => {
         name: 'Attempted signup',
       }),
     })
-    expect(signUpRes.status).not.toBe(200)
+    expect(signUpRes.status).toBe(400)
+    const signUpBody = await signUpRes.json<{ code: string }>()
+    expect(signUpBody.code).toBe('EMAIL_PASSWORD_SIGN_UP_DISABLED')
 
     const seeded = await seedUser('server-seeded@example.com', 'correct horse battery staple', 'Owner')
     expect(seeded.user.email).toBe('server-seeded@example.com')
   })
 
-  it('refuses a sign-in whose Origin header is not in APP_ORIGINS', async () => {
+  it('refuses a sign-in whose Origin header is not in APP_ORIGINS with the invalid-origin code', async () => {
     await seedUser('cross-origin@example.com', 'correct horse battery staple', 'Owner')
 
     const res = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
@@ -149,26 +151,46 @@ describe('session lifecycle against local D1', () => {
       body: JSON.stringify({ email: 'cross-origin@example.com', password: 'correct horse battery staple' }),
     })
 
-    expect(res.status).toBeGreaterThanOrEqual(400)
-    expect(res.status).toBeLessThan(500)
+    expect(res.status).toBe(403)
+    const body = await res.json<{ code: string }>()
+    expect(body.code).toBe('INVALID_ORIGIN')
   })
 })
 
 describe('rate limiting on sign-in (runs last, tripped counters persist in shared D1)', () => {
-  it('trips the configured sign-in limit after repeated failed attempts from one client address', async () => {
+  it('trips the configured sign-in limit after ten failed attempts, distinguishing it from the built-in three-per-ten-seconds rule, and keys per client address', async () => {
     await seedUser('throttle-target@example.com', 'correct horse battery staple', 'Owner')
-    const throttleHeaders = headersFor('200')
+    const throttledHeaders = headersFor('200')
 
-    let lastStatus = 0
+    const statuses: number[] = []
     for (let attempt = 0; attempt < 11; attempt += 1) {
       const res = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
         method: 'POST',
-        headers: throttleHeaders,
+        headers: throttledHeaders,
         body: JSON.stringify({ email: 'throttle-target@example.com', password: 'wrong password' }),
       })
-      lastStatus = res.status
+      statuses.push(res.status)
     }
 
-    expect(lastStatus).toBe(429)
+    // The custom rule allows ten attempts in the window; the library's
+    // built-in sign-in rule would have tripped after the third. Attempts 1-10
+    // must each be a real credential failure (401), not an early 429, and
+    // only the eleventh trips the limit.
+    expect(statuses.slice(0, 10)).toEqual(Array(10).fill(401))
+    expect(statuses[10]).toBe(429)
+
+    const stillThrottledRes = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: throttledHeaders,
+      body: JSON.stringify({ email: 'throttle-target@example.com', password: 'correct horse battery staple' }),
+    })
+    expect(stillThrottledRes.status).toBe(429)
+
+    const otherAddressRes = await SELF.fetch('http://example.com/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: headersFor('201'),
+      body: JSON.stringify({ email: 'throttle-target@example.com', password: 'correct horse battery staple' }),
+    })
+    expect(otherAddressRes.status).toBe(200)
   })
 })

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ApiError, createSubscription, type Subscription } from '../api'
+import { ApiError, SignedOutError, createSubscription, type Subscription } from '../api'
 
 type Props = {
   onCreated: (subscription: Subscription) => void
+  onSignedOut: () => void
 }
 
-export function SubscriptionForm({ onCreated }: Props) {
+export function SubscriptionForm({ onCreated, onSignedOut }: Props) {
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('PLN')
   const [locale, setLocale] = useState('pl-PL')
@@ -30,6 +31,10 @@ export function SubscriptionForm({ onCreated }: Props) {
       setName('')
       setStartMonth('')
     } catch (err) {
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
       setError(err instanceof ApiError ? { field: err.field, message: err.message } : { message: 'Could not create the subscription.' })
     } finally {
       setSubmitting(false)

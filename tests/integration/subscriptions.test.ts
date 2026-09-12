@@ -145,4 +145,55 @@ describe('subscriptions ownership, persistence and validation', () => {
     })
     expect(unknownKey.status).toBe(400)
   })
+
+  it('lets the owner patch their own subscription, persisting the change and leaving other fields untouched', async () => {
+    const cookie = await signedInCookie('5', 'sub-patch-owner@example.com')
+
+    const createRes = await SELF.fetch('http://example.com/api/subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(validBody),
+    })
+    const created = await createRes.json<{ id: string; currency: string }>()
+
+    const patchRes = await SELF.fetch(`http://example.com/api/subscriptions/${created.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: 'Renamed plan' }),
+    })
+    expect(patchRes.status).toBe(200)
+    const patched = await patchRes.json<{ id: string; name: string; currency: string }>()
+    expect(patched.name).toBe('Renamed plan')
+    expect(patched.currency).toBe(created.currency)
+
+    const getRes = await SELF.fetch(`http://example.com/api/subscriptions/${created.id}`, { headers: { cookie } })
+    const refetched = await getRes.json<{ name: string; currency: string }>()
+    expect(refetched.name).toBe('Renamed plan')
+    expect(refetched.currency).toBe(created.currency)
+  })
+
+  it('refuses a PATCH body that carries user_id or id, the two keys that would move or rename a row across accounts', async () => {
+    const cookie = await signedInCookie('6', 'sub-patch-transfer@example.com')
+
+    const createRes = await SELF.fetch('http://example.com/api/subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify(validBody),
+    })
+    const created = await createRes.json<{ id: string }>()
+
+    const withUserId = await SELF.fetch(`http://example.com/api/subscriptions/${created.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: 'Still mine', user_id: 'someone-elses-id' }),
+    })
+    expect(withUserId.status).toBe(400)
+
+    const withId = await SELF.fetch(`http://example.com/api/subscriptions/${created.id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json', cookie },
+      body: JSON.stringify({ name: 'Still mine', id: 'a-different-id' }),
+    })
+    expect(withId.status).toBe(400)
+  })
 })

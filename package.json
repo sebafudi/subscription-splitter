@@ -14,7 +14,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:migrate:local": "wrangler d1 migrations apply subscription-splitter-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply subscription-splitter-db --remote",
-    "seed:local": "node -e \"const fs=require('fs');const vars=Object.fromEntries(fs.readFileSync('.dev.vars','utf8').split('\\n').filter(l=>l.includes('=')&&!l.trim().startsWith('#')).map(l=>{const i=l.indexOf('=');return[l.slice(0,i).trim(),l.slice(i+1).trim()]}));const base=process.env.SEED_TARGET_URL||'http://localhost:8787';async function seed(email,password,name){const res=await fetch(base+'/api/dev/seed',{method:'POST',headers:{'content-type':'application/json','x-seed-token':vars.SEED_TOKEN},body:JSON.stringify({email,password,name})});const body=await res.json();console.log(name,res.status,JSON.stringify(body));if(!res.ok)process.exitCode=1}(async()=>{await seed(vars.SEED_OWNER_EMAIL,vars.SEED_OWNER_PASSWORD,'Owner');await seed(vars.SEED_REVIEWER_EMAIL,vars.SEED_REVIEWER_PASSWORD,'Reviewer')})();\"",
+    "seed:local": "node scripts/seed-local.mjs",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
