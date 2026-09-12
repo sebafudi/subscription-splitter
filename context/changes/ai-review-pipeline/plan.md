@@ -876,13 +876,13 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Automated
 
-- [ ] 4.1 Workflow appears in gh workflow list
+- [x] 4.1 Workflow appears in gh workflow list
 - [x] 4.2 Trigger is pull_request and not pull_request_target - b344f86
 - [ ] 4.3 A run on a throwaway pull request reaches the reviewer step
 - [x] 4.4 No run block interpolates the pull request title or body - b344f86
 - [x] 4.5 Permissions are exactly contents read and pull-requests write - b344f86
 - [x] 4.10 The upsert step calls github.paginate - b344f86
-- [ ] 4.11 All four ai-cr labels exist on the repository
+- [x] 4.11 All four ai-cr labels exist on the repository
 
 #### Manual
 
