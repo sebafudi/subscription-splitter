@@ -62,7 +62,7 @@ risk is defended at the first moment it can be.
 |---|---|---|---|---|---|---|
 | 1 | Ownership and session integration | Prove risks #2 and #6 against a local database with two seeded accounts, as part of roadmap S-01 | #2, #6 | integration | complete | `context/archive/runtime-auth-slice/` |
 | 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | complete | `context/archive/members-and-price-history/` |
-| 3 | Persistence and recurring rules | Prove risks #3 and #4 through real write, edit, delete and re-read paths, as part of roadmap S-03 | #3, #4 | unit + integration | not started | - |
+| 3 | Persistence and recurring rules | Prove risks #3 and #4 through real write, edit, delete and re-read paths, as part of roadmap S-03 | #3, #4 | unit + integration | complete | `context/changes/payments-and-recurring/` |
 | 4 | Smoke flow and gates | One browser walkthrough of sign-in to balance, and the gates wired in CI, as part of roadmap S-04 | cross-cutting | e2e + gates | not started | - |
 
 ## 4. Stack
@@ -156,6 +156,18 @@ three times; copy that shape.
 ### 6.5 Per-rollout-phase notes
 
 (Optional. After each phase lands, a short note here captures anything surprising the phase taught.)
+
+**Phase 3, persistence and recurring rules.** Six conditions decide whether a month of a standing
+order counted, and the cheapest way to test them is as pairs against one state: the same
+arrangement, the same participant, the same months, with exactly one condition moved between the two
+halves of the pair. A test that moves more than one at a time proves nothing about either, which is
+the anti-pattern risk #4 names. Two further things this phase taught. Assert the agreement between
+two expressions of the rule as the set of months each one counts, not as a total, because a
+condition quietly dropped and another quietly added net out in a total and fail loudly in a set. And
+a per-route 401 case asserted through the composed application does not prove the route's own
+session middleware: routers mounted at the same base share the pattern, so a module that loses its
+own registration stays green. Proving that needs the router asked on its own, which is what
+`tests/integration/router-isolation.test.ts` does.
 
 ## 7. What We Deliberately Don't Test
 

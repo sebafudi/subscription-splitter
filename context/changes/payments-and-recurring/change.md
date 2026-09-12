@@ -1,7 +1,7 @@
 ---
 change_id: payments-and-recurring
 title: Record payments and standing orders, and watch the balances move
-status: implementing
+status: implemented
 archived_at: null
 ---
 

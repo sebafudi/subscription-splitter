@@ -1,0 +1,66 @@
+payments-and-recurring: captured verification run
+=================================================
+
+Commit:   979d0cf (feat(payments-and-recurring): the payments and standing-order sections (p4))
+Phases:   1 to 4 of context/changes/payments-and-recurring/plan.md
+Tree:     a clean worktree checked out at that commit, with a fresh `npm ci`.
+
+A note on what these counts include. They are repository-wide at 979d0cf, not
+this slice's alone: the members-and-price-history implementation review landed
+its test-only fixes at 09b763b, just before this commit, adding a unit file and
+tests/integration/router-isolation.test.ts. This slice's own contribution is
+unit 111 to 179 tests and integration 52 to 95 tests, measured across its first
+three phases; phase 4 adds no automated tests, which is what its success
+criteria ask for, because its verification is the browser walkthrough recorded
+in evidence/work-log.md and evidence/screenshots/.
+
+Not captured here, because neither command's output belongs in a test log:
+`npm run build` succeeds for the worker and the client, and all six migrations
+apply in order to a fresh local D1 created under a throwaway --persist-to
+directory.
+
+=== npm run typecheck ===
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+
+=== npm run test:unit ===
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-p5
+
+
+ Test Files  15 passed (15)
+      Tests  185 passed (185)
+   Start at  21:20:49
+   Duration  575ms (transform 492ms, setup 0ms, import 1.16s, tests 119ms, environment 1ms)
+
+
+=== npm run test:integration ===
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-p5
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+
+ Test Files  10 passed (10)
+      Tests  103 passed (103)
+   Start at  21:20:51
+   Duration  10.82s (transform 12.93s, setup 37.76s, import 303ms, tests 20.41s, environment 0ms)
+

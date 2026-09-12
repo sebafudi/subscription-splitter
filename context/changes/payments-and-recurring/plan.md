@@ -1368,9 +1368,9 @@ intended consequence, not a regression.
 
 #### Automated
 
-- [ ] 5.1 The captured file exists and shows the passing counts
-- [ ] 5.2 The same commands pass in one run
+- [x] 5.1 The captured file exists and shows the passing counts
+- [x] 5.2 The same commands pass in one run
 
 #### Manual
 
-- [ ] 5.3 The evidence index row and work-log entry name this slice, its commit and its risks
+- [x] 5.3 The evidence index row and work-log entry name this slice, its commit and its risks
