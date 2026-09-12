@@ -830,12 +830,12 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Automated
 
-- [x] 3.1 promptfoo configuration validates without calling a model
-- [x] 3.2 All four fixtures are valid unified diffs
-- [x] 3.3 Type check passes with the evaluation provider included
-- [x] 3.4 Unit tests still pass
-- [x] 3.5 The promptfoo assertion module is unit tested against recorded outcomes
-- [x] 3.8 Every criterion key is the expected criterion of at least one fixture
+- [x] 3.1 promptfoo configuration validates without calling a model - 8bbabb9
+- [x] 3.2 All four fixtures are valid unified diffs - 8bbabb9
+- [x] 3.3 Type check passes with the evaluation provider included - 8bbabb9
+- [x] 3.4 Unit tests still pass - 8bbabb9
+- [x] 3.5 The promptfoo assertion module is unit tested against recorded outcomes - 8bbabb9
+- [x] 3.8 Every criterion key is the expected criterion of at least one fixture - 8bbabb9
 
 #### Manual
 
