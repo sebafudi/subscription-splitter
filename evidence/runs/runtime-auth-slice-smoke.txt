@@ -1,0 +1,17 @@
+=== smoke test: fresh wrangler dev, no session ===
+
+--- GET /api/me (expect 401, no session) ---
+HTTP/1.1 401 Unauthorized
+Content-Length: 24
+Content-Type: application/json
+
+{"error":"unauthorized"}
+--- GET / (expect 200, client shell) ---
+HTTP 200
+
+--- GET /api/health (expect 200) ---
+HTTP/1.1 200 OK
+Content-Length: 11
+Content-Type: application/json
+
+{"ok":true}

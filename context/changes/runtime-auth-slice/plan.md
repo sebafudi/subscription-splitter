@@ -748,8 +748,8 @@ means re-reading its core table definitions in the installed package and editing
 
 #### Automated
 
-- [ ] 5.1 The same commands pass locally in one run
-- [ ] 5.2 Captured output exists and shows the passing counts
+- [x] 5.1 The same commands pass locally in one run
+- [x] 5.2 Captured output exists and shows the passing counts
 
 #### Manual
 
