@@ -61,7 +61,7 @@ risk is defended at the first moment it can be.
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
 | 1 | Ownership and session integration | Prove risks #2 and #6 against a local database with two seeded accounts, as part of roadmap S-01 | #2, #6 | integration | complete | `context/archive/runtime-auth-slice/` |
-| 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | complete | `context/changes/members-and-price-history/` |
+| 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | complete | `context/archive/members-and-price-history/` |
 | 3 | Persistence and recurring rules | Prove risks #3 and #4 through real write, edit, delete and re-read paths, as part of roadmap S-03 | #3, #4 | unit + integration | not started | - |
 | 4 | Smoke flow and gates | One browser walkthrough of sign-in to balance, and the gates wired in CI, as part of roadmap S-04 | cross-cutting | e2e + gates | not started | - |
 
