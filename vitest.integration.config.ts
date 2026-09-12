@@ -10,7 +10,15 @@ export default defineConfig(async () => {
       cloudflareTest({
         wrangler: { configPath: './wrangler.jsonc' },
         miniflare: {
-          bindings: { TEST_MIGRATIONS: migrations },
+          bindings: {
+            TEST_MIGRATIONS: migrations,
+            // Test-only values; real secrets never land in a committed config.
+            BETTER_AUTH_SECRET: 'integration-test-secret-not-for-production',
+            APP_ORIGINS: 'http://example.com',
+            COOKIE_SECURE: 'true',
+            SEED_ENABLED: 'true',
+            SEED_TOKEN: 'integration-test-seed-token',
+          },
         },
       }),
     ],

@@ -1,11 +1,9 @@
 import { Hono } from 'hono'
+import authRoutes from './routes/auth'
 
-type Bindings = {
-  DB: D1Database
-}
-
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono<{ Bindings: Env }>()
 
 app.get('/api/health', (c) => c.json({ ok: true }))
+app.route('/', authRoutes)
 
 export default app

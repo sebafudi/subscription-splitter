@@ -7,6 +7,11 @@
 declare namespace Cloudflare {
   interface Env {
     DB: D1Database
+    BETTER_AUTH_SECRET: string
+    APP_ORIGINS: string
+    COOKIE_SECURE: string
+    SEED_ENABLED: string
+    SEED_TOKEN: string
   }
 }
 

@@ -688,14 +688,14 @@ means re-reading its core table definitions in the installed package and editing
 
 #### Automated
 
-- [ ] 1.1 Integration tests pass
-- [ ] 1.2 Typecheck passes
-- [ ] 1.3 Unit tests still pass
-- [ ] 1.4 Migration applies to a local database
+- [x] 1.1 Integration tests pass
+- [x] 1.2 Typecheck passes
+- [x] 1.3 Unit tests still pass
+- [x] 1.4 Migration applies to a local database
 
 #### Manual
 
-- [ ] 1.5 Each new test failed first for the stated reason
+- [x] 1.5 Each new test failed first for the stated reason
 
 ### Phase 2: The owned resource
 
