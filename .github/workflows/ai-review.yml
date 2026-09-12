@@ -1,0 +1,148 @@
+name: AI code review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions: {}
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fork-notice:
+    name: Explain a skipped fork review
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Write the step summary
+        run: |
+          {
+            echo "### AI review skipped"
+            echo "This pull request comes from a fork. The pull_request trigger withholds"
+            echo "OPENROUTER_API_KEY and every other secret from fork pull requests, so the"
+            echo "review cannot run and nothing was misconfigured."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  review:
+    name: Run the AI reviewer
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Remove the re-run label
+        if: github.event.action == 'labeled'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              name: 'ai-cr:review',
+            }).catch(() => {});
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install reviewer dependencies
+        working-directory: tools/reviewer
+        run: npm ci
+
+      - name: Compute the diff against the merge base
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          git diff "origin/$BASE_REF...HEAD" > "$RUNNER_TEMP/pr.diff"
+
+      - name: Run the reviewer
+        id: review
+        working-directory: tools/reviewer
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set +e
+          npm run review -- "$RUNNER_TEMP/pr.diff" --out "$RUNNER_TEMP/comment.md"
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert the review comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ai-code-review -->';
+            const body = fs.readFileSync(`${process.env.RUNNER_TEMP}/comment.md`, 'utf8');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) => comment.body && comment.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Set the verdict label
+        uses: actions/github-script@v9
+        env:
+          EXIT_CODE: ${{ steps.review.outputs.exit_code }}
+        with:
+          script: |
+            const exitCode = Number(process.env.EXIT_CODE);
+            const labelForExitCode = { 0: 'ai-cr:passed', 1: 'ai-cr:failed' };
+            const target = labelForExitCode[exitCode] ?? 'ai-cr:error';
+            const allVerdictLabels = ['ai-cr:passed', 'ai-cr:failed', 'ai-cr:error'];
+
+            for (const name of allVerdictLabels) {
+              if (name === target) continue;
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name,
+              }).catch(() => {});
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [target],
+            });
+
+      - name: Fail the job on a missing credential
+        if: steps.review.outputs.exit_code == '3'
+        run: |
+          echo "::error::OPENROUTER_API_KEY is missing, empty or rejected. Set it as a repository secret; this is a configuration defect, not a review outcome." >&2
+          exit 1
