@@ -1143,23 +1143,23 @@ Two choices the phase-2 text left open, both taken the smaller way:
 
 #### Automated
 
-- [x] 4.1 Typecheck passes across all three projects
-- [x] 4.2 Production build succeeds
-- [x] 4.3 The whole suite passes
+- [x] 4.1 Typecheck passes across all three projects — 682080d
+- [x] 4.2 Production build succeeds — 682080d
+- [x] 4.3 The whole suite passes — 682080d
 
 #### Manual
 
-- [x] 4.5 A new subscription lists the owner as the account holder
-- [x] 4.6 Two participants and a price of 100.00 give 33.33 each with the owner absorbing 33.34
-- [x] 4.7 A departure moves the following month's share and leaves earlier months unchanged
-- [x] 4.8 A rejoin resumes liability without a second record
-- [x] 4.9 A skipped month costs nobody anything and leaves its neighbours unchanged
-- [x] 4.10 A later price change leaves earlier months on the old price
-- [x] 4.11 Archiving behaves as the requirements' default describes
-- [x] 4.12 The reviewer account reaches none of the owner's records
-- [x] 4.13 The layout is usable at a narrow phone width
-- [x] 4.14 The earliest price delete shows an inline confirmation naming the affected months
-- [x] 4.15 The detail screen's loading, error and no-owner states render as specified
+- [x] 4.5 A new subscription lists the owner as the account holder — 682080d
+- [x] 4.6 Two participants and a price of 100.00 give 33.33 each with the owner absorbing 33.34 — 682080d
+- [x] 4.7 A departure moves the following month's share and leaves earlier months unchanged — 682080d
+- [x] 4.8 A rejoin resumes liability without a second record — 682080d
+- [x] 4.9 A skipped month costs nobody anything and leaves its neighbours unchanged — 682080d
+- [x] 4.10 A later price change leaves earlier months on the old price — 682080d
+- [x] 4.11 Archiving behaves as the requirements' default describes — 682080d
+- [x] 4.12 The reviewer account reaches none of the owner's records — 682080d
+- [x] 4.13 The layout is usable at a narrow phone width — 682080d
+- [x] 4.14 The earliest price delete shows an inline confirmation naming the affected months — 682080d
+- [x] 4.15 The detail screen's loading, error and no-owner states render as specified — 682080d
 
 #### Notes
 
