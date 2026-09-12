@@ -145,7 +145,8 @@ accessible name.
 ### 3.2 App bar
 
 Present on Home and Detail, not on Login. Height 56px, ground `--ground`, bottom hairline `--rule`.
-Content aligned to the 720px column.
+Sticky at the top of the viewport (`position: sticky; top: 0`, above page content in stacking
+order) at every width. Content aligned to the 720px column.
 
 ```
 [glyph Subscription Splitter]                     owner@example.test   [Sign out]
@@ -201,8 +202,20 @@ Subtitle sentence at t-small ink-soft, when the section has one.
 ```
 
 Heading `h2` at `--t-section`; the count in parentheses is part of the heading text at weight 400
-colour `--ink-soft` when the section has a count. The primary action button sits on the same line,
-right aligned; below 640px it wraps under the heading, left aligned, full text.
+colour `--ink-soft` when the section has a count. The right end of the heading row is one flex
+group with gap `--s-4`: the status line from 3.9 first, then the primary action button. While the
+section's disclosure panel is open the button is absent and the status line stands alone. Below
+640px the heading takes the first line, the status line the second (left aligned, only when it has
+text) and the button the third, left aligned, full text.
+
+Directly under the heading row (and under the subtitle when there is one) every section mounts one
+permanent `role="alert"` element for action errors that happen outside a panel: a refused
+participant delete, a failed archive or unarchive, a failed unskip, a failed tile toggle, a failed
+list load. When it has text it renders at `--t-body` colour `--red`, ground `--red-tint`, 3px left
+rule `--red`, padding `--s-3`, radius 4px, with a link-variant "Dismiss" button at its end. Copy:
+the server message verbatim when the API supplies one that names a rule, otherwise "Could not save.
+Check your connection and try again." It clears on Dismiss or on the next successful action in the
+same section. Errors raised inside a panel stay inside the panel per 3.8.
 
 ### 3.6 Ledger entry
 
@@ -211,11 +224,12 @@ Every list on Detail and the Home list uses the ledger entry:
 ```
 Primary line at t-entry                                   figure column (tnum, right aligned)
 secondary line at t-small ink-soft                        secondary figure at t-small
-[Edit] [Delete]      (quiet, link-sized, appear in the row, not on hover)
+[Edit] [Delete]      (link variant at t-small, always visible, never on hover only)
 ──────────────────────────────────────────────────────────  1px rule
 ```
 
-Row padding `var(--s-3) 0`. Actions always visible (no hover reveal). Below 640px the figure column
+Row padding `var(--s-3) 0`. Row actions are link-variant buttons at `--t-small`, always visible
+(no hover reveal), separated by `--s-3`. Below 640px the figure column
 moves under the secondary line, left aligned, and actions wrap on their own line.
 
 ### 3.7 Disclosure forms
@@ -422,7 +436,10 @@ against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
   gradient.
 - Loading (first load): the leading figure and each `dd` are static skeleton bars in `--paper`
   (figure 160x34, cells 96x21); the sentence area is one 100%x15 bar; section headings render with
-  their counts blank; the `sr-only` `role="status"` reads "Loading this subscription". On reload
+  their counts blank and their subtitles present; each section's primary action button renders in
+  the disabled state; each list position shows two skeleton entries, each a 45% x 17 bar over a
+  30% x 13 bar in `--paper` with the hairline rule below, `aria-hidden`; the `sr-only`
+  `role="status"` reads "Loading this subscription". On reload
   after an edit, current figures stay on screen, unchanged behaviour, and the section that caused
   the reload shows its status line.
 - Error: alert line per 3.8 with `[Try again]`. The 409 no-owner case shows the server's message
@@ -447,8 +464,9 @@ Alice   not active this month                            owes 16,67 zł        t
   figure `--ink` tabular) separated by `--s-4` gaps; they wrap on narrow widths.
 - The settled-archived disclosure: a link-variant button "Show N settled archived participants"
   under the list, toggling to "Hide settled archived participants", using the disclosure motion.
-- Archive is a quiet button; on success the status line reads "Participant archived" and the row
-  gains the "archived" tag.
+- Archive is a row action (link variant) that toggles: "Archive" on an active participant,
+  "Unarchive" on an archived one. Success sentences: "Participant archived" (row gains the
+  "archived" tag) and "Participant unarchived" (tag removed).
 - Add form fields: Name (span). Fieldset "Active months" with legend at `--t-small` 600: each range
   is a pair From and To (hint on To: "Leave empty while still active"); "Add another range" as a
   link-variant button under the last range; a link-variant "Remove" at the end of each range beyond
@@ -466,6 +484,13 @@ Heading "Price history (N)". Subtitle none. Primary action "Record a price". Ent
 
 - Amount is the primary line (recorded money treatment); the effective month is the figure column
   at `--t-small` colour `--ink-soft`.
+- Delete uses the confirmation strip of 3.10 in two steps inside one strip. Step one asks "Delete
+  the 110,00 zł price from Sep 2026?" with `[Delete]` `[Keep]`. On Delete the request is sent as
+  today; if the server answers 409 with the months that would lose their price, the strip stays
+  open, its text becomes the server message verbatim followed by "Delete anyway?", and the buttons
+  become `[Delete anyway]` (destructive) and `[Keep]`, focus moving to Keep again. Delete anyway
+  sends the confirmed request exactly as the current inline confirm does. Any other failure goes to
+  the section alert of 3.5 and the strip closes.
 - Add form: Effective from and Amount per month (pair). Primary "Record this price". Success
   "Price recorded". The existing server 409 (a price already recorded for that month) shows the
   server message as the generic form error per 3.8 with the existing inline confirmation converted
@@ -632,7 +657,21 @@ light and dark themes, with reduced motion on and off:
 8. Contrast checks from 2.1 recorded with the tool used.
 9. Fonts loaded from the app's own origin, total woff2 bytes recorded.
 
-## 12. Answer index to frame.md
+## 12. Resolved design questions from planning
+
+Raised by the planner as D1 to D6 in `plan.md`; resolved by the designer and folded into the
+sections named.
+
+| Question | Resolution |
+| --- | --- |
+| D1 section-level action errors | 3.5: one permanent section alert under the heading row, with Dismiss |
+| D2 price delete and the 409 | 5.2: one strip, two steps; second step shows the server's months and "Delete anyway" |
+| D3 unarchive | 5.1: the Archive row action toggles to "Unarchive"; success "Participant unarchived" |
+| D4 sticky app bar | 3.2: sticky at `top: 0` at every width; the index sits at `top: 56px` |
+| D5 button and status line sharing the right end | 3.5: one flex group, status line first, button second; stacked lines on mobile |
+| D6 section bodies on first load | 4.4: subtitles present, buttons disabled, two skeleton entries per list |
+
+## 13. Answer index to frame.md
 
 | Frame question | Answered in |
 | --- | --- |
