@@ -1,0 +1,8 @@
+# D-002: Architect analysis repository
+
+- **Decision:** The module 4 (Architect) exercises analyze the established open-source repository `honojs/hono`, cloned outside this repository and pinned to one commit recorded in `context/map/repo-map.md`. All four artifact sets (map, feature research, refactor opportunities/plan, domain notes) stay on that repository for coherence. The final report identifies it as a separate analysis project from the subscription-splitter application.
+- **Rationale:** The course exercise requires meaningful Git history, co-change and contributor analysis. This application is a fresh build and has no such history; presenting it as established would be dishonest. Hono is the framework used by this application, is TypeScript (so `ast-grep` queries apply), has an active multi-contributor history and is bounded enough to map its core in one pass.
+- **Rejected alternative:** Analyzing the subscription-splitter itself for all four artifacts. Rejected because L2 contributor/co-change evidence would be absent and no debt exists to plan a refactor around without inventing it.
+- **Review objection:** Framework code has a thin business domain, which makes the L5 domain notes less natural than on an application. Resolution: keep L5 on Hono for coherence, focusing on its actual vocabulary (Context, Handler, Middleware, Router, adapters), the routing/composition invariants, and the platform-adapter boundary as the anti-corruption layer candidate; an absent leak is reported as a finding.
+- **Affected tests:** None in this application.
+- **Commit:** recorded when the map artifacts are committed.
