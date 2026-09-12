@@ -49,15 +49,20 @@ migration lands it becomes the one state the shipped build can no longer produce
 screen draws it as the degraded no-owner case.
 
 S-03's implementation review landed at `a55720b` with verdict "approve with required changes", and its
-fixes are not on `main` yet. This matters to this slice more than to any other: S-02's review followed
-the same shape, its plan was closed out before the fixes landed, and the fixes arrived two commits
-later. A release pinned before S-03's fixes would put the deployed instance behind `main` again within
-a commit or two, which is the exact failure this slice exists to end.
+fixes and archive followed at `0ff74bd`: `payments-and-recurring` is now under `context/archive/` with
+`status: archived` and a `## Resolution` section in its `reviews/impl-review.md`. That sequence is why
+phase 2 gates on the resolution commit rather than on "S-03 is closed out". S-02 showed the same
+shape, its plan was closed out before its review fixes landed, and the fixes arrived two commits
+later. A release pinned at either of those in-between points would put the deployed instance behind
+`main` again within a commit or two, which is the exact failure this slice exists to end. The gate is
+satisfied as of `0ff74bd`; phase 2 still checks it, because the release SHA has to be provably at or
+after that commit.
 
-The documentation has outrun its own text in three places: `AGENTS.md` still says "Only the scaffold
-exists so far", `README.md`'s first-run recipe still names two migrations and describes the
-repositories as future work, and the roadmap still carries S-03 as `in-progress`. There is no
-`infrastructure.md` in `context/foundation/`.
+The documentation has outrun its own text in two places: `AGENTS.md` still says "Only the scaffold
+exists so far", and `README.md`'s first-run recipe still names two migrations and describes the
+repositories as future work. There is no `infrastructure.md` in `context/foundation/`. The roadmap has
+caught up on its own: the status writer moved S-04 to `planning`, and S-03's archive flipped it to
+`done`.
 
 The full grounding, with evidence separated from inference, is in
 `context/changes/verification-and-release/research.md`.
@@ -168,7 +173,7 @@ that both halves of the evidence provably describe the same build.
   implementation review being resolved under that change's `reviews/`.
 - **Phase 2** needs phase 1 committed, because the release SHA it pins must be the tree whose
   documentation the release describes. It also needs a hard gate that phase 1 does not: the three
-  required findings of `context/changes/payments-and-recurring/reviews/impl-review.md` are resolved
+  required findings of `context/archive/payments-and-recurring/reviews/impl-review.md` are resolved
   and `payments-and-recurring` is archived, and the release SHA is read at or after the commit that
   resolves them. "S-03 is implemented and closed out" is not that gate, and was not for S-02 either.
 - **Phase 3** needs phase 2's dry run and snapshot, and needs the Cloudflare account already
@@ -308,7 +313,7 @@ may still send back.
 lands, in both the `## At a glance` row and the `- **Status:**` line of the item body, using the
 roadmap's own vocabulary (`proposed`, `ready`, `planning`, `in-progress`, `done`). The status writer
 has already moved it to `planning`, so this phase's edit is the step to `in-progress` and nothing
-else. S-03 is not touched here at all. The milestone's own status is not advanced. If another agent
+else. S-03 is not touched here at all; its own archive procedure has already flipped it to `done`. The milestone's own status is not advanced. If another agent
 has already moved S-04 further, the more advanced status is left alone.
 
 #### 7. Stack document drift check
@@ -373,7 +378,7 @@ and read the SHA from it. The first deployment's evidence records that it could 
 those, and the release SHA it quoted did not exactly describe the deployed bundle; S-02 and S-03 both
 show why the third matters.
 
-**Contract**: The gate comes first: `context/changes/payments-and-recurring/reviews/impl-review.md`
+**Contract**: The gate comes first: `context/archive/payments-and-recurring/reviews/impl-review.md`
 carries a `## Resolution` section resolving its three required findings, and
 `payments-and-recurring` is archived under `context/archive/`. The release SHA is read at or after the
 commit that resolved them, not merely from a clean tree. Then, from a clean checkout of `main`:
@@ -1022,8 +1027,8 @@ demonstrate a verb hangs off a non-owner participant that it deletes before the 
 - First deployment: `evidence/runs/deploy-1.md`, `evidence/runs/deploy-1-live-smoke.txt`
 - Roadmap item: `context/foundation/roadmap.md` S-04
 - Risks: `context/foundation/test-plan.md` §2
-- Prior slice shape: `context/changes/payments-and-recurring/plan.md`
-- Gate for phase 2: `context/changes/payments-and-recurring/reviews/impl-review.md`
+- Prior slice shape: `context/archive/payments-and-recurring/plan.md`
+- Gate for phase 2: `context/archive/payments-and-recurring/reviews/impl-review.md`
 - This plan's review: `context/changes/verification-and-release/reviews/plan-review.md`
 - Course minimum: `archive/toolkit/.ai/prompts/mvp-check.md`, `docs/MINIMUM-COMPLETION.md`
 

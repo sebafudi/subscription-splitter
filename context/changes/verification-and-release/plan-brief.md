@@ -19,8 +19,8 @@ two seeded accounts and one artefact, a throwaway subscription created by the fi
 run, which cannot be re-dated or deleted because `start_month` is not patchable and no subscription
 delete route exists, and which has no owner member because it predates `0003`. The gated seed route is
 closed and creates accounts only, so it cannot produce demo data. The documentation still says the
-scaffold is all that exists. S-03's implementation review has landed with required changes still to be
-applied, which is the gate this slice's release SHA has to clear.
+scaffold is all that exists. S-03's implementation review has landed, been resolved and been archived
+at `0ff74bd`, which is the gate this slice's release SHA has to be at or after.
 
 ## Desired end state
 

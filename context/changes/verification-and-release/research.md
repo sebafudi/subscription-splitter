@@ -72,7 +72,8 @@ that verb before the phase closes.
 The documentation gap is smaller than it looks but sits in load-bearing places. `AGENTS.md` still
 opens with "Only the scaffold exists so far". `README.md`'s first-run recipe still says the local
 migration step applies `0001` and `0002`, and still describes `src/server/` as holding "later the
-repositories". The roadmap still carries S-03 as `in-progress` and S-04 as `proposed`. There is no
+repositories". The roadmap carried S-03 as `in-progress` and S-04 as `proposed` when this was written
+and has since caught up on its own. There is no
 `infrastructure.md` anywhere in `context/foundation/`, which B09 names and which the organizer post
 offers as an example rather than a mandate - the infrastructure story currently exists, correct but
 scattered, across `README.md`'s Deploy section and `context/foundation/tech-stack.md`.
@@ -318,9 +319,12 @@ remote D1 creation, the `APP_ORIGINS`-after-first-deploy ordering, secret handli
 `SEED_TOKEN` afterwards and confirm the 404. It already names S-04 as the slice where remote seeding
 happens.
 
-**Evidence.** `context/foundation/roadmap.md`'s At a glance table carries S-03 as `in-progress` and
-S-04 as `proposed`. `context/changes/payments-and-recurring/change.md` has `status: implemented` and
-its Progress section is fully checked through phase 5.
+**Evidence.** At the commit this research was written against, `context/foundation/roadmap.md`'s At a
+glance table carried S-03 as `in-progress` and S-04 as `proposed`, and
+`context/changes/payments-and-recurring/change.md` had `status: implemented` with its Progress section
+fully checked through phase 5. Both have since moved: S-03 was archived at `0ff74bd` to
+`context/archive/payments-and-recurring/` with `status: archived` and its roadmap item flipped to
+`done`, and the status writer moved S-04 to `planning`.
 
 **Evidence.** `context/foundation/` holds `prd.md`, `roadmap.md`, `test-plan.md`, `tech-stack.md`,
 `shape-notes.md` and `bootstrap-verification.md`. There is no `infrastructure.md`.
@@ -436,7 +440,7 @@ why the run belongs after the documentation phase rather than before it.
 - `context/archive/runtime-auth-slice/` - the slice that established live verification by Chrome
   walkthrough, and whose Progress row 5.3 is closed by explanation rather than checked because no pull
   request was ever opened.
-- `context/changes/payments-and-recurring/plan.md` - the five-phase shape, the Progress contract, and
+- `context/archive/payments-and-recurring/plan.md` - the five-phase shape, the Progress contract, and
   a phase 5 that is evidence-only, which this slice's last phase mirrors.
 - `context/foundation/test-plan.md` risk 3 - "a migration leaves the remote database behind the code"
   is named there as a top risk, and this slice is the one that either closes it or realises it.
