@@ -1,7 +1,7 @@
 ---
 change_id: hono-refactor-opportunities
 title: Hono refactor opportunities
-status: planned
+status: plan_reviewed
 ---
 
 ## Notes
@@ -13,3 +13,5 @@ Intention: we have an analysis of this repository that documents technical debt 
 Exploration output: this change's `research.md`, ending with a ranked list of options with trade-offs. Decision on what to actually do is made at the planning stage; a refactor only starts according to the adopted plan.
 
 Artifacts: `context/changes/hono-refactor-opportunities/research.md` (exploration + ranking + ast-grep verification), `context/decisions/D-004-hono-refactor-selection.md` (decision), `context/changes/hono-refactor-opportunities/plan.md` and `plan-brief.md` (plan). Implementation of the plan is optional for this exercise.
+
+Independent plan review (`reviews/plan-review.md`, verdict: approve with required changes) tested the original top-ranked candidate with a counter-question and found three of its four supporting claims contradicted by the clone. `research.md`, `plan.md`, `plan-brief.md`, `D-004`, and `context/domain/02-invariant-aggregate-refactor.md` were all revised in response; see the review file's `## Resolution` section for the finding-by-finding mapping.
