@@ -1,0 +1,41 @@
+diff --git a/src/domain/current-month.test.ts b/src/domain/current-month.test.ts
+new file mode 100644
+index 0000000..a91e709
+--- /dev/null
++++ b/src/domain/current-month.test.ts
+@@ -0,0 +1,15 @@
++import { describe, expect, it } from 'vitest'
++import { currentMonthFor } from './current-month'
++
++describe('currentMonthFor', () => {
++  it('derives the month from the subscription time zone, not the server clock', () => {
++    const utcJustAfterMidnightTokyo = new Date('2026-01-31T15:30:00Z')
++    expect(currentMonthFor('Asia/Tokyo', utcJustAfterMidnightTokyo)).toBe('2026-02')
++    expect(currentMonthFor('UTC', utcJustAfterMidnightTokyo)).toBe('2026-01')
++  })
++
++  it('formats as YYYY-MM with zero-padded months', () => {
++    const marchFirst = new Date('2026-03-01T00:00:00Z')
++    expect(currentMonthFor('UTC', marchFirst)).toBe('2026-03')
++  })
++})
+diff --git a/src/domain/current-month.ts b/src/domain/current-month.ts
+new file mode 100644
+index 0000000..7a9c295
+--- /dev/null
++++ b/src/domain/current-month.ts
+@@ -0,0 +1,14 @@
++/**
++ * Derives the current billing month for a subscription from its own time zone, never from
++ * server-local date parts.
++ */
++export function currentMonthFor(timeZone: string, now: Date = new Date()): string {
++  const parts = new Intl.DateTimeFormat('en-CA', {
++    timeZone,
++    year: 'numeric',
++    month: '2-digit',
++  }).formatToParts(now)
++  const year = parts.find((part) => part.type === 'year')!.value
++  const month = parts.find((part) => part.type === 'month')!.value
++  return `${year}-${month}`
++}

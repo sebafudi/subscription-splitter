@@ -1,0 +1,19 @@
+diff --git a/src/domain/money.ts b/src/domain/money.ts
+index acf4575..e7c16e6 100644
+--- a/src/domain/money.ts
++++ b/src/domain/money.ts
+@@ -21,3 +21,14 @@ export function ownerResidualForMonth(priceMinor: number, activeCount: number):
+   const nonOwners = Math.max(activeCount - 1, 0)
+   return priceMinor - share * nonOwners
+ }
++
++/** Applies an effective-dated price change from its own month onward, never retroactively. */
++export function priceForMonth(
++  month: string,
++  priceHistory: { effectiveFrom: string; priceMinor: number }[],
++): number {
++  const applicable = priceHistory
++    .filter((entry) => entry.effectiveFrom <= month)
++    .sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1))
++  return applicable[0]?.priceMinor ?? 0
++}

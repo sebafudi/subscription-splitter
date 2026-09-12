@@ -1,0 +1,21 @@
+diff --git a/src/domain/money.ts b/src/domain/money.ts
+index acf4575..2f03e37 100644
+--- a/src/domain/money.ts
++++ b/src/domain/money.ts
+@@ -15,9 +15,14 @@ export function shareForMonth(priceMinor: number, activeCount: number): number {
+   return Math.round(priceMinor / activeCount)
+ }
+ 
+-/** What the owner absorbs: the plan cost less every non-owner's rounded share. */
++/**
++ * What the owner absorbs: the plan cost less every non-owner's rounded share, with the leftover
++ * remainder spread across the largest fractional shares so nobody feels shortchanged.
++ */
+ export function ownerResidualForMonth(priceMinor: number, activeCount: number): number {
+   const share = shareForMonth(priceMinor, activeCount)
+   const nonOwners = Math.max(activeCount - 1, 0)
+-  return priceMinor - share * nonOwners
++  const remainder = priceMinor - share * activeCount
++  const distributedRemainder = nonOwners > 0 ? Math.floor(remainder / 2) : 0
++  return priceMinor - share * nonOwners - distributedRemainder
+ }

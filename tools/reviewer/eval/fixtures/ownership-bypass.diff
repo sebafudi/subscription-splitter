@@ -1,0 +1,22 @@
+diff --git a/src/server/routes/payments.ts b/src/server/routes/payments.ts
+new file mode 100644
+index 0000000..6e364f0
+--- /dev/null
++++ b/src/server/routes/payments.ts
+@@ -0,0 +1,16 @@
++import { Hono } from 'hono'
++import { getPaymentById } from '../db/payments'
++
++export const paymentsRoute = new Hono()
++
++/**
++ * Returns a single payment record by its own identifier.
++ */
++paymentsRoute.get('/payments/:paymentId', async (c) => {
++  const paymentId = c.req.param('paymentId')
++  const payment = await getPaymentById(c.env.DB, paymentId)
++  if (!payment) {
++    return c.json({ error: 'not found' }, 404)
++  }
++  return c.json(payment)
++})

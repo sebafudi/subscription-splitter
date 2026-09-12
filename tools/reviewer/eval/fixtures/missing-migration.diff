@@ -1,0 +1,28 @@
+diff --git a/src/server/db/participants.ts b/src/server/db/participants.ts
+new file mode 100644
+index 0000000..57afaf2
+--- /dev/null
++++ b/src/server/db/participants.ts
+@@ -0,0 +1,22 @@
++import type { D1Database } from '@cloudflare/workers-types'
++
++export interface ParticipantRow {
++  id: string
++  subscription_id: string
++  display_name: string
++  loyalty_tier: string
++}
++
++/**
++ * Reads a participant's loyalty tier for the upcoming membership rewards feature.
++ */
++export async function getParticipantLoyaltyTier(
++  db: D1Database,
++  participantId: string,
++): Promise<string | null> {
++  const row = await db
++    .prepare('SELECT loyalty_tier FROM participants WHERE id = ?')
++    .bind(participantId)
++    .first<{ loyalty_tier: string }>()
++  return row?.loyalty_tier ?? null
++}

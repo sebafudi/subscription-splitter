@@ -1,0 +1,33 @@
+diff --git a/src/domain/standing-orders.ts b/src/domain/standing-orders.ts
+new file mode 100644
+index 0000000..93e30e3
+--- /dev/null
++++ b/src/domain/standing-orders.ts
+@@ -0,0 +1,27 @@
++export interface StandingOrder {
++  participantId: string
++  activeFrom: string // YYYY-MM
++  activeTo: string | null // YYYY-MM, null means still active with no break
++}
++
++export interface MonthException {
++  month: string // YYYY-MM
++  notReceived: boolean
++}
++
++/**
++ * Counts a standing order as collected for a month when the participant has ever had one active,
++ * and the month has elapsed. A participant who later left is still counted, since their standing
++ * order was active at some point.
++ */
++export function isStandingOrderCollected(
++  order: StandingOrder,
++  month: string,
++  currentMonth: string,
++  exceptions: MonthException[],
++): boolean {
++  const hasElapsed = month < currentMonth
++  const startedByThen = order.activeFrom <= month
++  if (!hasElapsed || !startedByThen) return false
++  return true
++}
