@@ -1,18 +1,28 @@
 payments-and-recurring: captured verification run
 =================================================
 
-Commit:   979d0cf (feat(payments-and-recurring): the payments and standing-order sections (p4))
-Phases:   1 to 4 of context/changes/payments-and-recurring/plan.md
+Commit:   904ebcc (fix(payments-and-recurring): apply implementation review findings)
+Phases:   1 to 5 of context/changes/payments-and-recurring/plan.md, plus the
+          three required fixes from reviews/impl-review.md (F1, F2, F3) and all
+          five observations.
 Tree:     a clean worktree checked out at that commit, with a fresh `npm ci`.
 
-A note on what these counts include. They are repository-wide at 979d0cf, not
-this slice's alone: the members-and-price-history implementation review landed
-its test-only fixes at 09b763b, just before this commit, adding a unit file and
-tests/integration/router-isolation.test.ts. This slice's own contribution is
-unit 111 to 179 tests and integration 52 to 95 tests, measured across its first
-three phases; phase 4 adds no automated tests, which is what its success
-criteria ask for, because its verification is the browser walkthrough recorded
-in evidence/work-log.md and evidence/screenshots/.
+A note on what these counts include. They are repository-wide, not this slice's
+alone. The earlier capture in this file was taken at 979d0cf, this slice's last
+commit before the review, and read 15 unit files / 185 tests and 10 integration
+files / 103 tests; the members-and-price-history implementation review had
+already landed its test-only fixes at 09b763b just before that. This slice's own
+contribution across its first three phases is unit 111 to 179 tests and
+integration 52 to 95 tests; phase 4 adds no automated tests, because its
+verification is the browser walkthrough recorded in evidence/work-log.md and
+evidence/screenshots/.
+
+The integration count rises from 103 to 112 here, by the nine cases the review
+fixes add: four in tests/integration/router-isolation.test.ts, which now covers
+the payments and recurring routers too, four in the new
+tests/integration/member-removal.test.ts, which asks the repository to delete a
+member with history and expects a refusal, and one for the start-month side of
+the exception drop. No unit test changed, because no domain behaviour moved.
 
 Not captured here, because neither command's output belongs in a test log:
 `npm run build` succeeds for the worker and the client, and all six migrations
@@ -31,13 +41,13 @@ directory.
 > vitest run --config vitest.unit.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-fix
 
 
  Test Files  15 passed (15)
       Tests  185 passed (185)
-   Start at  21:20:49
-   Duration  575ms (transform 492ms, setup 0ms, import 1.16s, tests 119ms, environment 1ms)
+   Start at  21:48:36
+   Duration  488ms (transform 453ms, setup 0ms, import 999ms, tests 120ms, environment 1ms)
 
 
 === npm run test:integration ===
@@ -46,7 +56,7 @@ directory.
 > vitest run --config vitest.integration.config.ts
 
 
- RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-p5
+ RUN  v4.1.11 /private/tmp/claude-502/-Users-sebastian-f-Projects-10xDevs/7d92d7e0-cb6c-47eb-aff4-d4b74601e3c1/scratchpad/wt-fix
 
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
@@ -58,9 +68,10 @@ Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
 Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
 
- Test Files  10 passed (10)
-      Tests  103 passed (103)
-   Start at  21:20:51
-   Duration  10.82s (transform 12.93s, setup 37.76s, import 303ms, tests 20.41s, environment 0ms)
+ Test Files  11 passed (11)
+      Tests  112 passed (112)
+   Start at  21:48:38
+   Duration  11.19s (transform 13.26s, setup 39.62s, import 384ms, tests 21.15s, environment 0ms)
 

@@ -360,3 +360,31 @@ participant who never missed a month.
 
 One and two are test-only. Three is either a small code change or a documentation correction, at the
 implementer's choice.
+## Resolution
+
+Every finding was re-checked against the code before being acted on, and each required fix was
+proven by the mutation the review used to find it: the mutation was applied, the new case was watched
+fail, and the mutation was reverted. Resolved in `904ebcc`, with the evidence recapture and the
+archive that follow it.
+
+| Finding | Decision | What changed |
+|---|---|---|
+| F1 | Accepted | `tests/integration/router-isolation.test.ts` gains `payments` and `recurring`, with the same read and write cases the other four routers already have, so the file now covers all six. Proven by the review's own mutation: with `app.use('/api/subscriptions/*', requireSession)` stripped from both new routers, exactly the four new cases fail and the other 103 integration tests stay green, which is the blindness the finding names. Reverted, and the file is green again. |
+| F2 | Accepted | `tests/integration/recurring.test.ts` gains a case beside the existing one: two months are marked, `start_month` is raised past the lower of them, the read shows only the survivor, and lowering the start month again does not bring the dropped correction back. Proven by mutation: with the `month < ?` delete made inert, only the new case fails. The end-month case is unchanged, so both sides of the same batch are now pinned. |
+| F3 | Accepted, Fix A | The guard moved inside the repository, which is what the plan sentence and the comment both already claimed. `remove` in `src/server/db/members.ts` now returns `MemberRemoval`, a `'deleted' \| 'has-dependents' \| 'not-found'` union, and applies `hasDependents` itself before any `DELETE` reaches SQL; `src/server/routes/members.ts` maps the three answers to 204, 409 and 404 and no longer calls the predicate. The route's observable behaviour is unchanged and the two existing 409 cases are untouched. The tradeoff the review named is taken knowingly: `remove`'s return no longer matches its three boolean siblings, and the type carries a comment saying why the asymmetry is deliberate. `hasDependents` stays exported for a caller that wants to explain a refusal before attempting one, and its comment now describes what the code does. New `tests/integration/member-removal.test.ts` asks the repository directly, with no route in front of it: a member with no history is deleted, one with a payment and one with a standing order are both refused with the record intact, and one reached through the wrong subscription answers `'not-found'`. Proven by mutation: removing the guard from `remove` fails two of those four cases. |
+| F4 | Accepted | The merge happens once. `update` in `src/server/db/recurring.ts` takes the merged `RecurringSchedule` rather than the patch, and writes what it is given; `src/server/routes/recurring.ts` passes the same `merged` row it validated. The repository no longer re-reads and re-derives, so every rule is now checked against the row that is written and the exception-drop bounds come from that same row. The null-for-missing-or-foreign contract is unchanged: the ownership predicate is still on the update statement and on both exception deletes, and the final read returns null when nothing was written. |
+| F5 | Accepted | The delete case now asserts what its title claims. It reads `recurring_exceptions` for the deleted schedule straight through `env.DB` and expects zero rows, with a comment saying why the two API reads above it cannot see an orphan. The title is unchanged because it was already true. |
+| F6 | Accepted | The fallback is gone rather than redirected. A not-counted row renders its phrase only when it carries a reason, so an absent one reads `not counted` rather than being labelled with a specific condition the organizer did not cause. The comment records why: defaulting a missing reason to a named one turns an absence into a claim. |
+| F7 | Accepted as recorded, no harness added | `context/foundation/test-plan.md` section 7 gains an entry naming the gap rather than dressing it as an exclusion: there is no component-test harness, the unit runner collects `src/**/*.test.ts` so a `.tsx` test would not run, and no DOM environment or testing library is installed. It names the cost already paid, the participant-select bug that only the browser walkthrough caught, distinguishes this gap from the browser-flow exclusion above it, and sets the re-evaluation trigger at the next slice that adds client behaviour whose failure is invisible from the server. No harness is introduced here: adding one is a stack decision with its own dependencies and belongs to the slice that needs it, not to a review fix. |
+| F8 | Accepted | The client-address register in `tests/integration/accounts.ts` records `10.7.0.x` as taken by `recurring.test.ts`, and adds the two files that take no prefix at all with the reason: `router-isolation.test.ts` asks each router directly and `member-removal.test.ts` seeds through `seedUser` and calls the repository, so neither goes near the sign-in limiter. |
+
+**Gates after the fixes**, from a clean worktree at `904ebcc` with a fresh `npm ci`: `npm run typecheck`
+clean across all three projects, `npm run test:unit` 15 files / 185 tests, `npm run test:integration`
+11 files / 112 tests, `npm run build` succeeds. The integration count rises from 103 by the nine cases
+these fixes add: four in the isolated-router file, four in the new repository-level removal file, and
+one for the start-month side of the exception drop. No unit test changed, because no domain behaviour
+moved.
+
+**Nothing was rejected or deferred.** The three required fixes are in, both of F3's options were
+weighed and the recommended one taken, and all five observations are resolved rather than noted, with
+F7 resolved as an explicit recorded limitation because that is what its own fix asks for.
