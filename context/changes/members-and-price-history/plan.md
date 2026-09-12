@@ -1194,10 +1194,10 @@ Two choices the phase-2 text left open, both taken the smaller way:
 
 #### Automated
 
-- [x] 5.1 The captured file exists and shows the passing counts
-- [x] 5.2 The same commands pass in one run
-- [x] 5.4 Test-plan sections 6.1 and 6.3 are filled and rollout phases 1 and 2 record their status
+- [x] 5.1 The captured file exists and shows the passing counts — 41adf58
+- [x] 5.2 The same commands pass in one run — 41adf58
+- [x] 5.4 Test-plan sections 6.1 and 6.3 are filled and rollout phases 1 and 2 record their status — 41adf58
 
 #### Manual
 
-- [x] 5.3 The evidence index row and work-log entry name this slice, its commit and its risks
+- [x] 5.3 The evidence index row and work-log entry name this slice, its commit and its risks — 41adf58
