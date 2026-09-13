@@ -1,0 +1,24 @@
+s08 gates, run on the captured tree (commit 31398ab; no file under src/, tests/ or migrations/ differs from bc036e2, the tree the captures were taken against).
+
+$ npm run typecheck
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+
+$ npm test
+> npm run test:unit && npm run test:integration
+> test:unit
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+ Test Files  22 passed (22)
+      Tests  262 passed (262)
+> test:integration
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+ Test Files  13 passed (13)
+      Tests  131 passed (131)
+
+$ npm run build
+dist/client/assets/index-CtqqFhDM.css                                  17.54 kB │ gzip:  4.24 kB
+dist/client/assets/index-Bcb4fGTZ.js                                  284.64 kB │ gzip: 84.84 kB
+
+✓ built in 99ms
