@@ -1399,25 +1399,25 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 1.1 Typecheck passes across all three projects
-- [x] 1.2 The whole suite passes with no test file changed
-- [x] 1.3 The production build succeeds
-- [x] 1.4 @fontsource/ibm-plex-sans is pinned to 5.3.0 with no range prefix
-- [x] 1.5 Four woff2 files ship at 79,268 bytes with no woff, ttf, eot or otf, recorded against the budget
-- [x] 1.6 No NumberFormat appears anywhere under src/client
-- [x] 1.7 Nothing under src/server, src/domain or migrations has changed
-- [x] 1.15 The faces are declared in index.css and nothing imports fontsource CSS from main.tsx
-- [x] 1.16 The wire-name match counts are captured from main and are unchanged at this phase's end
+- [x] 1.1 Typecheck passes across all three projects — 701b68f
+- [x] 1.2 The whole suite passes with no test file changed — 701b68f
+- [x] 1.3 The production build succeeds — 701b68f
+- [x] 1.4 @fontsource/ibm-plex-sans is pinned to 5.3.0 with no range prefix — 701b68f
+- [x] 1.5 Four woff2 files ship at 79,268 bytes with no woff, ttf, eot or otf, recorded against the budget — 701b68f
+- [x] 1.6 No NumberFormat appears anywhere under src/client — 701b68f
+- [x] 1.7 Nothing under src/server, src/domain or migrations has changed — 701b68f
+- [x] 1.15 The faces are declared in index.css and nothing imports fontsource CSS from main.tsx — 701b68f
+- [x] 1.16 The wire-name match counts are captured from main and are unchanged at this phase's end — 701b68f
 
 #### Manual
 
-- [x] 1.8 The app bar renders per design-spec 3.2 on Home and Detail at 1280 in light and dark
-- [x] 1.9 Every control keeps the focus ring of design-spec 2.4
-- [x] 1.10 The browser tab shows the split glyph favicon
-- [x] 1.11 Four woff2 requests go to the app's own origin and none to a third party
-- [x] 1.12 Nothing animates on load with reduced motion on and with it off
-- [x] 1.13 At 390 the email is visually hidden and every bar control is at least 44px high
-- [x] 1.14 The app bar stays at the top of the viewport while the page scrolls at 1280 and at 390
+- [x] 1.8 The app bar renders per design-spec 3.2 on Home and Detail at 1280 in light and dark — 701b68f
+- [x] 1.9 Every control keeps the focus ring of design-spec 2.4 — 701b68f
+- [x] 1.10 The browser tab shows the split glyph favicon — 701b68f
+- [x] 1.11 Four woff2 requests go to the app's own origin and none to a third party — 701b68f
+- [x] 1.12 Nothing animates on load with reduced motion on and with it off — 701b68f
+- [x] 1.13 At 390 the email is visually hidden and every bar control is at least 44px high — 701b68f
+- [x] 1.14 The app bar stays at the top of the viewport while the page scrolls at 1280 and at 390 — 701b68f
 
 ### Phase 2: The shared presentation layer, proven on Login and session loading
 
