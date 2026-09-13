@@ -109,3 +109,15 @@ Updated `context/STATUS.md` (Deployment section: release 4 retitled history, a n
 ### Next action
 
 Whoever retakes the five affected captures and refills the submission documents, and whoever archives the change and flips roadmap S-08 to `done`, should each write their own checkpoint; the next status sync reads those before touching these files again.
+
+## Seventh pass: certification captures refreshed
+
+- **Status:** complete; M06 deliberately left unchecked per instruction, its check to come once the archive lands
+
+Verified against `context/checkpoints/release-5-captures.md` (`cfa5e12`) and `evidence/runs/release-5-captures.md` directly: the five retaken captures and the five left alone, the served-asset check, no credential in any capture, and the course-workspace document updates (release identity, manifest total 990,732 bytes split 486,856/503,876) all read from the files. Confirmed in `docs/SUBMISSION-CHECK.md` itself that F01's final audit is recorded as still standing at release 4.
+
+Updated `context/STATUS.md` (the M06 remaining-work paragraph and item 12), `evidence/index.md` (M06 row reworded "captures refreshed; archive in progress"), `evidence/work-log.md`, and `GOALS.md` (B12 and B13 release/manifest values updated to release 5, owner placeholders and upload-confirmation wording left untouched; a new note added under the F goals that the final audit stands at release 4 pending re-audit). M06 left unchecked.
+
+### Next action
+
+Whoever archives `subscription-management-and-date-inputs` and flips roadmap S-08 to `done` writes their own checkpoint; the next status sync reads it before checking M06. Separately, a re-audit of F01 against release 5 is outstanding and unrelated to M06.
