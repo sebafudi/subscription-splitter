@@ -85,3 +85,26 @@ local run used npm 11.
 | `ai-review-pipeline-run.png` | The Actions run page: `ai-review.yml on: pull_request`, status Success, the `Run the AI reviewer` job green at 2m 36s and the skipped fork-notice job |
 | `ai-review-job-log.png` | The hosted job log: the install, the merge-base diff, the masked credential, the model, the CLI invocation and the `pass` verdict, then the comment upsert and the label step. Captured from a terminal because GitHub requires a signed-in session to view Actions logs, and these captures were taken from a signed-out browser |
 | `ai-review-pr-comment.png` | The pull request Conversation tab with the posted review: verdict heading, the five-criterion score table, every finding, and the `ai-cr:passed` label in the sidebar |
+
+## The second hosted run, after the implementation review
+
+Pull request 2 exists to prove the workflow still runs green after the Phase 5 implementation review
+changed it, which reading the YAML cannot establish.
+
+| What | Where |
+|---|---|
+| Pull request | `https://github.com/sebafudi/subscription-splitter/pull/2` |
+| Workflow run | `https://github.com/sebafudi/subscription-splitter/actions/runs/34730251520` |
+| Reviewer job | `https://github.com/sebafudi/subscription-splitter/actions/runs/34730251520/job/103651592797` |
+| Review comment | `https://github.com/sebafudi/subscription-splitter/pull/2#issuecomment-5649919282` |
+| Merged as | `d37417e` |
+
+It carried only `.github/workflows/ai-review.yml`: `timeout-minutes: 15` on the `review` job, the
+five `uses:` pinned to exact patch tags, and a `::warning::` annotation step for exit code 2. The run
+concluded successfully in 1m 54s, faster than the first, and posted one marker comment with verdict
+`passed` plus one `ai-cr:passed` label. The new annotation step was correctly skipped, because the
+reviewer exited 0 rather than 2, so that path is registered but not yet exercised by a real error
+outcome. The root `CI` workflow passed alongside it.
+
+Two independent pull requests have now been reviewed by the pipeline, which is what makes the
+reproducibility claim in GOALS C09 a measurement rather than an assertion.

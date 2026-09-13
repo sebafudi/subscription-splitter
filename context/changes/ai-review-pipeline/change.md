@@ -1,7 +1,8 @@
 ---
 change_id: ai-review-pipeline
 title: AI code review pipeline for pull requests
-status: implemented
+status: impl_reviewed
+updated: 2026-09-13
 ---
 
 ## Notes
@@ -26,10 +27,22 @@ contract), `research.md` (library and platform evidence), `plan.md` and `plan-br
 The implementation review (`reviews/impl-review.md`, phases 1 to 4) is resolved: all five required
 fixes and all four observations were applied, mapped in that file's `## Resolution` section.
 
-Phase 5 landed across `d4e755f` (the comparison, the decision and the live-call transcript),
-`7b3a7b7` and `4db78e8` (the model change and the npm fix, merged through pull request 1) and the
-closing evidence commit. One Progress row is deliberately left unchecked with its reason rather than
-made green: 5.2 asks the evaluation to exit 0, and `promptfoo eval` exited 100 because neither
-candidate passed all seven fixtures. Six Phase 4 manual rows stay unchecked for stated reasons too,
-each one a case that would have needed a fork, a deliberately broken secret or a manufactured
-hundred-comment thread to demonstrate. No implementation review has been run on Phase 5 yet.
+Phase 5 landed across `d4e755f` (the first comparison, the decision and the live-call transcript),
+`7b3a7b7` and `4db78e8` (the model change and the npm fix, merged through pull request 1), `6678f55`
+and `3ece70a` (the evidence and the procedure citation).
+
+An independent implementation review followed (`reviews/impl-review-phase5.md`, verdict NEEDS
+ATTENTION, 0 critical, 5 warnings, 4 observations) and every finding is resolved, mapped in that
+file's `## Resolution` section. The substantial one was F2: the comparison that chose the model had
+run at an uncommitted output budget of 8000, and two of its four model failures were the exact mode
+later attributed to that budget. It was re-run once at the shipped 16000 budget. The model choice did
+not change but its reasoning did, and the new matrix is the authoritative one.
+
+**Progress rows, exactly.** 53 of the 59 rows are checked. The six that are not are all Phase 4
+manual rows, each carrying its own one-line reason: 4.6, 4.8 and 4.12 would need a second run, a
+re-run and a hundred-comment thread on the repository's only pull request; 4.9 and 4.13 need a fork
+and the repository has none; 4.14 would mean deliberately breaking a working secret. Row 5.2 was
+unchecked before the re-run and is now checked, because every fixture assertion passes for the chosen
+model, which is what that criterion's own gloss requires. Rows 2.10, 2.11, 3.6, 3.7 and 3.9 were
+unchecked and reasonless until the review caught it; all five are now closed against evidence that
+already existed.

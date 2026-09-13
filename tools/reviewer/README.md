@@ -82,7 +82,8 @@ request fails the job, because that is an operator defect rather than a review r
 latency are captured in `../../evidence/champion/eval-results.md`. Needs `OPENROUTER_API_KEY`.
 
 The two candidates are `z-ai/glm-5.3-flash` and `deepseek/deepseek-v4-flash-0731`. Both are reasoning
-models, so `src/review.ts` asks for 8000 output tokens rather than 2000: OpenRouter bills reasoning
+models, so `src/review.ts` asks for 16000 output tokens rather than 2000: OpenRouter bills reasoning
 tokens against the same budget the verdict object has to fit in, and at 2000 both models spent the
-whole allowance thinking and returned no object at all. Expect a single review call to take between
-30 seconds and 5 minutes.
+whole allowance thinking and returned no object at all. 8000 was tried in between and was still too
+tight, truncating the JSON mid-object on runs that reasoned harder. Expect a single review call to
+take between 30 seconds and 9 minutes.

@@ -7,7 +7,7 @@ prompts:
 # Two candidates, compared on identical fixtures. Both were confirmed present in the OpenRouter
 # catalog with structured_outputs support before this run; prices observed on the day are recorded
 # in evidence/champion/eval-results.md. Both are reasoning models, which is why src/review.ts
-# budgets 8000 output tokens rather than 2000.
+# budgets 16000 output tokens rather than 2000.
 providers:
   - id: file://provider.ts
     label: preferred
@@ -36,8 +36,8 @@ defaultTest:
     # and recorded in evidence/champion/eval-results.md.
     #
     # The latency threshold was raised from 60000 after the same run. Both Phase 5 candidates are
-    # reasoning models answering with an 8000 token budget, and observed latencies ran from 38s to
-    # 282s, so 60s flagged healthy calls. 300000 still catches a genuinely hung call.
+    # reasoning models, and observed latencies ran from 38s to 522s, so 60s flagged healthy calls.
+    # 300000 still catches a genuinely hung call.
     - type: latency
       threshold: 300000
 

@@ -488,9 +488,11 @@ and a `cost` threshold, both as cross-checks rather than as the control. Caching
 matrix is run only when the prompt or the schema changes.
 
 **Spend control.** The ceiling is enforced by the shape of the run, not by a promptfoo assertion:
-input is bounded because every fixture is a small fixed file, output is bounded at 2,000 tokens by
-`reviewDiff` itself, retries are bounded at one, and the fixture count is fixed at seven across three
-providers, so a full matrix is 21 calls with a known upper bound. The authoritative spend figure is
+input is bounded because every fixture is a small fixed file, output is bounded by `reviewDiff`
+itself, retries are bounded at one, and the fixture count is fixed. Superseded by Phase 5: the output
+cap is 16,000 tokens rather than 2,000, because both candidates are reasoning models, and the matrix
+is seven fixtures across two providers, so a full matrix is 14 reviewer calls plus 14 grading calls
+rather than 21. The authoritative spend figure is
 read from the provider's own `usage.cost`, aggregated in `evidence/champion/eval-results.md`, and
 cross-checked against the OpenRouter activity page. The promptfoo `cost` assertion is a tripwire only:
 `research.md` §Unknown records that it may report promptfoo's own estimate rather than the OpenRouter
@@ -692,7 +694,10 @@ and the documentation were aligned in this same change flow; and the selection w
 deterministic and rubric pass or fail, cost and latency numbers. The dearer of the two was selected,
 but not silently: both models' failures are recorded with their numbers, and the model chosen is the
 document's own preferred one. Fixtures stayed bounded at seven, retries at the one already
-configured, and total spend at 0.1337 dollars. Both
+configured. Whole-phase spend is reconciled in one place with the arithmetic shown, in
+`evidence/champion/eval-results.md` §Spend: 0.171179 dollars against a 2 dollar ceiling. The figures
+0.114841 and 0.133683 that appear in earlier commits are successive readings of the same running
+total, not competing measurements. Both
 identifiers were re-fetched from the OpenRouter catalog and confirmed exact, with
 `structured_outputs` support and prices read on the day, before any live call. The evaluation
 configuration, the package default model, the workflow environment, the reviewer README and
@@ -701,6 +706,15 @@ the same flow as well: the output token budget starved both reasoning candidates
 `cost` tripwire assertion discarded whole results when OpenRouter omitted `usage.cost`. Both are
 recorded with their measurements in `evidence/champion/eval-results.md`, and the selection itself in
 `context/decisions/D-011-reviewer-model-selection.md`.
+
+The comparison was then re-run once at the shipped 16000 budget, because the first one was made at an
+uncommitted working-tree budget of 8000 that no commit reproduces, and two of its four model failures
+were the `no_object_generated` mode later attributed to that very budget. The 16000 run is the
+authoritative matrix; the 8000 run is kept as `evidence/champion/eval-results-8000-superseded.md`
+with the correction on it. The selection did not change, but its reasoning did: the clean-control
+argument against the cheaper model is withdrawn, since it passes that fixture at 16000, and the
+deciding fact is now that it returns a valid object on the injection probe and names the embedded
+instruction in no finding.
 
 ### Overview
 
@@ -822,9 +836,11 @@ integration layer and it is a separate, credentialed run.
 
 ## Performance considerations
 
-One model call per pull request per run, bounded to 2,000 output tokens with one retry. The diff is
-bounded at 96 KB. Expected wall time is well under two minutes, dominated by `npm ci` and the model
-call. The concurrency group means a burst of pushes costs one run, not one per push.
+One model call per pull request per run, bounded to 16,000 output tokens with one retry (2,000 as
+first planned, raised in Phase 5 because both candidates are reasoning models billing their thinking
+against the same budget). The diff is bounded at 96 KB. Measured wall time on the first hosted run
+was 2m 36s for the job and 2m 26s for the model call, and the Phase 5 matrix recorded a 522s tail, so
+the `review` job carries `timeout-minutes`. The concurrency group means a burst of pushes costs one run, not one per push.
 
 ## References
 
@@ -881,8 +897,8 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Manual
 
-- [ ] 2.10 System prompt carries all five criteria, the project rules and the injection guardrail
-- [ ] 2.11 No prompt, comment or log line can carry a credential
+- [x] 2.10 System prompt carries all five criteria, the project rules and the injection guardrail - 90527f5 (closed against evidence that already existed. `buildSystemPrompt` in `src/prompt.ts` renders every entry of `CRITERIA` with its key, title, question and both anchors, states the project rules, and names the per-call nonce as the only valid block terminator while instructing that an embedded instruction is content to report rather than a direction to follow. Three tests in `test/prompt.test.ts` assert exactly those three properties: "names all five criteria", "states the nonce as the only valid terminator" and "instructs that embedded instructions are content to report, not directions to follow")
+- [x] 2.11 No prompt, comment or log line can carry a credential - 90527f5 (the credential has exactly one reader, `resolveModel()` in `src/model.ts`, which hands it to `createOpenRouter` and never returns it; a grep for `process.env` across `src/` finds only `PR_TITLE` and `PR_BODY` besides that, so no prompt builder or comment renderer can reach it. `MissingCredentialError` carries the variable's name and not its value. `test/format.test.ts` asserts a rendered comment never matches a credential-shaped string. The independent review's own secret scan of the working tree and of `git log -p --all -S` found no key material, and the hosted job log shows `OPENROUTER_API_KEY: ***`, masked by Actions. The claim is bounded by what can be shown: no path in this package writes the value, rather than a proof that no future edit could)
 
 ### Phase 3: Evaluation harness, fixtures and model comparison
 
@@ -897,9 +913,9 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Manual
 
-- [ ] 3.6 Each fixture's seeded defect is present and singular
-- [ ] 3.7 clean.diff contains nothing a reasonable reviewer would call blocking
-- [ ] 3.9 untested-risk-change.diff is trivially correct apart from its missing test
+- [x] 3.6 Each fixture's seeded defect is present and singular - 90527f5 (all seven fixtures read end to end; each defect fixture is a single small hunk carrying one seeded defect: the residual split across largest fractional shares in `money-rounding-bug.diff`, the payment looked up by client-supplied id with no ownership join in `ownership-bypass.diff`, the new column with no migration in `missing-migration.diff`, the open-ended active range in `break-month-liability.diff`, the missing test in `untested-risk-change.diff`, and the embedded instruction in `prompt-injection.diff`. The live matrix corroborates this: on every defect fixture where a model produced an object, the rubric grader confirmed the rationale named that fixture's own defect)
+- [x] 3.7 clean.diff contains nothing a reasonable reviewer would call blocking - 90527f5 (it adds `currentMonthFor`, which derives the billing month from the subscription's own time zone through `Intl.DateTimeFormat` rather than from server-local date parts, together with its own unit test covering the Tokyo-versus-UTC midnight boundary and zero-padded formatting. It follows the project rule the other fixtures break rather than breaking one. The preferred model returned `pass` on it in the live matrix, which is the fixture's purpose)
+- [x] 3.9 untested-risk-change.diff is trivially correct apart from its missing test - 90527f5 (it adds `priceForMonth`, which filters price history to entries effective at or before the month, sorts descending and takes the first, returning 0 when none applies. That is the effective-dated rule the project states, applied forward and never retroactively. No test accompanies it, and nothing else in the hunk is wrong, which is what makes `test-adequacy` the only criterion it should move)
 
 ### Phase 4: GitHub Actions workflow, comment and label
 
@@ -927,8 +943,8 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Automated
 
-- [x] 5.1 The evaluation writes eval/results.json - 7b3a7b7, promptfoo eval `eval-4uc-2026-09-12T23:43:00` (the file is a working artefact and is deliberately not committed; `evidence/champion/eval-results.md` is the curated record)
-- [ ] 5.2 The evaluation exits 0 for the chosen model - **not met, and left unchecked rather than explained away.** `promptfoo eval` exited 100. The chosen model passed 5 of the 7 deterministic assertions, not all 7: it missed the criterion-attribution check on `missing-migration.diff` and returned `no_object_generated` on `untested-risk-change.diff`. The alternative also passed 5 of 7. The criterion as written assumes a model that passes every fixture exists among the candidates; neither does. Loosening `eval/asserts/verdict.js` would have turned this green without changing any model behaviour, so it was not done. The full per-fixture result is in `evidence/champion/eval-results.md`
+- [x] 5.1 The evaluation writes eval/results.json - promptfoo eval `eval-dfe-2026-09-13T00:53:56` at the shipped 16000 budget (the earlier `eval-4uc-2026-09-12T23:43:00` run at an uncommitted 8000 budget is superseded) (the file is a working artefact and is deliberately not committed; `evidence/champion/eval-results.md` is the curated record)
+- [x] 5.2 The evaluation exits 0 for the chosen model - promptfoo eval `eval-dfe-2026-09-13T00:53:56` (closed by the re-run at the shipped budget, having been left unchecked with its reason at the 8000 budget. This criterion's own gloss is "meaning every fixture assertion passed for at least the chosen model", and that is now literally true: `z-ai/glm-5.3-flash` passed all seven fixtures on every assertion, deterministic, rubric and latency alike. The process still exits 100, because the matrix contains a second provider and the alternative failed three of its seven; no single exit code can be 0 while a comparison includes a losing candidate, so the gloss rather than the number is what the criterion can mean here)
 - [x] 5.3 The workflow run on a real pull request concludes successfully - run 34727750896, pull request 1 (two earlier runs, 34727635662 and 34727724451, failed at the install step; the fix is 4db78e8)
 - [x] 5.4 The pull request carries one review comment and one verdict label - run 34727750896 (`gh pr view 1 --json comments,labels`: one comment bearing the `<!-- ai-code-review -->` marker, one label `ai-cr:passed`)
 
@@ -936,6 +952,6 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 - [x] 5.5 OPENROUTER_API_KEY provisioned locally and as a repository secret - `gh secret list -R sebafudi/subscription-splitter` names it; loaded locally into the process environment only, never written into this repository (see `evidence/runs/ai-review-live-call.md`)
 - [x] 5.6 Three Champion screenshots captured under evidence/champion/ - `ai-review-pipeline-run.png`, `ai-review-job-log.png`, `ai-review-pr-comment.png`
-- [x] 5.7 Evaluation spend is under the two dollar ceiling - 0.026870 dollars for the reported matrix, summed from each call's own `usage.cost`; 0.1148 dollars total on the key for the whole phase including the discarded first attempt, the probes and every grading call
+- [x] 5.7 Evaluation spend is under the two dollar ceiling - 0.024119 dollars of reviewer calls for the authoritative 16000 matrix, summed from each call's own `usage.cost`; 0.171179 dollars total on the key for the whole phase, reconciled with the arithmetic in `evidence/champion/eval-results.md` §Spend
 - [x] 5.8 The comment's findings are specific to the change - run 34727750896 (every finding cites a file and line in the diff; three correct observations nobody planted are quoted in `evidence/champion/hosted-review-run.md`)
 - [x] 5.9 STATUS.md no longer lists the credential as a blocker

@@ -111,8 +111,11 @@ absent, described the catalog as it stood when this document was first written; 
 Both candidates are reasoning models, and OpenRouter bills their reasoning tokens against the same
 `maxOutputTokens` budget the object must fit in. Probed on `eval/fixtures/money-rounding-bug.diff`,
 each consumed the whole 2,000 token allowance on reasoning alone, returned `finishReason: "length"`
-with zero text tokens, and surfaced as a `no_object_generated` outcome. At 8,000 tokens both returned
-a valid object first time. This supersedes the inference below that a verdict fits comfortably under
+with zero text tokens, and surfaced as a `no_object_generated` outcome. 8,000 was tried next and both
+returned a valid object, but it was still too tight in practice: one review was observed spending
+5,167 reasoning tokens before 1,347 tokens of object, and runs that reasoned harder truncated the
+JSON mid-object. The shipped budget is **16,000** (`tools/reviewer/src/review.ts`, pinned by
+`test/review.test.ts`). This supersedes the inference below that a verdict fits comfortably under
 2,000 output tokens: that holds for a non-reasoning model only.
 
 ### promptfoo, `0.123.0`
@@ -240,8 +243,10 @@ Open items, each with the default to take if it is still unresolved when the wor
   custom provider sets `tokenUsage` and `cost` from `result.providerMetadata.openrouter.usage.cost`,
   that figure is the authoritative one recorded in `evidence/champion/eval-results.md` and
   cross-checked against the OpenRouter activity page, and the assertion is kept only as a tripwire.
-  The ceiling itself is enforced by bounded input, a 2,000 token output cap, one retry and a fixed
-  fixture count.
+  The ceiling itself is enforced by bounded input, a bounded output cap, one retry and a fixed
+  fixture count. The cap named here as 2,000 is superseded: the shipped value is 16,000, because both
+  Phase 5 candidates are reasoning models whose thinking is billed against the same budget. See the
+  Phase 5 candidate re-verification section above.
 - **Whether `@openrouter/ai-sdk-provider`'s `response-healing` plugin is worth enabling.** It would
   mask exactly the malformed-output path the unit tests exist to cover. Default: leave it off, and
   reconsider only if a model that is otherwise good fails purely on JSON formatting.

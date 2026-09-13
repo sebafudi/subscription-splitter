@@ -1,5 +1,24 @@
 # Phase 5 runbook: AI review pipeline
 
+> **Superseded. Do not follow this document.** It is the procedure written *before* Phase 5 ran, kept
+> only as a record of what was planned. Phase 5 has since executed and almost every operational fact
+> below is now wrong: the workflow has run (three runs, `34727635662` and `34727724451` failed at the
+> install step, `34727750896` succeeded), there are two configured providers rather than three, the
+> candidates are `z-ai/glm-5.3-flash` and `deepseek/deepseek-v4-flash-0731` rather than
+> `deepseek/deepseek-v3.2` / `openai/gpt-5-mini` / `anthropic/claude-sonnet-4.6` (the second of those
+> is now only the rubric grader), the `gemini-2.5-flash` fallback comment no longer exists in the
+> configuration, the `cost` assertion has been removed and the latency threshold is 300000 rather
+> than 60000, `deepseek/deepseek-v3.2` is recorded as the superseded package default, the workflow
+> passes four environment variables to the CLI step rather than one, and the output token budget is
+> 16000 rather than 2000. The real change landed as a pull request rather than as the boundary test
+> this document proposes, and that test was never written.
+>
+> For the current state read, in this order: the Phase 5 revision note and Progress rows in
+> `plan.md`, `evidence/champion/eval-results.md` (the authoritative matrix),
+> `evidence/champion/hosted-review-run.md`, `context/decisions/D-011-reviewer-model-selection.md`,
+> and `tools/reviewer/README.md`.
+
+
 Ordered, copy-pasteable steps for the moment `OPENROUTER_API_KEY` exists. Everything up to this
 point (phases 1 to 4) is landed and green with no network access. This runbook assumes the key is
 in hand and unblocks GOALS.md items C02, C04, C05, C06, C07, C08 and C09.

@@ -89,7 +89,7 @@ call was made, so nothing here re-measures cost or latency.
   - Confidence: HIGH - established from the commit contents, not inferred.
   - Blind spot: I cannot confirm the working tree was at exactly 8000 during the run; that is only
     the document's own claim.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F2 - The model choice rests partly on a failure the team then attributed to that budget
 
@@ -128,7 +128,7 @@ call was made, so nothing here re-measures cost or latency.
   - Confidence: MEDIUM - depends on both identifiers still being available and priced as observed.
   - Blind spot: A re-run could flip the choice to the cheaper model, which means touching
     `DEFAULT_MODEL_ID`, the repository variable and the workflow again.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F3 - The Phase 5 runbook is wholly superseded and presents itself as current
 
@@ -149,7 +149,7 @@ call was made, so nothing here re-measures cost or latency.
 - **Fix**: Add a note at the top stating the runbook is the pre-execution procedure, superseded by
   the Phase 5 revision note in `plan.md` and by `evidence/champion/eval-results.md`, and kept only as
   a record of what was planned.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F4 - The output token budget is stale in five more documents
 
@@ -168,7 +168,7 @@ call was made, so nothing here re-measures cost or latency.
   "38s to 522s".
 - **Fix**: Sweep the six sites to 16000 and correct the latency range in the evaluation
   configuration to 38s to 522s.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F5 - Five manual Progress rows are unchecked with no reason, and the change summary omits them
 
@@ -190,7 +190,7 @@ call was made, so nothing here re-measures cost or latency.
 - **Fix**: Either close 2.10, 2.11, 3.6, 3.7 and 3.9 against the evidence that already exists, or
   give each the same one-line reason the Phase 4 rows carry, and correct `change.md` so its count of
   unchecked rows matches the plan.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F6 - Two spend totals for the same phase
 
@@ -205,7 +205,7 @@ call was made, so nothing here re-measures cost or latency.
   and the 0.026870 matrix total recompute correctly, so only this one figure is in question.
 - **Fix**: Reconcile to one figure, or say in the revision note that 0.1337 is a later reading of the
   key that includes spend after the matrix was recorded.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F7 - An error outcome leaves the job green with no run-level signal
 
@@ -222,7 +222,7 @@ call was made, so nothing here re-measures cost or latency.
   silently green run is the outcome a reader is least likely to notice.
 - **Fix**: Add a step that writes a `::warning::` to the run summary on exit 2, keeping the job green
   but making the error visible on the Actions page rather than only on the pull request.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F8 - No job timeout on a step with a measured tail of nearly nine minutes
 
@@ -237,7 +237,7 @@ call was made, so nothing here re-measures cost or latency.
   cell and a 180s mean, so a hung provider call is not hypothetical, and it would burn runner minutes
   rather than tokens.
 - **Fix**: Set `timeout-minutes: 15` on the `review` job.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F9 - Actions are pinned to floating majors in one workflow and exact patches in the other
 
@@ -252,7 +252,7 @@ call was made, so nothing here re-measures cost or latency.
   The reviewer package itself is exemplary here: every dependency is an exact version with no caret or
   tilde, and the lockfile is committed.
 - **Fix**: Pin the five `uses:` in `ai-review.yml` to exact patch tags to match `ci.yml`.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ## Notes on what was checked and found sound
 
@@ -281,3 +281,101 @@ call was made, so nothing here re-measures cost or latency.
   withholds every secret, so the failure mode is a skipped review and an explanatory summary rather
   than an exposure. The `fork-notice` job runs with `permissions: {}` and only writes to the step
   summary.
+
+## Resolution
+
+Author's response, 2026-09-13. All five warnings and all four observations are resolved. The review
+was accurate on every point; F1 and F2 in particular found a real hole in the evidence that no
+amount of re-reading the write-ups would have shown.
+
+| Finding | Severity | Outcome | Commit |
+|---|---|---|---|
+| F1 | warning | Fixed. Correction written onto the old matrix, which is now `evidence/champion/eval-results-8000-superseded.md` | `4c831bc` |
+| F2 | warning | Fixed by Fix B, the re-run. New authoritative matrix at `evidence/champion/eval-results.md`; `D-011` rewritten | `4c831bc` |
+| F3 | warning | Fixed. Supersession note at the top of `phase-5-runbook.md` | `4c831bc` |
+| F4 | warning | Fixed. Six stale sites swept to 16000, latency range corrected | `4c831bc` |
+| F5 | warning | Fixed. Rows 2.10, 2.11, 3.6, 3.7 and 3.9 closed against existing evidence; `change.md` count corrected | `4c831bc` |
+| F6 | observation | Fixed. One figure with the arithmetic shown | `4c831bc` |
+| F7 | observation | Implemented. `::warning::` annotation on exit code 2 | `d37417e` |
+| F8 | observation | Implemented. `timeout-minutes: 15` on the `review` job | `d37417e` |
+| F9 | observation | Implemented. Five `uses:` pinned to exact patch tags | `d37417e` |
+
+**F1.** The correction is written on the superseded file itself rather than tucked into a changelog,
+because that file is what a reader following a citation lands on. It now states that the matrix was
+produced at an uncommitted working-tree value of 8000, that `d4e755f` touches no file under `src/`
+and still carried 2000, that `7b3a7b7` went from 2000 straight to 16000, and that the run is
+therefore not reproducible from any tagged commit. The reviewer's blind spot is worth naming: the
+8000 value is still only the document's own claim about a working tree nobody can inspect. That is
+precisely why the re-run was worth doing rather than only annotating.
+
+**F2.** Fix B was taken. The comparison re-ran once, bounded, at the shipped 16000 budget on the same
+seven fixtures: promptfoo eval `eval-dfe-2026-09-13T00:53:56`. The finding's own blind spot turned
+out to be the important one, and it cut both ways.
+
+- The alternative now **passes** the clean control with a real rationale. The first pillar of the
+  decision, that it cries wolf on clean diffs with `TODO` rationales, is **withdrawn**: that was the
+  token budget, not the model. The old record overstated the case against it.
+- The alternative now produces a fully valid object on the prompt injection probe and **still fails**
+  it, naming the embedded instruction in no finding. The pillar the review flagged as a probable
+  budget artifact is the one that survived, and it is now settled rather than confounded.
+- Neither model produced a single `no_object_generated` outcome at 16000, against two at 8000 and
+  fourteen at 2000, which confirms the budget was the cause of both earlier failures.
+
+The plan's tie-break was re-applied honestly and, for the first time, literally: at 8000 neither
+candidate passed all seven deterministic assertions so the rule could only be used by analogy; at
+16000 `z-ai/glm-5.3-flash` passes 7 of 7 and `deepseek/deepseek-v4-flash-0731` passes 5 of 7, which
+is exactly the "cheaper model misses a check the pricier one catches" condition. The decision stands
+and no configuration changed, but `D-011` is rewritten so the reason on file is the reason that
+survives. Re-run cost 0.037496 dollars.
+
+**F3.** The runbook now opens with a supersession block naming every operational fact in it that is
+now false, including the three-provider matrix, the old candidate set, the removed `cost` assertion,
+the 60000 latency threshold, the superseded package default, the single-variable claim about the
+workflow `env`, and the boundary test it proposes that was never written. It points at the five
+documents that are current.
+
+**F4.** Swept to 16000 in `tools/reviewer/README.md`, `research.md` twice, `plan.md` twice and
+`promptfooconfig.yaml`, and the configuration's latency range corrected from "38s to 282s" to
+"38s to 522s". Two of these are historical documents, so the 2,000 figures there carry a supersession
+sentence rather than being rewritten as if they had always said 16,000. `plan.md`'s spend paragraph
+also had a stale "seven fixtures across three providers, so a full matrix is 21 calls"; it now says
+two providers and 14 reviewer calls plus 14 grading calls.
+
+**F5.** All five rows are closed against evidence that already existed rather than given excuses,
+which is what the finding suggested was possible for at least two of them. 2.10 rests on
+`buildSystemPrompt` plus the three assertions in `test/prompt.test.ts`. 2.11 rests on the credential
+having exactly one reader in `src/model.ts`, no other `process.env` use in `src/` besides `PR_TITLE`
+and `PR_BODY`, the negative assertion in `test/format.test.ts`, the reviewer's own secret scan, and
+the masked value in the hosted job log; the row's claim is stated as bounded by what can be shown.
+3.6, 3.7 and 3.9 rest on reading all seven fixtures, and the live matrix corroborates them. `change.md`
+now states the real count, 53 of 59 checked, with the six remaining named.
+
+**F6.** `evidence/champion/eval-results.md` §Spend carries one table with the arithmetic: 0.114841
+after the first matrix, 0.133683 after the hosted run and closing verification, 0.171179 after the
+re-run, with the re-run's 0.037496 split into 0.024119 of reviewer calls and 0.013377 of grading and
+overhead. The earlier figures were successive readings of a running total, not competing
+measurements, and the revision note now says so and points here.
+
+**F7.** Implemented rather than deferred. A step writes a `::warning::` annotation when the reviewer
+exits 2, so a `no_object_generated`, `schema_invalid` or `provider_error` outcome is visible on the
+Actions page instead of only on the pull request. The job still concludes successfully, because the
+pipeline is advisory by decision and turning exit 2 into a failure would change that contract.
+
+**F8.** `timeout-minutes: 15` on the `review` job, with a comment giving the reason: the model call
+has no `abortSignal`, the matrix recorded a 222s tail for the selected model and a 333s tail overall,
+and the GitHub default is 360 minutes.
+
+**F9.** `actions/github-script@v9.0.0` in three places, `actions/checkout@v7.0.1` and
+`actions/setup-node@v7.0.0`, matching `ci.yml` and the `AGENTS.md` rule the finding cites. Each tag
+was confirmed to be the current latest release rather than guessed.
+
+**Verification after the fixes.** `npm test` in `tools/reviewer` 68 tests in 10 files, `npm run
+typecheck` clean, `npx promptfoo validate` valid. The workflow changes were proved on a real hosted
+run rather than by reading the YAML: pull request 2,
+`https://github.com/sebafudi/subscription-splitter/pull/2`, carried only `.github/workflows/ai-review.yml`
+and ran `34730251520`, which concluded successfully in 1m 54s, posted one `<!-- ai-code-review -->`
+comment with verdict `passed` and applied one `ai-cr:passed` label. The new "Annotate an error
+outcome" step was correctly skipped, since the reviewer exited 0 rather than 2. The root `CI`
+workflow passed alongside it. Merged with a rebase as `d37417e`. That run is also the second real
+exercise of the pipeline, which incidentally makes the reviewer's own behaviour reproducible across
+two independent pull requests.
