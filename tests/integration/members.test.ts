@@ -93,8 +93,8 @@ describe('the owner member every subscription is created with', () => {
     expect(members[0].name).toBe('Organizer')
   })
 
-  it('refuses a subscription PATCH carrying start_month with 400 and leaves the stored month unchanged', async () => {
-    const cookie = await signedInCookie('3', 'members-start-month-fixed@example.com')
+  it('carries the owner opening range along when a subscription PATCH moves the first month', async () => {
+    const cookie = await signedInCookie('3', 'members-start-month-shift@example.com')
     const plan = await createPlan(cookie)
 
     const patchRes = await SELF.fetch(`http://example.com/api/subscriptions/${plan.id}`, {
@@ -102,13 +102,14 @@ describe('the owner member every subscription is created with', () => {
       headers: jsonHeaders(cookie),
       body: JSON.stringify({ start_month: '2026-05' }),
     })
-    expect(patchRes.status).toBe(400)
-    const error = await patchRes.json<{ error: string; field?: string }>()
-    expect(`${error.field ?? ''} ${error.error}`).toContain('start_month')
+    expect(patchRes.status).toBe(200)
 
     const getRes = await SELF.fetch(`http://example.com/api/subscriptions/${plan.id}`, { headers: { cookie } })
     const stored = await getRes.json<{ startMonth: string }>()
-    expect(stored.startMonth).toBe('2026-01')
+    expect(stored.startMonth).toBe('2026-05')
+
+    const members = await listMembers(cookie, plan.id)
+    expect(members[0].activeRanges).toEqual([{ joinedMonth: '2026-05', leftMonth: null }])
   })
 
   it('refuses a second owner with 409 and leaves the existing owner in place', async () => {

@@ -42,14 +42,16 @@ export const createSubscriptionSchema = z
 
 /**
  * Accepts a non-empty subset of the create fields; rejects an empty body and
- * any unknown key. `start_month` is not one of the patchable fields: every
- * stored range, price entry and break month is validated against it on the
- * way in, and because it cannot move, nothing has to be re-validated later.
- * A patch carrying it is a 400 naming the field, in the same shape as the
- * existing refusal of `id` and `user_id`.
+ * any unknown key. `start_month` is patchable: moving it earlier is admissible
+ * down to a floor of January ten years before the current year, and moving it
+ * later is bounded by the earliest month any dependent record uses. Neither
+ * bound is a schema rule, because both depend on the stored row - the floor on
+ * its time zone and the ceiling on its ranges, prices, break months, payments
+ * and standing orders. Both are enforced in `src/server/db/subscriptions.ts`,
+ * beside the write they guard, and answered as a 400 naming `start_month`.
  */
 export const patchSubscriptionSchema = z
-  .object({ name, currency, locale, time_zone: timeZone })
+  .object({ name, currency, locale, time_zone: timeZone, start_month: startMonth })
   .partial()
   .strict()
   .refine((value) => Object.keys(value).length > 0, 'patch body must not be empty')

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { requireSession, type SessionVariables } from '../middleware/require-session'
-import { create, get, list, update } from '../db/subscriptions'
+import { create, get, list, remove, update } from '../db/subscriptions'
 import { createSubscriptionSchema, patchSubscriptionSchema } from '../validation/subscriptions'
 
 const app = new Hono<{ Bindings: Env; Variables: SessionVariables }>()
@@ -22,7 +22,8 @@ app.post('/api/subscriptions', async (c) => {
     return c.json({ error: parsed.error.issues[0]?.message ?? 'invalid body', field: parsed.error.issues[0]?.path.join('.') }, 400)
   }
   const created = await create(c.env.DB, user.id, parsed.data)
-  return c.json(created, 201)
+  if (!created.ok) return c.json({ error: created.message, field: created.field }, 400)
+  return c.json(created.subscription, 201)
 })
 
 app.get('/api/subscriptions/:id', async (c) => {
@@ -39,9 +40,17 @@ app.patch('/api/subscriptions/:id', async (c) => {
   if (!parsed.success) {
     return c.json({ error: parsed.error.issues[0]?.message ?? 'invalid body', field: parsed.error.issues[0]?.path.join('.') }, 400)
   }
-  const row = await update(c.env.DB, c.req.param('id'), user.id, parsed.data)
-  if (!row) return c.json({ error: 'not found' }, 404)
-  return c.json(row)
+  const result = await update(c.env.DB, c.req.param('id'), user.id, parsed.data)
+  if (result.ok) return c.json(result.subscription)
+  if (result.kind === 'not-found') return c.json({ error: 'not found' }, 404)
+  return c.json({ error: result.message, field: result.field }, 400)
+})
+
+app.delete('/api/subscriptions/:id', async (c) => {
+  const user = c.get('sessionUser')
+  const deleted = await remove(c.env.DB, c.req.param('id'), user.id)
+  if (!deleted) return c.json({ error: 'not found' }, 404)
+  return c.body(null, 204)
 })
 
 export default app

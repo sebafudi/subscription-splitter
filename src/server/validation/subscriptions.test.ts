@@ -95,8 +95,15 @@ describe('patchSubscriptionSchema', () => {
     expect(result.success).toBe(false)
   })
 
-  it('rejects start_month, in the same shape as the existing refusal of id and user_id', () => {
+  it('accepts start_month, whose bounds are enforced beside the write rather than here', () => {
     const result = patchSubscriptionSchema.safeParse({ start_month: '2026-02' })
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a malformed start_month, including the 00 and 13-19 the database pattern admits', () => {
+    for (const bad of ['2026-00', '2026-13', '2026-19', '2026-1', '26-01']) {
+      const result = patchSubscriptionSchema.safeParse({ start_month: bad })
+      expect(result.success, `expected ${bad} to be rejected`).toBe(false)
+    }
   })
 })
