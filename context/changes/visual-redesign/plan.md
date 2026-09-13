@@ -1464,8 +1464,10 @@ design-spec 8 asked for different numbers. The designer answered it by rewriting
 implemented, and the four mobile captures that show the filter, rows 09 and 22 in both themes, were
 retaken against the answered design. Nothing else in the pass diverged from the specification, no
 token value was changed, and no appearance was altered except in response to that answer. No
-checkpoint is open. Progress row 6.14 stays unticked until the designer's review of the capture set
-itself lands, which is what phase 6's implementation note requires.
+checkpoint is open. The designer reviewed the capture set, accepted it with three required
+corrections A1 to A3, re-checked those corrections against the retaken captures and accepted the
+implementation without conditions; the review and both rounds are recorded in
+`reviews/design-acceptance.md`, and Progress row 6.14 closes with `6930058`.
 
 ## Testing strategy
 
@@ -1680,4 +1682,4 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border — fac48ee
 - [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5 — fac48ee
 - [x] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high — f642b89
-- [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings
+- [x] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings — 6930058
