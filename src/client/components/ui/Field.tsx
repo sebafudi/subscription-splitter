@@ -11,7 +11,7 @@ type Props = {
   /** Also the control's id, so the label points at it. */
   id: string
   label: string
-  /** Sits under the label and stays visible; the ISO form of a month or date belongs here. */
+  /** Sits under the control and stays visible; the ISO form of a month or date belongs here. */
   hint?: string
   /** One sentence, never prefixed with the wire name. */
   error?: string
@@ -26,18 +26,22 @@ export function Field({ id, label, hint, error, span = true, children }: Props) 
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')
 
   return (
+    // Label, control, then hint and error. Stacking the hint below the control is
+    // what lets a pair whose halves are hinted differently keep its two inputs on
+    // one line: the extra text extends below its own side rather than pushing that
+    // side's control down.
     <div className={span ? 'field field-span' : 'field'}>
       <label htmlFor={id}>{label}</label>
-      {hint && (
-        <span className="field-hint t-small soft" id={hintId}>
-          {hint}
-        </span>
-      )}
       {children({
         id,
         'aria-describedby': describedBy || undefined,
         'aria-invalid': error ? 'true' : undefined,
       })}
+      {hint && (
+        <span className="field-hint t-small soft" id={hintId}>
+          {hint}
+        </span>
+      )}
       {error && (
         <span className="field-error t-small" id={errorId}>
           {error}

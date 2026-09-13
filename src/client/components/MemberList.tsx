@@ -315,8 +315,8 @@ export function MemberList({ subscriptionId, startMonth, members, summary, onCha
             onClick={() => setShowSettledArchived((shown) => !shown)}
           >
             {showSettledArchived
-              ? 'Hide settled archived participants'
-              : `Show ${settledArchived.length} settled archived participants`}
+              ? `Hide settled archived participant${settledArchived.length === 1 ? '' : 's'}`
+              : `Show ${settledArchived.length} settled archived participant${settledArchived.length === 1 ? '' : 's'}`}
           </button>
         </>
       )}

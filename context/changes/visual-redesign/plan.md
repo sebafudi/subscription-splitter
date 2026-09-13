@@ -1328,7 +1328,7 @@ implement the answers rather than the questions.
 
 Questions found during implementation are added below under the protocol above.
 
-**D7, raised in phase 3. Design-spec 4.3: the Home success feedback and the screen it opens.**
+**D7, raised in phase 3, RESOLVED. Design-spec 4.3: the Home success feedback and the screen it opens.**
 Design-spec 4.3 ends the create flow with "status line 'Subscription created' in the Home heading
 row, then the detail screen opens", and design-spec 3.9 gives that status line four seconds and the
 created row the entry highlight, which design-spec 2.5 runs for 1200ms beginning 200ms after the row
@@ -1339,18 +1339,43 @@ behaviour, in which the created subscription is appended to the list and the scr
 Everything else in that clause is implemented, so the panel closes, the heading row reads
 "Subscription created" and the new row takes the highlight.
 
-**D10, raised in phase 5. Design-spec 3.4 and 6: how a field pair sits when only one half has a hint.**
-Design-spec 3.4 stacks a field as label, optional hint, control. Design-spec 6 pairs "From + Date
-received" and "Amount + Kind" in the payment form, and in both pairs exactly one half carries a hint:
-the date hint and the amount hint from 3.4, against two selects that have none. The two-column grid
-of 3.7 aligns the tops of the two field boxes, so the hinted half's control sits one line lower than
-its partner's and the two controls in a pair do not share a baseline. Every other pair in section 6
-has a hint on both halves or on neither, so this is the only form affected. The specification does
-not say how unequal field boxes sit in one row, and both the current top alignment and a bottom
-alignment are appearances. No Progress row asserts it, so none is left unticked. Left in place for
-it: the grid's own alignment, which is what the rules design-spec 3.4 and 3.7 fix produce together.
+*Designer's answer, folded into design-spec 4.3 at `02b213e`.* The create flow now ends on Home: the
+panel closes, "Subscription created" shows in the heading row, the new row appears with the entry
+highlight, and the screen stays put. The new row is itself the button that opens the detail screen,
+and nothing navigates automatically. That is what the shipped behaviour already did, so the answer
+is implemented as it stands and Progress row 3.11 is judged against design-spec 4.3 rather than
+against its own title. Verified in a browser: the panel closed, the sentence appeared, the row ran
+the 1200ms highlight after its 200ms delay, focus returned to the heading-row button, and the screen
+stayed on Home. Closed with phase 4's commit, which is the one that carried the tick.
 
-**D9, raised in phase 4. Design-spec 5.2: `[Replace]` on the price 409 has no route behind it.**
+**D8, raised in phase 3, RESOLVED. Design-spec 3.8: the sentence a field error carries.**
+Design-spec 3.8 fixes the shape of a field error and forbids prefixing it with the wire name, and
+its display map turns the wire name into the field's label. The sentence itself still comes from the
+server, and the shipped server's messages name the wire field inside the sentence: `start_month must
+be in YYYY-MM format with a valid month`, `time_zone must be a valid IANA time zone`,
+`currency must be a three-letter uppercase ISO code` and the same pattern for every other rule in
+`src/server/validation/`. `src/server/` is out of this change's scope, and writing replacement copy
+per rule in the client would be inventing copy. So the label beside the field is correct while the
+wire name survives inside the server's own sentence. This blocks Progress row 3.12, and the same
+condition reaches every refused field in phases 4 and 5. Left in place for it: the server's message
+verbatim, with the client prefix that phase 3 removes gone. The phase 5 gate on `error.field` is
+unaffected, because no wire name is interpolated by the client anywhere.
+
+*Designer's answer, folded into design-spec 3.8 at `02b213e`.* The server keeps the sentence and the
+client applies one mechanical transform before display: when the message opens with that field's own
+wire name followed by a space, the leading token becomes the field's display label, and otherwise the
+message is shown verbatim. No other rewriting, no per-rule copy in the client, and a wire name that
+survives elsewhere inside a server sentence is explicitly not a defect. Implemented once as
+`messageWithLabel` in `src/client/components/ui/fieldLabels.ts`, beside the display maps it reads, and
+applied by every redesigned form: the subscription, participant, price, skipped-month, payment and
+standing-order forms all route their field refusals through it, so phases 3, 4 and 5 are covered by
+the one path. Verified in a browser: `start_month must be in YYYY-MM format with a valid month`
+renders as "Start month must be in YYYY-MM format with a valid month" and `name must not be empty` as
+"Name must not be empty", while the price form's `month must be ...`, whose leading token is not
+`effective_from`, stays verbatim. Progress row 3.12 and the equivalent rows in phases 4 and 5 close
+with phase 4's commit.
+
+**D9, raised in phase 4, RESOLVED. Design-spec 5.2: `[Replace]` on the price 409 has no route behind it.**
 Design-spec 5.2 turns the server's "a price already recorded for that month" 409 into a two-button
 pattern inside the panel, "question from the server, `[Replace]` (primary) and `[Keep the existing
 price]` (quiet)", describing it as the existing inline confirmation converted. There is no existing
@@ -1364,18 +1389,32 @@ last sentence of phase 4 change 4. Left in place for it: everything else the sen
 takes its red left rule. No Progress row covers the two buttons, so none is left unticked for it.
 The delete's own two-step strip, which design-spec 5.2 also describes, is implemented in full.
 
-**D8, raised in phase 3. Design-spec 3.8: the sentence a field error carries.**
-Design-spec 3.8 fixes the shape of a field error and forbids prefixing it with the wire name, and
-its display map turns the wire name into the field's label. The sentence itself still comes from the
-server, and the shipped server's messages name the wire field inside the sentence: `start_month must
-be in YYYY-MM format with a valid month`, `time_zone must be a valid IANA time zone`,
-`currency must be a three-letter uppercase ISO code` and the same pattern for every other rule in
-`src/server/validation/`. `src/server/` is out of this change's scope, and writing replacement copy
-per rule in the client would be inventing copy. So the label beside the field is correct while the
-wire name survives inside the server's own sentence. This blocks Progress row 3.12, and the same
-condition reaches every refused field in phases 4 and 5. Left in place for it: the server's message
-verbatim, with the client prefix that phase 3 removes gone. The phase 5 gate on `error.field` is
-unaffected, because no wire name is interpolated by the client anywhere.
+*Designer's answer, folded into design-spec 5.2 at `0870801`.* The two buttons are dropped: the
+create 409 renders as the generic form error per 3.8 with the server message verbatim, and the panel
+stays open holding its values so the month can be changed. That is what was already built, so the
+answer needed no code. Verified in a browser: recording a price for a month that already has one
+left the panel open with `2026-09` and `120.00` still in their fields, put "this subscription already
+has a price entry for that month" in the panel's alert with the panel's red left rule, moved focus to
+that line, and offered only "Record this price" and "Cancel".
+
+**D10, raised in phase 5, RESOLVED. Design-spec 3.4 and 6: how a field pair sits when only one half has a hint.**
+Design-spec 3.4 stacks a field as label, optional hint, control. Design-spec 6 pairs "From + Date
+received" and "Amount + Kind" in the payment form, and in both pairs exactly one half carries a hint:
+the date hint and the amount hint from 3.4, against two selects that have none. The two-column grid
+of 3.7 aligns the tops of the two field boxes, so the hinted half's control sits one line lower than
+its partner's and the two controls in a pair do not share a baseline. Every other pair in section 6
+has a hint on both halves or on neither, so this is the only form affected. The specification does
+not say how unequal field boxes sit in one row, and both the current top alignment and a bottom
+alignment are appearances. No Progress row asserts it, so none is left unticked. Left in place for
+it: the grid's own alignment, which is what the rules design-spec 3.4 and 3.7 fix produce together.
+
+*Designer's answer, folded into design-spec 3.7 at `0870801`.* The panel grid takes
+`align-items: start` and a field now stacks label, control, then hint or error, so a hint or an error
+on one side of a pair extends below that side rather than moving its partner's control. Implemented
+in `src/client/components/ui/Field.tsx` and in the two panel grids, which covers every form at once.
+Verified in a browser: in the payment panel From and Date received now share a top edge, as do Amount
+and Kind, and in the participant panel a refused From keeps its input level with To while the error
+runs on under it alone.
 
 ## Testing strategy
 

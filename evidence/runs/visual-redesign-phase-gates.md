@@ -216,3 +216,36 @@ of them was reverted, so the local database holds exactly the synthetic fixtures
 One observation for the designer, recorded as design question D10 in the plan rather than resolved
 here: in the payment form's two pairs exactly one half carries a hint, so the two controls in a pair
 do not share a baseline.
+
+## Design answers folded in after phase 5
+
+The designer answered plan design questions D9 and D10 and the three copy observations by editing
+`design-spec.md` at `0870801`. All four changes are implemented in one follow-up commit, and every
+Progress row in phases 3 to 5 stays ticked because each change is a correction inside what those
+phases landed rather than new scope.
+
+- **D10, design-spec 3.7.** The panel grid takes `align-items: start`, and a field now stacks label,
+  control, then hint or error. Measured after the change: in the payment panel From and Date received
+  share a top edge at 553 and Amount and Kind share one at 654, where before the hinted half sat a
+  line lower; in the participant panel a refused From keeps its input level with To at 343 while the
+  error runs on below it alone. The change is in `Field.tsx` and the two grid rules, so it reaches
+  every form at once.
+- **D9, design-spec 5.2.** The Replace and Keep buttons are dropped from the price create 409, which
+  keeps the panel open with its values and shows the server message as the panel's own alert. That
+  was already the built behaviour, so this needed no code; it was re-checked in the browser.
+- **Design-spec 5.2, the price delete strip.** The second step now drops the sentence that names
+  `confirm=true` and keeps every other word of the server's refusal. Measured: the strip reads
+  "deleting this entry leaves 1 month(s) with no price: 2026-08. Delete anyway?" with the buttons
+  Delete anyway and Keep and focus on Keep.
+- **Design-spec 5.1, the settled archived disclosure.** The label now pluralises, so with one such
+  participant it reads "Show 1 settled archived participant" and "Hide settled archived participant".
+- **Design-spec 3.12, months in the subscription's locale.** Confirmed as intended, so nothing
+  changed; the mockup's English months are illustrative.
+
+The captures `phase-5-payment-add-light-desktop.png`, `phase-4-participant-field-error-light-desktop.png`
+and `phase-4-price-delete-step-two-light-desktop.png` were retaken so they show the answered design
+rather than the questioned one.
+
+One note back to the designer, not a question: design-spec 3.4 still reads "Optional hint under the
+label", which the new 3.7 stack supersedes. The implementation follows 3.7, because 3.7 is the text
+that was written to answer D10 and its stated reason depends on the hint sitting under the control.

@@ -33,6 +33,20 @@ function toMinor(value: string): number {
 }
 
 /**
+ * The server's refusal names the months that would lose their price and then
+ * tells an API caller to repeat the request with a flag. That last sentence is
+ * developer-facing and carries nothing the organizer can act on, so it is the
+ * one thing dropped; every other word is the server's own.
+ */
+function withoutApiInstruction(message: string): string {
+  return message
+    .split(/(?<=\.)\s+/)
+    .filter((sentence) => !sentence.includes('confirm=true'))
+    .join(' ')
+    .trim()
+}
+
+/**
  * The second step of a price deletion, which only the server can reach: it
  * answers 409 with the months that would lose their price, and that message
  * becomes the strip's own question.
@@ -173,7 +187,7 @@ export function PriceHistory({ subscriptionId, prices, currency, locale, onChang
                       question={
                         pendingDelete.refusal === null
                           ? `Delete the ${money(entry.amount)} price from ${formatMonth(entry.effectiveFrom, locale)}?`
-                          : `${pendingDelete.refusal} Delete anyway?`
+                          : `${withoutApiInstruction(pendingDelete.refusal)} Delete anyway?`
                       }
                       confirmLabel={pendingDelete.refusal === null ? 'Delete' : 'Delete anyway'}
                       onConfirm={() => void handleDelete(entry, pendingDelete.refusal !== null)}
