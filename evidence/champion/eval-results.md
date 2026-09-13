@@ -1,4 +1,4 @@
-# Reviewer model comparison at the shipped budget, 2026-09-13
+# Reviewer model comparison at the shipped budget
 
 The authoritative two-model comparison. Both candidates ran against the same seven fixtures in
 `tools/reviewer/eval/fixtures/`, through the same `reviewDiff()` the CI workflow calls, at the

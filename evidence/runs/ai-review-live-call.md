@@ -1,4 +1,4 @@
-# Live authenticated model call, 2026-09-13
+# Live authenticated model call
 
 Closes the live half of GOALS C02: a real authenticated OpenRouter call made through the reviewer
 CLI on a synthetic diff, with the credential never printed, logged or committed.

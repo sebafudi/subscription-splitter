@@ -1,4 +1,4 @@
-# The AI reviewer on a real pull request, 2026-09-13
+# The AI reviewer on a real pull request
 
 The first pull request ever opened on this repository, and therefore the first run of
 `.github/workflows/ai-review.yml`, which triggers only on `pull_request`.

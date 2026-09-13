@@ -1,4 +1,4 @@
-# Reviewer model comparison at an 8000 token budget, 2026-09-13 (SUPERSEDED)
+# Reviewer model comparison at an 8000 token budget (SUPERSEDED)
 
 > **Superseded by `eval-results.md`, which holds the authoritative matrix.** This file is kept
 > because it is the comparison the model decision was originally made from, and deleting it would
@@ -18,7 +18,7 @@
 > the model decision. The comparison was therefore re-run once at the shipped 16000 budget on the
 > same seven fixtures, and `eval-results.md` records that run and the decision re-applied to it.
 
-# Reviewer model comparison, 2026-09-13
+# Reviewer model comparison
 
 The live two-model promptfoo comparison required by `context/STATUS.md` §OpenRouter configuration
 update and by `context/changes/ai-review-pipeline/plan.md` Phase 5. Both candidates ran against the
