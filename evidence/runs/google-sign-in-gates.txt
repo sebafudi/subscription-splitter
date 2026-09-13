@@ -2,28 +2,28 @@
 
 ## Phase 2
 
-Client only. The integration suite in this run also carries the sibling's phase 1 and phase 3
-working-tree changes, so its counts are recorded here for context, not claimed by this phase.
+The client half: the action row, the Google button, the return-leg mapping and the url cleanup.
+Re-run after phase 1 landed, so both halves of the suite are in it.
 
 $ npm run typecheck
+  tsc -p tsconfig.worker.json && tsc -p tsconfig.app.json && tsc -p tsconfig.node.json   -> clean, no output
 
-> typecheck
-> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
-
-
-$ npx vitest run --config vitest.unit.config.ts
- Test Files  18 passed (18)
-      Tests  214 passed (214)
-   Duration  527ms (transform 659ms, setup 0ms, import 1.26s, tests 144ms, environment 1ms)
+$ npm test
+  unit          Test Files  18 passed (18)    Tests  214 passed (214)
+  integration   Test Files  12 passed (12)    Tests  119 passed (119)
 
 $ npm run build
-dist/client/assets/index-9kiEnDLY.js                                  276.66 kB │ gzip: 82.70 kB
+  dist/client/assets/index-<hash>.css   16.87 kB
+  dist/client/assets/index-<hash>.js   276.66 kB
+  built, no warning
 
-✓ built in 78ms
+$ grep -rn "GOOGLE_CLIENT" src/client/          -> no match
+$ grep -rn "error_description" src/client/      -> no match
+$ git diff --stat cf3e3de^..e6b3dab -- src/server src/domain migrations   -> empty
 
-$ grep -rn "GOOGLE_CLIENT" src/client/   -> no match
-$ grep -rn "error_description" src/client/   -> no match
-$ git diff --stat 57065dc..HEAD -- src/server src/domain migrations   -> empty
+The unit count includes the fifteen new cases in src/client/components/ui/googleErrors.test.ts, which
+this phase added by instruction rather than leaving to phase 3; Progress row 2.2 is therefore left
+pending, because it is worded as no test file changing in this phase.
 
 ## Phase 1
 
