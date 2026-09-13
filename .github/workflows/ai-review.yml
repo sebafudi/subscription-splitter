@@ -33,13 +33,17 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review')
     runs-on: ubuntu-latest
+    # The model call has no abortSignal and the Phase 5 matrix recorded a 522s tail against a 180s
+    # mean, so a hung provider would otherwise burn the GitHub default of 360 minutes. 15 leaves
+    # roughly a 9 minute margin over the slowest observed call plus the install and checkout.
+    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Remove the re-run label
         if: github.event.action == 'labeled'
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             await github.rest.issues.removeLabel({
@@ -50,7 +54,7 @@ jobs:
             }).catch(() => {});
 
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -58,7 +62,7 @@ jobs:
       # npm 10 (which Node 22 bundles) resolves two googleapis-common transitives to different
       # positions and rejects the lockfile as out of sync, failing `npm ci` before the reviewer runs.
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
           node-version: '24'
 
@@ -86,7 +90,7 @@ jobs:
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Upsert the review comment
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -118,7 +122,7 @@ jobs:
             }
 
       - name: Set the verdict label
-        uses: actions/github-script@v9
+        uses: actions/github-script@v9.0.0
         env:
           EXIT_CODE: ${{ steps.review.outputs.exit_code }}
         with:
@@ -144,6 +148,10 @@ jobs:
               issue_number: context.issue.number,
               labels: [target],
             });
+
+      - name: Annotate an error outcome
+        if: steps.review.outputs.exit_code == '2'
+        run: echo "::warning::The reviewer produced no verdict (provider_error, no_object_generated or schema_invalid). The pull request carries an ai-cr:error comment and label. The job stays green because this pipeline is advisory."
 
       - name: Fail the job on a missing credential
         if: steps.review.outputs.exit_code == '3'
