@@ -83,3 +83,15 @@ Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, item 12),
 ### Next action
 
 The independent implementation review of the whole change and the designer's visual acceptance are next; the next status sync reads `context/checkpoints/m05-impl-review.md` and the acceptance checkpoint before touching these files again.
+
+## Fifth pass: designer acceptance committed (689bfe9), then impl review + resolution recorded, M02-M05 checked
+
+Designer acceptance (`design-acceptance.md`) was committed alone at `689bfe9` per instruction, one line added to STATUS.md, one row to `evidence/index.md`, one work-log line; M05 stayed unchecked at that point.
+
+Then verified the implementation review (`reviews/impl-review.md` at `d8ba66d`, checkpoint `m05-impl-review.md`) and its resolution (`abf8790`/`91ce0da`) directly against the files: verdict, dimension table, finding counts and gate figures all read from the review itself rather than trusted from the handoff. **Found and corrected a discrepancy**: the handoff and the review's own scope line cite "55 of 57" / "57 of 57" Progress rows, but a direct count of `## Progress` in `plan.md` (`grep -c "^\- \[x\]"` / `"^\- \[ \]"`) shows 59 total rows, 57 checked, 2 open (2.8, the `no-owner` half of 4.17) — recorded the verified 57-of-59 figure rather than propagating the mismatched count. Confirmed `release-5.md` does not exist under checkpoints or evidence/runs.
+
+Checked M02, M03, M04 and M05 in `GOALS.md` with full evidence trails (commits, verdicts, capture references, explicit Firefox/Edge/mobile unverified note on M04). Left M06 open, noting release 5 in progress. Updated `context/STATUS.md` (Current SHA, Active change/phase, item 12), `evidence/index.md` (M02-M04 rows updated to reflect both reviews, M05 rewritten as complete, stale M05/M06 placeholder rows cleaned up), and `evidence/work-log.md`.
+
+### Next action
+
+Whoever runs release 5 writes `context/checkpoints/release-5.md`; the next status sync reads it before checking M06.
