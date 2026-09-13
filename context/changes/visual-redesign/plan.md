@@ -1493,8 +1493,8 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field — 00813fe
 - [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button — 00813fe
 - [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span — 00813fe
-- [x] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
-- [x] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
+- [x] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail — 5ac541f
+- [x] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus — 5ac541f
 - [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again — 00813fe
 - [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll — 00813fe
 - [x] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open — 00813fe
@@ -1503,33 +1503,33 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 4.1 Typecheck passes across all three projects
-- [x] 4.2 The whole suite passes with no test file changed
-- [x] 4.3 The production build succeeds
-- [x] 4.4 Participants carries no count, Active participants is the fourth cell, and other counts equal rows rendered
-- [x] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists
-- [x] 4.6 The member, range and price payload keys are unchanged
-- [x] 4.7 No router was added and App.tsx still holds the selection in one useState
-- [x] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing
+- [x] 4.1 Typecheck passes across all three projects — 5ac541f
+- [x] 4.2 The whole suite passes with no test file changed — 5ac541f
+- [x] 4.3 The production build succeeds — 5ac541f
+- [x] 4.4 Participants carries no count, Active participants is the fourth cell, and other counts equal rows rendered — 5ac541f
+- [x] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists — 5ac541f
+- [x] 4.6 The member, range and price payload keys are unchanged — 5ac541f
+- [x] 4.7 No router was added and App.tsx still holds the selection in one useState — 5ac541f
+- [x] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing — 5ac541f
 
 #### Manual
 
-- [x] 4.8 The leading figure and the four cell ledger line match design-spec 4.4 at 1280 in light and dark
-- [x] 4.9 The summary sentence keeps its content and order, with no bold spans and months through the formatter
-- [x] 4.10 The index sticks under the bar, clicking scrolls a heading clear of both 116px, and aria-current changes at the visible top
-- [x] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells
-- [x] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls
-- [x] 4.13 Editing opens in place and opening a second edit closes the first and discards its values
-- [x] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert
-- [x] 4.23 Keep returns focus to that entry's Delete and a completed delete focuses the section h2, never the body
-- [x] 4.15 Price history entries show the recorded amount and the short effective month
-- [x] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly
-- [x] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list
-- [x] 4.18 A reload after an edit keeps the figures on screen and shows the acting section's status line
-- [x] 4.19 Archive reads Archive or Unarchive by state and produces its matching success sentence
-- [x] 4.20 A refused price delete keeps one strip open across both steps with the server's months and Delete anyway
-- [x] 4.21 The section alert clears on Dismiss and on the next success, and never carries a panel error
-- [x] 4.22 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally
+- [x] 4.8 The leading figure and the four cell ledger line match design-spec 4.4 at 1280 in light and dark — 5ac541f
+- [x] 4.9 The summary sentence keeps its content and order, with no bold spans and months through the formatter — 5ac541f
+- [x] 4.10 The index sticks under the bar, clicking scrolls a heading clear of both 116px, and aria-current changes at the visible top — 5ac541f
+- [x] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells — 5ac541f
+- [x] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls — 5ac541f
+- [x] 4.13 Editing opens in place and opening a second edit closes the first and discards its values — 5ac541f
+- [x] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert — 5ac541f
+- [x] 4.23 Keep returns focus to that entry's Delete and a completed delete focuses the section h2, never the body — 5ac541f
+- [x] 4.15 Price history entries show the recorded amount and the short effective month — 5ac541f
+- [x] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly — 5ac541f
+- [x] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list — 5ac541f
+- [x] 4.18 A reload after an edit keeps the figures on screen and shows the acting section's status line — 5ac541f
+- [x] 4.19 Archive reads Archive or Unarchive by state and produces its matching success sentence — 5ac541f
+- [x] 4.20 A refused price delete keeps one strip open across both steps with the server's months and Delete anyway — 5ac541f
+- [x] 4.21 The section alert clears on Dismiss and on the next success, and never carries a panel error — 5ac541f
+- [x] 4.22 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally — 5ac541f
 
 ### Phase 5: Skipped months, Payments received and Standing orders
 
