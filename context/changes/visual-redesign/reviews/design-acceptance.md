@@ -87,3 +87,12 @@ build succeeding at 273,424 bytes of JavaScript, 16,703 bytes of CSS and 79,268 
 woff2 files with no other font format.
 
 Re-check by the designer is requested.
+
+## Designer re-check
+
+Re-checked at `f642b89` against the retaken captures 19 (light desktop), 22 (mobile light) and 09
+(light desktop and mobile): the participant balance renders at weight 600, the confirmation strip
+spans the full entry width, the index bar keeps an opaque ground on mobile with no page content
+showing through its edges, and the payments filter select is 44px at 390. A1 to A3 and D11 are
+closed. The implemented visuals are accepted against `design-spec.md` without conditions. Progress
+row 6.14 may be ticked against this record.
