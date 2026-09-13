@@ -116,3 +116,105 @@ None. Every appearance and behaviour detail phase 2 needed was already settled i
 Phase 3: migrate the eight calendar call sites to `MonthField` and `DateField`, move the create form's
 label to "First month" and set the paired and server-rule `min` values per the delta's Bounds
 paragraph.
+
+---
+
+# Phase 3: the eight calendar call sites
+
+- Task id: `m04-phase2-controls`, continued
+- Model: Opus
+- Status: complete, with one scope deviation recorded below
+
+## The scope deviation, stated first
+
+Phase 3 could not be done inside the file list it was given. Five of the eight call sites need the
+subscription's `timeZone` and `startMonth`, and neither value reaches them: `Summary` carries
+`currentMonth`, `currency` and `locale` only, and both missing values live on the `subscription`
+object held in `src/client/screens/SubscriptionDetail.tsx`. The plan's phase 3 file list names only
+the six leaf files and understates this as well.
+
+`SubscriptionDetail.tsx` therefore changed, against the instruction not to touch it. The edit is eight
+added lines and no deleted line, all inside the section JSX at `:225-275`, passing
+`subscription.startMonth` and `subscription.timeZone` down. The phase 4 header work sits well above
+it. The team lead was told before the edit was made and can have it reverted.
+
+## What was done
+
+Seven month fields render `MonthField` and the payment date renders `DateField`, each inside its
+existing `Field`. Removed from every one: `inputMode`, `pattern`, `placeholder` and the ISO hint.
+Kept: `required` where it stood, `autoComplete="off"` through the controls themselves, and the
+semantic hints, which also become the empty option's label in the fallback branch. No state shape,
+submit body or normalisation moved: `MemberForm` still holds `string | null` and `ScheduleForm` still
+holds `''`, both normalising to `null` at submit, and the control's handler emits a string into both.
+
+Bounds, per the delta's amended Bounds paragraph:
+
+| Field | `min` |
+| --- | --- |
+| Participant From | the subscription first month |
+| Participant To | the From value, through `pairedMonthMin` |
+| Price Effective from | the subscription first month |
+| Skipped month | the subscription first month |
+| Standing order First month | the subscription first month |
+| Standing order Last month | the First month value, through `pairedMonthMin` |
+| Payment date | the first month with `-01` appended |
+| Subscription first month, create form | January ten years before the current year |
+
+No `max` and no `step` anywhere.
+
+`start_month` is "First month" on both the create form's label and the single entry in
+`src/client/components/ui/fieldLabels.ts`. No other entry in that file moved, so phase 4 can add the
+edit panel's labels without a conflict.
+
+Three helpers joined `monthControl.ts` rather than being written inline in a `.tsx`, where the unit
+include `src/**/*.test.ts` would never have collected them:
+
+- `pairedMonthMin(partner)` returns the partner's value only while it is a complete month, so clearing
+  the partner releases the bound instead of freezing it, which is what manual row 3.10 checks.
+- `usableLocale(locale, fallback)` and `usableTimeZone(timeZone, fallback)` carry the delta's rule that
+  the create form falls back to its defaults when the value the organizer is still typing is not one
+  the runtime can read. Without them a half-typed time zone throws out of `currentMonth` and a
+  half-typed locale throws out of the formatter.
+
+`ScheduleForm` already held a local `startMonth` state, so its new prop is `subscriptionStartMonth`.
+
+## Changed paths
+
+- `src/client/screens/SubscriptionForm.tsx`, `src/client/screens/SubscriptionDetail.tsx`
+- `src/client/components/MemberForm.tsx`, `MemberList.tsx`, `PriceHistory.tsx`, `BreakMonths.tsx`,
+  `ScheduleForm.tsx`, `RecurringSection.tsx`, `PaymentForm.tsx`, `PaymentList.tsx`
+- `src/client/components/ui/fieldLabels.ts`, `monthControl.ts`, `monthControl.test.ts`
+- `context/changes/subscription-management-and-date-inputs/plan.md`, this checkpoint
+
+## Verification
+
+The shared working tree carries phase 1's in-flight work across `src/server/` and `tests/`, so every
+count below comes from a detached worktree at `54b6d8c` holding the phase 3 client files alone.
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | passes, all three projects |
+| `npm run test:unit` | 19 files, 235 tests, all passing |
+| `npm run test:integration` | 12 files, 119 tests, all passing |
+| `npm run build` | succeeds |
+| `grep -rn 'inputMode="numeric"' src/client/` | no match |
+| `grep -rn 'pattern="' src/client/` | no match |
+| `grep -rn "Month as YYYY-MM\|Date as YYYY-MM-DD" src/client/` | no match |
+| `grep -rn "Start month" src/client/` | no match |
+| `MonthField` and `DateField` render sites | seven and one |
+| `git status` under `src/server/`, `src/domain/`, `migrations/`, `tests/` | clean |
+
+Typecheck and build were also run green in the shared tree.
+
+## Progress rows ticked
+
+3.1 through 3.7 and 3.9, each with `75906dd`. Rows 3.8 and 3.10 are manual and stay pending.
+
+## Designer questions
+
+None.
+
+## Next action
+
+Phase 4: the detail header, the edit panel and the deletion strip. It owns `SubscriptionDetail.tsx`
+from here; the phase 3 edit there is committed, so there is nothing uncommitted to collide with.

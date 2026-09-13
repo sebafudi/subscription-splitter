@@ -1152,14 +1152,14 @@ exercised on data that matters.
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes across all three projects
-- [ ] 3.2 The whole suite passes
-- [ ] 3.3 The production build succeeds
-- [ ] 3.4 No `inputMode="numeric"` and no `pattern="` attribute remains under `src/client/`
-- [ ] 3.5 No ISO format hint remains under `src/client/`
-- [ ] 3.6 Exactly eight call sites render `MonthField` or `DateField`
-- [ ] 3.7 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed
-- [ ] 3.9 No `Start month` string remains under `src/client/`
+- [x] 3.1 Typecheck passes across all three projects — 75906dd
+- [x] 3.2 The whole suite passes — 75906dd
+- [x] 3.3 The production build succeeds — 75906dd
+- [x] 3.4 No `inputMode="numeric"` and no `pattern="` attribute remains under `src/client/` — 75906dd
+- [x] 3.5 No ISO format hint remains under `src/client/` — 75906dd
+- [x] 3.6 Exactly eight call sites render `MonthField` or `DateField` — 75906dd
+- [x] 3.7 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed — 75906dd
+- [x] 3.9 No `Start month` string remains under `src/client/` — 75906dd
 
 #### Manual
 
