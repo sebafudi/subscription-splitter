@@ -1,7 +1,20 @@
 # D-013: Whether a Google identity may join an existing password account
 
-**Status: proposed.** Recorded by the `google-sign-in` research and framing step for the
-orchestrator to accept, amend or reject before planning.
+**Status: accepted.** Proposed by the `google-sign-in` research and framing step and ruled on by
+the designer in `context/changes/google-sign-in/design-delta.md`, under "Ruling on D-013 (account
+linking)", which reads in full:
+
+> Accepted as recommended by the research: `disableImplicitLinking: true`, `google` not in
+> `trustedProviders`. A Google identity whose email matches an existing password account is refused
+> with `account_not_linked`. A Google identity with a new email creates its own account and its own
+> empty ledger, never touching the seeded demo owner. Manual linking from inside the app is out of
+> scope for S-07. Rationale: the seeded accounts are reviewer and demo credentials whose ownership
+> must stay provable; a refusal is reversible, an unintended merge is not.
+
+The ruling accepts the proposal below unchanged. It adds one operative constraint: the refusal copy
+is fixed by the same delta as "This Google account cannot be used here. Sign in with your email and
+password instead.", identical whatever the reason for the refusal, so it confirms nothing about
+whether an account with that address exists. Manual linking stays out of scope for roadmap S-07.
 
 - **Decision:** Google sign-in never joins an existing account implicitly. `createAuth` sets
   `account: { accountLinking: { disableImplicitLinking: true } }`, and `google` is deliberately
@@ -61,4 +74,5 @@ orchestrator to accept, amend or reject before planning.
   subscription list and is answered 404 for the seeded owner's subscription, which extends the
   existing cross-account assertions in `tests/integration/` to an OAuth-shaped account. The existing
   `tests/integration/auth.test.ts` must pass unchanged both with and without Google configured.
-- **Commit:** pending; recorded with the `google-sign-in` implementation phase that applies it.
+- **Commit:** accepted at planning time for change `google-sign-in`; the configuration and the tests
+  that assert it land with that change's phase 1 and phase 3.
