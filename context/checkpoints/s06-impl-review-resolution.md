@@ -11,7 +11,7 @@
 | F1 | `SectionIndex` tracks the current item at the heading's own `scroll-margin-top` plus one pixel; design-spec 4.4 amendment committed with it; verified in a browser | `da99573` |
 | F6 | `withoutApiInstruction` extracted to `ui/apiMessages.ts` and given a fallback to the server's own words, with four unit cases | `3d94766` |
 | F2, F3, F4, F5, F7 | Progress row 3.11 parenthetical, the gates record, the manual-row measurements, the index verification, the two corrected counts, the protocol's lesson | `5c02639` |
-| Record | `## Resolution` in the review file, `change.md` note, work-log entry, this checkpoint | `HEAD` |
+| Record | `## Resolution` in the review file, `change.md` note, work-log entry, this checkpoint | `da7ad52` |
 
 ## Changed paths
 
