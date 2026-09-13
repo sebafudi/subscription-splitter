@@ -62,12 +62,12 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-04 | verification-and-release | use the certified flow on a deployed instance | S-03 | US-01, US-02, US-03, US-04, US-05, MS-02 | done |
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | done |
 
-| S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | in-progress |
+| S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | done |
 
 ## S-06: Visual redesign
 
-- **Change ID:** `visual-redesign`
-- **Status:** in-progress
+- **Change ID:** `visual-redesign` (`context/archive/visual-redesign/`)
+- **Status:** done
 - **Prerequisites:** S-04
 - **Source:** explicit user request; `context/foundation/visual-redesign-brief.md`.
 - **Outcome:** a cohesive, polished responsive app with fully specified interactions and motion, preserving the verified product flow.
@@ -269,6 +269,7 @@ not recreate them.
 - **S-03: The organizer records, edits and deletes payments, records standing orders and marks single months of them as not received, and every balance moves accordingly.** - Archived to `context/archive/payments-and-recurring/`. Lesson: a per-route assertion made through the composed application can prove a contract a caller sees while proving nothing about the module that answers it, because routers mounted at one base share the pattern; the property only becomes testable when the router is asked on its own.
 - **S-04: The organizer walks the whole flow in a browser against a deployed instance carrying every migration, and the walkthrough is captured as evidence.** - Archived to `context/archive/verification-and-release/`. Lesson: a release SHA only describes the deployed bundle if the build runs from a tree nobody else can touch, because `vite build` reads the working tree rather than a git ref; building from a throwaway clone at the pinned SHA is what made the first deployment's recorded defect impossible to repeat here.
 - **S-05: (supporting) A pull request receives an automated review comment produced by the reviewer package, with its prompts exercised by an evaluation suite.** - Archived to `context/archive/ai-review-pipeline/`. Lesson: an evaluation is only evidence at the budget the code actually ships, because the first two-model comparison ran at an uncommitted `maxOutputTokens` of 8000 and two of its four model failures were `no_object_generated`, the failure that budget itself caused; re-running at the shipped 16000 withdrew one pillar of the model decision and confirmed the other.
+- **S-06: The organizer uses a polished, responsive interface across every shipped screen, designed end to end by Fable 5.1, with the certified ledger behaviour preserved exactly.** - Archived to `context/archive/visual-redesign/`, shipped as release `c842f64` on Cloudflare version `84a95549-cd34-4065-a202-cf5f1385e9f9`. Lesson: a scroll-spy that names its own threshold drifts from the anchor it is meant to follow, because the section index tracked its current item at 100px while a click scrolled the heading to 116px and so marked the section before the one just clicked; reading the heading's own `scroll-margin-top` and watching the line one pixel below it is the only offset that cannot disagree with where a click lands.
 
 ## S-07: Google sign-in
 
