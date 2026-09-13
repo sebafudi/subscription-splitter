@@ -14,10 +14,12 @@ This is roadmap item S-07. It changes `src/server/auth.ts`, `src/server/routes/a
 adds no migration, changes no accounting rule, no route other than one unauthenticated read, no
 ownership check and no stored subscription value.
 
-`context/changes/visual-redesign/design-spec.md` is deliberately not edited. The accepted
-specification keeps its original wording and `design-delta.md` is the standing amendment for
-sections 4.1, 9 and 11, so the amendment lives in one file that a reader of either can follow rather
-than in two files that can drift apart.
+The accepted S-06 specification, now at `context/archive/visual-redesign/design-spec.md`, is
+deliberately not edited. It keeps its original wording, the archive carries it as it was accepted, and
+`design-delta.md` is the standing amendment for sections 4.1, 9 and 11, so the amendment lives in one
+file that a reader of either can follow rather than in two files that can drift apart. Artifacts
+written before S-06 was archived still name the specification under `context/changes/`; the file is the
+same one.
 
 The change is small in code and concentrated in risk. Research says it plainly: the schema was
 already written from the library's own table definitions, the handler is a catch-all so the callback
@@ -796,7 +798,7 @@ the database, so no migration is rolled back and no stored value is affected.
   `context/decisions/D-005-account-seeding.md`,
   `context/decisions/D-010-live-demo-data-and-reviewer-access.md`
 - Provisioning state: `context/checkpoints/g02-oauth-provision.md`
-- Prior art for the login screen: `context/changes/visual-redesign/design-spec.md` sections 2.1, 2.4,
+- Prior art for the login screen: `context/archive/visual-redesign/design-spec.md` sections 2.1, 2.4,
   3.3, 3.8, 4.1, 4.2, 9 and 11
 - Files this change touches: `src/server/auth.ts`, `src/server/routes/auth.ts`, `env.d.ts`,
   `.dev.vars.example`, `src/client/api.ts`, `src/client/App.tsx`,
