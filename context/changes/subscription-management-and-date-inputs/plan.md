@@ -1135,14 +1135,14 @@ exercised on data that matters.
 
 #### Automated
 
-- [ ] 2.1 Typecheck passes across all three projects
-- [ ] 2.2 The unit suite passes, covering both detection branches through stubs, the branch function
-      and the option range
-- [ ] 2.3 The integration suite is unchanged and passes
-- [ ] 2.4 The production build succeeds
-- [ ] 2.5 No `valueAsDate` or `valueAsNumber` appears anywhere under `src/client/`
-- [ ] 2.6 No `new Date(` appears under `src/client/` outside the two known-safe sites in `format.ts`
-- [ ] 2.7 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed
+- [x] 2.1 Typecheck passes across all three projects — e47b427
+- [x] 2.2 The unit suite passes, covering both detection branches through stubs, the branch function
+      and the option range — e47b427
+- [x] 2.3 The integration suite is unchanged and passes — e47b427
+- [x] 2.4 The production build succeeds — e47b427
+- [x] 2.5 No `valueAsDate` or `valueAsNumber` appears anywhere under `src/client/` — e47b427
+- [x] 2.6 No `new Date(` appears under `src/client/` outside the two known-safe sites in `format.ts` — e47b427
+- [x] 2.7 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed — e47b427
 
 #### Manual
 
