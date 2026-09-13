@@ -216,11 +216,30 @@ response. `node_modules/better-auth/dist/oauth2/errors.ts` (`redirectOnError`) a
 issues a 302. The callback route recovers that URL from the parsed state, so an `errorCallbackURL`
 sent on the original `sign-in/social` call is what governs where a failure two hops later lands.
 
-**Evidence.** Without an `errorCallbackURL`, the fallback is `${baseURL}/error`, which in this app is
-`/api/auth/error`, a library-rendered page rather than this app's login screen.
+**Evidence.** Without an `errorCallbackURL`, the fallback is `defaultErrorURL`, which is
+`onAPIError?.errorURL || ${baseURL}/error` (`node_modules/better-auth/dist/api/routes/callback.mjs:37`).
+This application sets no `onAPIError`, so that resolves to `/api/auth/error`, a library-rendered page
+rather than this app's login screen.
 
-**Inference.** The client must send `errorCallbackURL` on every call, or a denied consent will end on
-a page that has none of the redesign's styling.
+**Evidence, correcting an inference this section first drew the other way.** `errorCallbackURL` is
+stored inside the OAuth state and recovered by `parseState`
+(`node_modules/better-auth/dist/oauth2/state.mjs:27` and `:46-63`), so it can only govern a failure
+that happens once the state has parsed. When the state is the thing that failed there is nothing to
+recover it from. A callback carrying no `state` at all redirects to `defaultErrorURL` with
+`error=state_not_found` (`callback.mjs:74-77`); under the database state strategy this application
+runs, a fabricated, replayed or expired state finds no verification row and throws `state_mismatch`
+with no `errorURL` attached (`node_modules/better-auth/dist/state.mjs:119-123`); under the cookie
+strategy a missing cookie throws `state_mismatch` and a decryption failure throws `state_invalid`,
+both likewise without one (`:96-111`). Only the security-mismatch and expiry throws carry
+`parsedData.errorURL`, and both of those need the state to have parsed first.
+
+**Inference.** The client must send `errorCallbackURL` on every call, which covers a denied consent, a
+failed exchange and a refused link. It does not cover a state failure, so the server must also set
+`onAPIError: { errorURL: '/' }`, which is what `defaultErrorURL` reads. A root-relative value is
+supported: `appendQueryParams` appends the query to a `/` path without resolving it against an origin
+(`node_modules/@better-auth/core/dist/utils/url.mjs:40-49`), so one value is correct on all three
+origins. Without both settings, three of the error codes this section lists below end on a page that
+has none of the redesign's styling. This correction comes from the plan review, finding F1.
 
 **Evidence.** State failures are classified in `node_modules/better-auth/dist/oauth2/state.mjs:45-60`:
 `state_not_found`, `state_invalid` and `state_mismatch` are forwarded to the user, the internal
