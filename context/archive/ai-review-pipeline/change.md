@@ -1,8 +1,9 @@
 ---
 change_id: ai-review-pipeline
 title: AI code review pipeline for pull requests
-status: impl_reviewed
+status: archived
 updated: 2026-09-13
+archived_at: null
 ---
 
 ## Notes

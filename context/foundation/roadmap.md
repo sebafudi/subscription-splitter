@@ -60,7 +60,7 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-02 | members-and-price-history | record participants and prices and read this month's share and balances | S-01 | US-01, US-03, US-04, FR-006 to FR-014, FR-022, FR-023, FR-024 | done |
 | S-03 | payments-and-recurring | record payments and standing orders and watch balances move | S-02 | US-02, FR-015 to FR-021, FR-025, FR-026 | done |
 | S-04 | verification-and-release | use the certified flow on a deployed instance | S-03 | US-01, US-02, US-03, US-04, US-05, MS-02 | done |
-| S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | in-progress |
+| S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | done |
 
 | S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | in-progress |
 
@@ -213,7 +213,7 @@ not recreate them.
 - **Risk:** Kept out of the ledger stream entirely so that a missing credential never blocks the
   product work. The risk is scope drift: a review pipeline can absorb unlimited effort, and it
   certifies nothing about the money calculation.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -269,3 +269,4 @@ not recreate them.
 - **S-02: The organizer records participants with the months they were active, records the price history and any skipped months, and reads this month's per-person share, the headline totals and a per-participant balance.** - Archived to `context/archive/members-and-price-history/`. Lesson: a helper that restates a rule the shipped code already applies proves nothing; the month-status seam was only worth adding because `shareForMember` and `recurringReceived` were both re-expressed over it.
 - **S-03: The organizer records, edits and deletes payments, records standing orders and marks single months of them as not received, and every balance moves accordingly.** - Archived to `context/archive/payments-and-recurring/`. Lesson: a per-route assertion made through the composed application can prove a contract a caller sees while proving nothing about the module that answers it, because routers mounted at one base share the pattern; the property only becomes testable when the router is asked on its own.
 - **S-04: The organizer walks the whole flow in a browser against a deployed instance carrying every migration, and the walkthrough is captured as evidence.** - Archived to `context/archive/verification-and-release/`. Lesson: a release SHA only describes the deployed bundle if the build runs from a tree nobody else can touch, because `vite build` reads the working tree rather than a git ref; building from a throwaway clone at the pinned SHA is what made the first deployment's recorded defect impossible to repeat here.
+- **S-05: (supporting) A pull request receives an automated review comment produced by the reviewer package, with its prompts exercised by an evaluation suite.** - Archived to `context/archive/ai-review-pipeline/`. Lesson: an evaluation is only evidence at the budget the code actually ships, because the first two-model comparison ran at an uncommitted `maxOutputTokens` of 8000 and two of its four model failures were `no_object_generated`, the failure that budget itself caused; re-running at the shipped 16000 withdrew one pillar of the model decision and confirmed the other.
