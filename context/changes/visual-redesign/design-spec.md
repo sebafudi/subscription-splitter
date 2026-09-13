@@ -262,9 +262,11 @@ Edit forms open in place of the entry they edit, inside the same panel styling, 
 [Cancel]`; only one edit panel per section may be open; opening another closes the first with its
 values discarded. The panel's `h3` reads "Edit <thing>", for example "Edit payment".
 
-Field layout inside a panel: a two-column grid (`repeat(2, minmax(0, 1fr))`, gap `--s-4`) for
-paired short fields listed per form in section 6; every other field spans both columns. Below 640px
-everything is one column.
+Field layout inside a panel: a two-column grid (`repeat(2, minmax(0, 1fr))`, gap `--s-4`,
+`align-items: start`) for paired short fields listed per form in section 6; every other field spans
+both columns. In a pair, labels and inputs sit at the same vertical position because each field
+stacks label, input, then hint or error; a hint or error present on one side only extends below
+that side and does not move the other. Below 640px everything is one column.
 
 ### 3.8 Validation
 
@@ -495,6 +497,7 @@ Alice   not active this month                            owes 16,67 zł        t
   `--ink-faint`. Below it three labelled cells in one line at `--t-small` (label `--ink-soft`,
   figure `--ink` tabular) separated by `--s-4` gaps; they wrap on narrow widths.
 - The settled-archived disclosure: a link-variant button "Show N settled archived participants"
+  ("Show 1 settled archived participant" when N is 1; likewise for the Hide text)
   under the list, toggling to "Hide settled archived participants", using the disclosure motion.
 - Archive is a row action (link variant) that toggles: "Archive" on an active participant,
   "Unarchive" on an archived one. Success sentences: "Participant archived" (row gains the
@@ -519,15 +522,17 @@ Heading "Price history (N)". Subtitle none. Primary action "Record a price". Ent
 - Delete uses the confirmation strip of 3.10 in two steps inside one strip. Step one asks "Delete
   the 110,00 zł price from Sep 2026?" with `[Delete]` `[Keep]`. On Delete the request is sent as
   today; if the server answers 409 with the months that would lose their price, the strip stays
-  open, its text becomes the server message verbatim followed by "Delete anyway?", and the buttons
+  open, its text becomes the server message with any sentence that mentions `confirm=true` removed
+  (that sentence is developer-facing and carries no user information; nothing else is rewritten)
+  followed by "Delete anyway?", and the buttons
   become `[Delete anyway]` (destructive) and `[Keep]`, focus moving to Keep again. Delete anyway
   sends the confirmed request exactly as the current inline confirm does. Any other failure goes to
   the section alert of 3.5 and the strip closes.
 - Add form: Effective from and Amount per month (pair). Primary "Record this price". Success
-  "Price recorded". The existing server 409 (a price already recorded for that month) shows the
-  server message as the generic form error per 3.8 with the existing inline confirmation converted
-  to the two-button pattern of 3.10 inside the panel: question from the server, `[Replace]`
-  (primary) and `[Keep the existing price]` (quiet).
+  "Price recorded". The server 409 on create (a price already recorded for that month) has no
+  replace route behind it, so it renders as the generic form error per 3.8 with the server message
+  verbatim; the panel stays open with its values so the month can be changed. No Replace or Keep
+  buttons exist for this case.
 
 ### 5.3 Skipped months
 
@@ -727,6 +732,14 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 | 7 standing-order question | 3.10: consequence clause added |
 | 8 payments count under filter | 5.4: N is the rows listed under the current filter |
 | 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
+
+Implementation round, after Phase 5 (plan D9 and D10, and three copy observations): 5.2 drops the
+Replace and Keep buttons on the price create 409 because no replace route exists; the 409 is the
+generic form error with the panel kept open. 3.7 fixes paired fields with `align-items: start` and
+states that a one-sided hint does not move the other field. 3.10 removes the developer-facing
+`confirm=true` sentence from the second step of the price delete strip. 5.1 pluralises the settled
+archived disclosure. Month names rendering in the subscription's locale (for example "lip 2026" for
+pl-PL) is the intended behaviour of 3.12; the mockup's English months are illustrative only.
 
 Implementation round, after Phase 3 (plan D7 and D8): 4.3 now keeps the screen on Home after a
 create, with the status line and highlight visible and the new row as the way in; 3.8 now defines
