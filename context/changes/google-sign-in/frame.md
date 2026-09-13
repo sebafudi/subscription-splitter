@@ -62,7 +62,7 @@ installed `better-auth@1.7.4` package to test each.
 | 2. A Google email matching a password account gets linked | `accountLinking.enabled` defaults true and `disableImplicitLinking` defaults false; linking is blocked today only because `requireLocalEmailVerified` defaults true and seeded users keep `emailVerified = 0` from `migrations/0001_auth.sql:6` and `tests/integration/accounts.ts:52-55` | WEAK today, STRONG as a latent risk |
 | 3. The button cannot be hidden without credentials | `/api/me` answers 401 signed out (`src/server/routes/auth.ts:31-33`), `/api/health` carries nothing (`src/server/index.ts:14`), and the provider throws `CLIENT_ID_AND_SECRET_REQUIRED` when registered empty (`google.ts:165-170`); but `createAuth` is already per-request, so a conditional provider needs no new pattern | WEAK, and answered by one new public read |
 | 4. The redirect leg breaks on Workers | callback path is `${baseURL}/callback/google` (`oauth2/utils.mjs:28-31`) under an existing `/api/auth/*` catch-all; cookie is `SameSite=Lax`, which a top-level callback navigation allows; state and PKCE use `generateRandomString` and `jose`, no Node crypto; the callback carries no `Origin` and is protected by stored state instead | NONE |
-| 5. The design specification is contradicted | `context/changes/visual-redesign/design-spec.md:366-382` fixes the login block and states "No link to anything else; there is no registration", and its screenshot list at line 707 names only idle, submitting and 401 | STRONG |
+| 5. The design specification is contradicted | `context/archive/visual-redesign/design-spec.md:366-382` fixes the login block and states "No link to anything else; there is no registration", and its screenshot list at line 707 names only idle, submitting and 401 | STRONG |
 | 6. Mocked tests get presented as proof | nothing in the repository can reach `accounts.google.com`; every assertion available stops at the authorize URL | STRONG as a process risk |
 
 ## Narrowing signals
@@ -171,7 +171,7 @@ Research deliberately answers none of these. Each one changes what implementers 
 - Brief: `context/foundation/google-sign-in-brief.md`
 - Proposed decision: `context/decisions/D-013-google-account-linking.md`
 - Login screen: `src/client/screens/Login.tsx`; auth factory: `src/server/auth.ts`
-- Design specification: `context/changes/visual-redesign/design-spec.md` sections 3.3, 3.8, 4.1, 4.2
+- Design specification: `context/archive/visual-redesign/design-spec.md` sections 3.3, 3.8, 4.1, 4.2
 - Prior decisions: `context/decisions/D-001-auth-solution.md`,
   `context/decisions/D-005-account-seeding.md`,
   `context/decisions/D-010-live-demo-data-and-reviewer-access.md`

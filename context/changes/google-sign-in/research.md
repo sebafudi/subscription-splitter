@@ -339,7 +339,7 @@ focuses the email field on every distinct failure, tracked by an incrementing `a
 repeated failure still moves focus. The submit button stays focusable and announces `aria-disabled`
 and `aria-busy` rather than becoming disabled.
 
-**Evidence.** `context/changes/visual-redesign/design-spec.md` section 4.1 fixes the login block at
+**Evidence.** `context/archive/visual-redesign/design-spec.md` section 4.1 fixes the login block at
 360px wide, full width below 640px, placed at 20vh, left aligned inside a centred block, and states
 explicitly "No link to anything else; there is no registration." Section 4.2 specifies a session
 loading screen. Section 3.8 governs the error line and section 3.3 the submitting state. The
@@ -438,7 +438,7 @@ being true.
 - `context/decisions/D-010-live-demo-data-and-reviewer-access.md` records that `reviewer@example.com`
   is deliberately empty as the isolation demonstration. A Google-created account is a second, more
   convincing instance of the same demonstration, and the live pass can say so.
-- `context/changes/visual-redesign/design-spec.md` section 4.1 is the login screen this change
+- `context/archive/visual-redesign/design-spec.md` section 4.1 is the login screen this change
   amends, and its section 4.2, 3.3 and 3.8 govern the loading and error states any new affordance
   must match.
 - `context/checkpoints/g02-oauth-provision.md` verified the auth base path, the default callback

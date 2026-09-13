@@ -15,7 +15,7 @@ matters most: a first Google login creates a separate account with its own empty
 and a Google identity is never mapped onto the seeded `owner@example.com` account or given its data.
 
 Fable 5.1 is the sole designer for the login screen delta, consistent with the accepted redesign in
-`context/changes/visual-redesign/design-spec.md` section 4.1 and with Google's own sign-in branding.
+`context/archive/visual-redesign/design-spec.md` section 4.1 and with Google's own sign-in branding.
 Research and framing collect the ground truth and the open design questions; they decide no
 appearance. Opus and Sonnet implement.
 
