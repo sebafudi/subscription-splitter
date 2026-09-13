@@ -470,7 +470,7 @@ against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
   heading top is at or above the line 117px from the viewport top, one pixel below the 116px
   `scroll-margin-top`, so a heading that has just been scrolled into place by the index counts as
   current (an `IntersectionObserver` on headings with a top `rootMargin` of -117px, or an
-  equivalent scroll measurement, is fine). The `nav` itself keeps
+  equivalent scroll measurement, is fine). When the document is scrolled to its end, meaning the viewport bottom is within 1px of the document's scroll height, the last item is current regardless of where its heading sits, so every item can become current on a tall viewport. Otherwise the rule above applies. The `nav` itself keeps
   an opaque `--ground` background at every width; on mobile the `mask-image` fade is applied to an
   inner scrolling list element, never to the `nav`, so page content scrolling underneath never shows
   through the bar's edges. Below 640px the list scrolls horizontally with `overflow-x: auto`, hidden scrollbar, 8px inline
@@ -745,6 +745,8 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 
 Implementation review round (reviews/impl-review.md F1): 4.4 now fixes the current-item line at
 117px, one pixel below the 116px scroll margin, so the observer and the scroll offset agree.
+
+Implementation review follow-up (F1 re-check): 4.4 adds the end-of-document rule so the last index item is reachable when the final section is shorter than the viewport.
 
 Designer acceptance round (reviews/design-acceptance.md, A1 to A3): 3.6 makes the figure column
 weight 600 explicit; 3.10 makes the strip span the entry width; 4.4 constrains the mobile index fade
