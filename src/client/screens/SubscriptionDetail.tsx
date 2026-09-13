@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatMoney } from '../../domain/money'
 import {
   ApiError,
   SignedOutError,
+  deleteSubscription,
   getSummary,
   listBreakMonths,
   listMembers,
@@ -23,11 +24,25 @@ import { MemberList } from '../components/MemberList'
 import { PaymentList } from '../components/PaymentList'
 import { PriceHistory } from '../components/PriceHistory'
 import { RecurringSection } from '../components/RecurringSection'
+import { SubscriptionSettings } from '../components/SubscriptionSettings'
 import { DETAIL_SECTIONS, type SectionDescriptor } from '../components/sections'
+import { ConfirmStrip } from '../components/ui/ConfirmStrip'
+import { DisclosurePanel } from '../components/ui/DisclosurePanel'
 import { CONNECTION_FAILURE } from '../components/ui/FormAlert'
 import { SectionAlert } from '../components/ui/SectionAlert'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SectionIndex } from '../components/ui/SectionIndex'
+import { StatusLine } from '../components/ui/StatusLine'
+import { useSectionStatus } from '../components/ui/useSectionStatus'
+import { currencyLocked, headerActions } from './subscriptionEdits'
+
+const EDIT_PANEL_ID = 'subscription-settings-panel'
+const EDIT_BUTTON_ID = 'subscription-edit'
+const DELETE_BUTTON_ID = 'subscription-delete'
+
+const DELETION_CONSEQUENCE =
+  'Its participants and their active months, prices, skipped months, payments, standing orders and ' +
+  "their month marks will be removed. This can't be undone."
 
 type Props = {
   subscription: Subscription
@@ -35,7 +50,14 @@ type Props = {
   onBack: () => void
   onSignOut: () => void
   onSignedOut: () => void
+  /** Hands the PATCH response up to where the subscription is held, so the title and subtitle follow it. */
+  onUpdated: (subscription: Subscription) => void
+  /** Leaves the detail for Home, which confirms the deletion and refetches its list. */
+  onDeleted: () => void
 }
+
+/** A failed deletion. `gone` marks the 404, where the only useful action left is leaving the screen. */
+type HeaderError = { message: string; gone: boolean }
 
 type Loaded = {
   summary: Summary
@@ -53,8 +75,27 @@ type State =
   /** Only reachable for a subscription created before the owner became part of every create. */
   | { status: 'no-owner'; message: string }
 
-export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onSignedOut }: Props) {
+export function SubscriptionDetail({
+  subscription,
+  email,
+  onBack,
+  onSignOut,
+  onSignedOut,
+  onUpdated,
+  onDeleted,
+}: Props) {
   const [state, setState] = useState<State>({ status: 'loading' })
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelAlert, setPanelAlert] = useState<string | null>(null)
+  // Remounts the form so a closed panel discards what was typed into it.
+  const [formKey, setFormKey] = useState(0)
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [headerError, setHeaderError] = useState<HeaderError | null>(null)
+  const [focusTarget, setFocusTarget] = useState<string | null>(null)
+  const [focusAlert, setFocusAlert] = useState(false)
+  const status = useSectionStatus()
+  const alertLine = useRef<HTMLParagraphElement>(null)
 
   const load = useCallback(async () => {
     // A reload after an edit keeps the figures already on screen rather than
@@ -90,6 +131,62 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
     void load()
   }, [load])
 
+  // The two header buttons are absent while a panel or the strip is open, so
+  // focus returns to them as the row remounts rather than before it exists.
+  useEffect(() => {
+    if (!focusTarget) return
+    document.getElementById(focusTarget)?.focus()
+    setFocusTarget(null)
+  }, [focusTarget])
+
+  useEffect(() => {
+    if (!focusAlert) return
+    alertLine.current?.focus()
+    setFocusAlert(false)
+  }, [focusAlert])
+
+  const actions = headerActions(state.status)
+  // The lock is read off the loaded lists, which is why Edit waits for the first load to settle.
+  const locked = state.status === 'ready' ? currencyLocked(state.data) : false
+
+  function closePanel() {
+    setPanelOpen(false)
+    setPanelAlert(null)
+    setFormKey((key) => key + 1)
+    setFocusTarget(EDIT_BUTTON_ID)
+  }
+
+  function keepSubscription() {
+    setConfirming(false)
+    setFocusTarget(DELETE_BUTTON_ID)
+  }
+
+  /**
+   * The one irreversible action on this screen. On success the screen is left
+   * behind, so nothing here is reset; on failure the strip closes and the
+   * header alert takes the server's own words.
+   */
+  async function handleDelete() {
+    if (deleting) return
+    setDeleting(true)
+    try {
+      await deleteSubscription(subscription.id)
+      onDeleted()
+    } catch (err) {
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
+      setDeleting(false)
+      setConfirming(false)
+      setHeaderError({
+        message: err instanceof ApiError ? err.message : CONNECTION_FAILURE,
+        gone: err instanceof ApiError && err.status === 404,
+      })
+      setFocusAlert(true)
+    }
+  }
+
   const bar = <AppBar email={email} onHome={onBack} onSignOut={onSignOut} />
 
   const header = (
@@ -102,6 +199,92 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
         {subscription.currency}, {subscription.timeZone}, from{' '}
         {formatMonth(subscription.startMonth, subscription.locale)}
       </p>
+
+      <div className="detail-actions">
+        {!panelOpen && !confirming && (
+          <>
+            <button
+              type="button"
+              id={EDIT_BUTTON_ID}
+              className="btn-link t-small"
+              aria-disabled={!actions.edit || undefined}
+              aria-expanded={panelOpen}
+              aria-controls={EDIT_PANEL_ID}
+              onClick={() => {
+                if (!actions.edit) return
+                status.clear()
+                setPanelOpen(true)
+              }}
+            >
+              Edit subscription
+            </button>
+            <button
+              type="button"
+              id={DELETE_BUTTON_ID}
+              className="btn-link t-small"
+              aria-disabled={!actions.remove || undefined}
+              onClick={() => {
+                if (!actions.remove) return
+                status.clear()
+                setConfirming(true)
+              }}
+            >
+              Delete subscription
+            </button>
+          </>
+        )}
+        <StatusLine message={status.message} />
+      </div>
+
+      <SectionAlert
+        ref={alertLine}
+        message={headerError?.message ?? null}
+        onDismiss={() => setHeaderError(null)}
+        action={
+          headerError?.gone ? (
+            <button type="button" className="btn-link t-small" onClick={onBack}>
+              All subscriptions
+            </button>
+          ) : undefined
+        }
+      />
+
+      <DisclosurePanel
+        id={EDIT_PANEL_ID}
+        open={panelOpen}
+        title="Edit subscription"
+        onCancel={closePanel}
+        invalid={panelAlert !== null}
+      >
+        <SubscriptionSettings
+          key={formKey}
+          subscription={subscription}
+          currencyLocked={locked}
+          alert={panelAlert}
+          onAlert={setPanelAlert}
+          onSaved={(updated) => {
+            closePanel()
+            setHeaderError(null)
+            onUpdated(updated)
+            status.confirm('Changes saved')
+            void load()
+          }}
+          onUnchanged={closePanel}
+          onCancel={closePanel}
+          onSignedOut={onSignedOut}
+        />
+      </DisclosurePanel>
+
+      {confirming && (
+        <ConfirmStrip
+          question={`Delete ${subscription.name}?`}
+          consequence={DELETION_CONSEQUENCE}
+          confirmLabel="Delete subscription"
+          busy={deleting}
+          onConfirm={() => void handleDelete()}
+          onKeep={keepSubscription}
+        />
+      )}
     </header>
   )
 

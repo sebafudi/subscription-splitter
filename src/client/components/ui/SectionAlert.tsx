@@ -1,3 +1,5 @@
+import type { ReactNode, Ref } from 'react'
+
 type Props = {
   /** Null when idle. */
   message: string | null
@@ -5,6 +7,10 @@ type Props = {
   /** Home's load failure offers a quiet "Try again" in place of Dismiss; every other use takes the default. */
   dismissLabel?: string
   dismissVariant?: 'link' | 'quiet'
+  /** A second control beside Dismiss, used by the detail header when the subscription is already gone. */
+  action?: ReactNode
+  /** Lets a caller move focus here when the action that failed left no button to return to. */
+  ref?: Ref<HTMLParagraphElement>
 }
 
 /**
@@ -20,12 +26,15 @@ export function SectionAlert({
   onDismiss,
   dismissLabel = 'Dismiss',
   dismissVariant = 'link',
+  action,
+  ref,
 }: Props) {
   return (
     <div role="alert" className="alert-region">
       {message && (
-        <p className="section-alert t-body">
+        <p className="section-alert t-body" tabIndex={-1} ref={ref}>
           <span>{message}</span>
+          {action}
           <button
             type="button"
             className={dismissVariant === 'quiet' ? 'btn-quiet' : 'btn-link t-small'}

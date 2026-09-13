@@ -766,6 +766,13 @@ label {
   color: var(--red);
 }
 
+/* The second sentence of the strip, used only by the subscription deletion. It
+   takes the whole line, so the question stands on its own above it. */
+.confirm-consequence {
+  flex-basis: 100%;
+  color: var(--ink);
+}
+
 /* Destructive confirmation */
 .confirm-strip {
   grid-column: 1 / -1;
@@ -825,8 +832,37 @@ label {
   gap: var(--s-1);
 }
 
+/* The header action row: the two subscription-level verbs under the subtitle,
+   with the header status line at the right end. The header's own column gap
+   supplies --s-1 of the --s-3 that sits above the row. */
+.detail-actions {
+  align-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+.detail-actions .status-line {
+  margin-left: auto;
+}
+
+/* The edit panel, the failed-deletion alert and the page-level strip each open
+   in the action row's place and span the content column rather than their text. */
+.detail-head > .disclosure,
+.detail-head .confirm-strip,
+.detail-head .section-alert {
+  align-self: stretch;
+}
+
+.detail-head .confirm-strip,
+.detail-head .section-alert {
+  margin-top: var(--s-2);
+}
+
 .summary-label {
-  margin-top: var(--s-6);
+  margin-top: var(--s-5);
 }
 
 .figure-owed {
@@ -981,6 +1017,12 @@ main section {
 @media (max-width: 640px) {
   .filter-label select {
     height: 44px;
+  }
+
+  /* The two buttons keep one line and the status line drops under them. */
+  .detail-actions .status-line {
+    margin-left: 0;
+    flex-basis: 100%;
   }
 }
 

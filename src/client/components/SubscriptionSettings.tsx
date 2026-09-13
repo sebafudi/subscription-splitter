@@ -1,31 +1,52 @@
 import { useEffect, useRef, useState } from 'react'
-import { ApiError, SignedOutError, createSubscription, type Subscription } from '../api'
-import { Field } from '../components/ui/Field'
-import { subscriptionFieldLabels, labelFor, messageWithLabel } from '../components/ui/fieldLabels'
-import { CONNECTION_FAILURE, FormAlert } from '../components/ui/FormAlert'
-import { MonthField } from '../components/ui/MonthField'
-import { usableLocale, usableTimeZone } from '../components/ui/monthControl'
-import { firstMonthFloor } from './subscriptionEdits'
-
-const DEFAULT_LOCALE = 'pl-PL'
-const DEFAULT_TIME_ZONE = 'Europe/Warsaw'
+import { ApiError, SignedOutError, patchSubscription, type Subscription } from '../api'
+import {
+  currencyLockHint,
+  firstMonthFloor,
+  storedValues,
+  subscriptionChanges,
+} from '../screens/subscriptionEdits'
+import { Field } from './ui/Field'
+import { labelFor, messageWithLabel, subscriptionFieldLabels } from './ui/fieldLabels'
+import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
+import { MonthField } from './ui/MonthField'
 
 type Props = {
+  subscription: Subscription
+  /** True once the subscription carries a price, a payment or a standing order. */
+  currencyLocked: boolean
   /** The panel's own error line, owned by the screen so the panel can take its red left rule. */
   alert: string | null
   onAlert: (message: string | null) => void
-  onCreated: (subscription: Subscription) => void
+  onSaved: (subscription: Subscription) => void
+  /** A submit that changes nothing closes the panel as Cancel would, with no request and no sentence. */
+  onUnchanged: () => void
   onCancel: () => void
   onSignedOut: () => void
 }
 
-export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSignedOut }: Props) {
-  const [name, setName] = useState('')
-  const [currency, setCurrency] = useState('PLN')
-  const [locale, setLocale] = useState(DEFAULT_LOCALE)
-  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE)
-  const [startMonth, setStartMonth] = useState('')
-  const [ownerName, setOwnerName] = useState('')
+/**
+ * The five editable settings of a subscription, in the same panel machinery
+ * every other form on the screen uses. Only the settings that differ from the
+ * stored row travel over the wire, so a save reports itself only when there was
+ * something to save.
+ */
+export function SubscriptionSettings({
+  subscription,
+  currencyLocked,
+  alert,
+  onAlert,
+  onSaved,
+  onUnchanged,
+  onCancel,
+  onSignedOut,
+}: Props) {
+  const stored = storedValues(subscription)
+  const [name, setName] = useState(stored.name)
+  const [currency, setCurrency] = useState(stored.currency)
+  const [locale, setLocale] = useState(stored.locale)
+  const [timeZone, setTimeZone] = useState(stored.timeZone)
+  const [startMonth, setStartMonth] = useState(stored.startMonth)
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null)
   const [submitting, setSubmitting] = useState(false)
   // Counts refusals rather than holding one, so a second identical failure still moves focus.
@@ -38,11 +59,6 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
     const invalid = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
     ;(invalid ?? alertLine.current)?.focus()
   }, [refusals])
-
-  // Both settings are free text until the form is submitted, so the month
-  // control reads them through the fallback rather than on trust.
-  const formLocale = usableLocale(locale, DEFAULT_LOCALE)
-  const formTimeZone = usableTimeZone(timeZone, DEFAULT_TIME_ZONE)
 
   function errorFor(wireName: string): string | undefined {
     return fieldError?.field === wireName ? fieldError.message : undefined
@@ -60,17 +76,16 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
     if (submitting) return
     setFieldError(null)
     onAlert(null)
+
+    const changes = subscriptionChanges(subscription, { name, currency, locale, timeZone, startMonth })
+    if (!changes) {
+      onUnchanged()
+      return
+    }
+
     setSubmitting(true)
     try {
-      const created = await createSubscription({
-        name,
-        currency,
-        locale,
-        time_zone: timeZone,
-        start_month: startMonth,
-        ...(ownerName.trim() ? { owner_name: ownerName.trim() } : {}),
-      })
-      onCreated(created)
+      onSaved(await patchSubscription(subscription.id, changes))
     } catch (err) {
       if (err instanceof SignedOutError) {
         onSignedOut()
@@ -96,7 +111,7 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
     >
       <FormAlert message={alert} ref={alertLine} />
 
-      <Field id="sub_name" label="Name" error={errorFor('name')}>
+      <Field id="settings_name" label="Name" error={errorFor('name')}>
         {(control) => (
           <input
             {...control}
@@ -108,19 +123,25 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
         )}
       </Field>
 
-      <Field id="sub_currency" label="Currency" span={false} error={errorFor('currency')}>
+      <Field
+        id="settings_currency"
+        label="Currency"
+        span={false}
+        hint={currencyLocked ? currencyLockHint(subscription.currency) : undefined}
+        error={errorFor('currency')}
+      >
         {(control) => (
           <input
             {...control}
             required
-            disabled={submitting}
+            disabled={submitting || currencyLocked}
             value={currency}
             onChange={(event) => setCurrency(event.target.value.toUpperCase())}
           />
         )}
       </Field>
 
-      <Field id="sub_locale" label="Locale" span={false} error={errorFor('locale')}>
+      <Field id="settings_locale" label="Locale" span={false} error={errorFor('locale')}>
         {(control) => (
           <input
             {...control}
@@ -132,7 +153,12 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
         )}
       </Field>
 
-      <Field id="sub_time_zone" label="Time zone" error={errorFor('time_zone')}>
+      <Field
+        id="settings_time_zone"
+        label="Time zone"
+        hint="Decides which month counts as the current one. Balances follow it."
+        error={errorFor('time_zone')}
+      >
         {(control) => (
           <input
             {...control}
@@ -145,37 +171,21 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
       </Field>
 
       <Field
-        id="sub_start_month"
+        id="settings_start_month"
         label="First month"
+        hint="Can move back up to ten years, or later up to the earliest recorded month."
         error={errorFor('start_month')}
       >
         {(control) => (
           <MonthField
             {...control}
             required
-            min={firstMonthFloor(formTimeZone)}
-            locale={formLocale}
-            timeZone={formTimeZone}
+            min={firstMonthFloor(subscription.timeZone)}
+            locale={subscription.locale}
+            timeZone={subscription.timeZone}
             disabled={submitting}
             value={startMonth}
             onChange={setStartMonth}
-          />
-        )}
-      </Field>
-
-      <Field
-        id="sub_owner_name"
-        label="Your name on this plan"
-        hint="How you appear in the participant list"
-        error={errorFor('owner_name')}
-      >
-        {(control) => (
-          <input
-            {...control}
-            placeholder="Me"
-            disabled={submitting}
-            value={ownerName}
-            onChange={(event) => setOwnerName(event.target.value)}
           />
         )}
       </Field>
@@ -187,7 +197,7 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
           aria-busy={submitting || undefined}
           aria-disabled={submitting || undefined}
         >
-          Create subscription
+          Save changes
         </button>
         <button type="button" className="btn-quiet" onClick={onCancel}>
           Cancel

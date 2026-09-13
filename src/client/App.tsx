@@ -11,6 +11,8 @@ export function App() {
   // behind a router. Holding the object, not the id, means the detail screen
   // has the name and the first month to show before the summary arrives.
   const [selected, setSelected] = useState<Subscription | null>(null)
+  // One-shot: set when a deletion sends the user back, consumed by Home as it mounts.
+  const [announceDeleted, setAnnounceDeleted] = useState(false)
   // Read once beside the session and held here, so a later sign-out repaints the
   // login screen with its final action row rather than asking again.
   const [googleEnabled, setGoogleEnabled] = useState(false)
@@ -59,6 +61,12 @@ export function App() {
         onBack={() => setSelected(null)}
         onSignOut={handleSignOut}
         onSignedOut={signedOut}
+        onUpdated={setSelected}
+        onDeleted={() => {
+          // Nothing deleted is held anywhere: the object goes before Home remounts and refetches.
+          setSelected(null)
+          setAnnounceDeleted(true)
+        }}
       />
     )
   }
@@ -69,6 +77,8 @@ export function App() {
       onSelect={setSelected}
       onSignOut={handleSignOut}
       onSignedOut={signedOut}
+      announceDeleted={announceDeleted}
+      onAnnounced={() => setAnnounceDeleted(false)}
     />
   )
 }

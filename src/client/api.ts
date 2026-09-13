@@ -150,6 +150,30 @@ export async function createSubscription(input: CreateSubscriptionInput): Promis
   })
 }
 
+/** The five editable settings, each optional; the route refuses an empty body. */
+export type PatchSubscriptionInput = Partial<{
+  name: string
+  currency: string
+  locale: string
+  time_zone: string
+  start_month: string
+}>
+
+export async function patchSubscription(
+  subscriptionId: string,
+  patch: PatchSubscriptionInput,
+): Promise<Subscription> {
+  return request<Subscription>(`/api/subscriptions/${subscriptionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
+/** Removes the subscription and everything reachable from it; answers 204, so nothing comes back. */
+export async function deleteSubscription(subscriptionId: string): Promise<void> {
+  await request<null>(`/api/subscriptions/${subscriptionId}`, { method: 'DELETE' })
+}
+
 /**
  * The member, price and summary shapes are the domain's own, re-exported here
  * so the screens have one import for everything the API returns and so the

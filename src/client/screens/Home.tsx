@@ -12,15 +12,26 @@ import { formatMonth } from '../format'
 import { SubscriptionForm } from './SubscriptionForm'
 
 const PANEL_ID = 'new-subscription-panel'
+const HEADING_ID = 'home-heading'
 
 type Props = {
   email: string
   onSelect: (subscription: Subscription) => void
   onSignOut: () => void
   onSignedOut: () => void
+  /** Set by a deletion that sent the user back here; consumed once and cleared. */
+  announceDeleted?: boolean
+  onAnnounced?: () => void
 }
 
-export function Home({ email, onSelect, onSignOut, onSignedOut }: Props) {
+export function Home({
+  email,
+  onSelect,
+  onSignOut,
+  onSignedOut,
+  announceDeleted = false,
+  onAnnounced,
+}: Props) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -30,6 +41,7 @@ export function Home({ email, onSelect, onSignOut, onSignedOut }: Props) {
   const [returnFocus, setReturnFocus] = useState(false)
   const status = useSectionStatus()
   const newButton = useRef<HTMLButtonElement>(null)
+  const announced = useRef(false)
 
   const load = useCallback(() => {
     let cancelled = false
@@ -53,6 +65,17 @@ export function Home({ email, onSelect, onSignOut, onSignedOut }: Props) {
 
   useEffect(() => load(), [load])
 
+  // A deletion leaves no row to land on, so focus goes to the heading that
+  // titles the screen and the sentence confirms what happened. The ref makes it
+  // once per mount whatever the caller does with the flag afterwards.
+  useEffect(() => {
+    if (!announceDeleted || announced.current) return
+    announced.current = true
+    status.confirm('Subscription deleted')
+    document.getElementById(HEADING_ID)?.focus()
+    onAnnounced?.()
+  }, [announceDeleted, status, onAnnounced])
+
   // The button is absent while the panel is open, so focus returns to it as it remounts.
   useEffect(() => {
     if (!returnFocus) return
@@ -72,7 +95,7 @@ export function Home({ email, onSelect, onSignOut, onSignedOut }: Props) {
       <AppBar email={email} onSignOut={onSignOut} />
       <main className="column page">
         <SectionHeader
-          id="home-heading"
+          id={HEADING_ID}
           title="Your subscriptions"
           level={1}
           rule={false}
