@@ -302,9 +302,29 @@ stating plainly: when the document has already scrolled to its end, a last secti
 below the line is not marked, and the section above it stays current. That is what the rule
 prescribes, it is visible at 1280 and not at 375, and it is not a defect the offset can fix.
 
-The accepted captures `redesign-22-index-current-item-light.png` and its mobile pair still show the
-superseded behaviour. They are left untouched, because the acceptance set records what the designer
-reviewed; the four `impl-review-f1-*` captures record the behaviour that now ships.
+The accepted captures `redesign-22-index-current-item-light.png` and its mobile pair showed the
+superseded behaviour and were left untouched in the first pass. The designer has since decided both
+open calls, and the follow-up below carries them.
+
+**F1 follow-up.** The designer amended design-spec 4.4 with an end-of-document rule: when the
+viewport bottom is within 1px of the document's scroll height, the last item is current wherever its
+heading sits, so every item can become current on a tall viewport. `SectionIndex.tsx` implements it
+beside the 117px line, on a passive `scroll` listener because no heading crossing announces the end of
+the document, and the decision itself moved into an exported pure function with five unit cases. The
+unit suite goes from 189 tests in 16 files to 194 in 17. Re-verified in a browser at 1280 and at 375,
+light and dark, and again under `--force-prefers-reduced-motion`: all five index items now take
+`aria-current` when clicked, including Standing orders at 1280 with its heading at 280.03px, and the
+375 behaviour is unchanged because the line reaches every heading there on its own. Numbers in
+`evidence/runs/visual-redesign-index-current-item.md`, captures in
+`evidence/screenshots/impl-review-f1-index-last-item-desktop-{light,dark}.png`. The four
+`redesign-22-index-current-item` captures were retaken at the widths and themes of the originals, so
+the acceptance set now shows the shipped behaviour; the addendum in `reviews/design-acceptance.md`
+records that the designer's acceptance stands.
+
+| Finding | Outcome | Commit |
+|---|---|---|
+| F1 follow-up | Fixed. End-of-document rule in design-spec 4.4 and in `SectionIndex.tsx`, five unit cases, browser-verified at both widths | `b5208f3` |
+| F1 follow-up | Recorded. The `redesign-22` captures retaken, two new end-of-document captures | `7e84dd3` |
 
 **F2.** The row keeps its title, as `plan.md` requires, and now reads "... and opens Detail (judged
 against design-spec 4.3 as amended in `02b213e`: the screen stays on Home and the new row is itself

@@ -75,6 +75,65 @@ involved in either.
 | `evidence/screenshots/impl-review-f1-index-current-mobile-light.png` | 375, light: Standing orders clicked, its own item current |
 | `evidence/screenshots/impl-review-f1-index-current-mobile-dark.png` | the same state in dark |
 
-The accepted capture `redesign-22-index-current-item-light.png` and its mobile pair predate this fix
-and show the superseded behaviour the finding describes. They are left as they were taken, because
-the acceptance set records what the designer reviewed; these four captures are the current behaviour.
+The accepted capture `redesign-22-index-current-item-light.png` and its mobile pair showed the
+superseded behaviour when they were first taken. They were retaken against the end-of-document rule
+below, at the widths and themes of the originals, so the acceptance set now shows what ships.
+
+## Follow-up: the end-of-document rule
+
+Design-spec 4.4 gained the end-of-document rule after this record was first written: when the
+viewport bottom is within 1px of the document's scroll height, the last item is current wherever its
+heading sits. `SectionIndex.tsx` implements it alongside the 117px line and carries it on a passive
+`scroll` listener, because no heading crossing announces the end of the document.
+
+Re-driven the same way, against the same synthetic account and the same populated subscription, whose
+five sections are Participants, Price history, Skipped months, Payments received and Standing orders.
+
+### Desktop, 1280 by 900 at a 2x device pixel ratio
+
+Page height 2328px, viewport 900px, so 1428px of scroll. `scroll-margin-top` computes 116px on every
+section heading.
+
+| Index item clicked | Heading top after the scroll | Document at its end | Item marked current |
+| --- | --- | --- | --- |
+| Participants | 116.25px | no | Participants |
+| Price history | 115.81px | no | Price history |
+| Skipped months | 115.69px | no | Skipped months |
+| Payments received | 116.47px | no | Payments received |
+| Standing orders | 280.03px | yes | Standing orders |
+
+All five, the last one included. Scrolling to the bottom without clicking anything gives the same
+mark: `scrollHeight - (innerHeight + scrollY)` is 0 and Standing orders carries `aria-current="true"`
+while its heading top reads 280.03px, which is the case the previous record had to disclose as
+unreachable.
+
+### Narrow, 375 by 812 at a 2x device pixel ratio
+
+Page height 3029px, `document.scrollWidth - document.clientWidth` 0, so nothing scrolls horizontally.
+
+| Index item clicked | Heading top after the scroll | Document at its end | Item marked current |
+| --- | --- | --- | --- |
+| Participants | 115.72px | no | Participants |
+| Price history | 116.41px | no | Price history |
+| Skipped months | 116.41px | no | Skipped months |
+| Payments received | 116.44px | no | Payments received |
+| Standing orders | 115.81px | no | Standing orders |
+
+Unchanged: the column is tall enough here that the 117px line reaches every heading on its own and
+the new rule never has to fire. Scrolled to the bottom, Standing orders stays marked.
+
+### Reduced motion
+
+Repeated in a second Chrome launched with `--force-prefers-reduced-motion`, where
+`matchMedia('(prefers-reduced-motion: reduce)')` matches: the same five rows at 1280, the same
+end-of-document mark, and `document.getAnimations().length` of 0 throughout.
+
+### Follow-up captures
+
+| File | What it shows |
+| --- | --- |
+| `evidence/screenshots/impl-review-f1-index-last-item-desktop-light.png` | 1280, light: the document scrolled to its end, the Standing orders heading well below the line, its own index item underlined |
+| `evidence/screenshots/impl-review-f1-index-last-item-desktop-dark.png` | the same state in dark |
+
+The four `redesign-22-index-current-item` captures were retaken in the same session at 1280 by 900
+and 390 by 844, light and dark, each showing Payments received clicked and its own item underlined.

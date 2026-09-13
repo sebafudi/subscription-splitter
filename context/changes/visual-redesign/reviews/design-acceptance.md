@@ -96,3 +96,17 @@ spans the full entry width, the index bar keeps an opaque ground on mobile with 
 showing through its edges, and the payments filter select is 44px at 390. A1 to A3 and D11 are
 closed. The implemented visuals are accepted against `design-spec.md` without conditions. Progress
 row 6.14 may be ticked against this record.
+
+## Addendum after implementation review F1
+
+The section index rule changed after this acceptance was given. Design-spec 4.4 now fixes the
+current-item line at 117px, one pixel below the 116px `scroll-margin-top`, and adds an
+end-of-document rule: when the viewport bottom is within 1px of the document's scroll height, the
+last item is current wherever its heading sits. Together they make every index item reachable,
+including a last section shorter than the viewport.
+
+Capture 22, the `redesign-22-index-current-item` pair at 1280 and at 390 in both themes, showed the
+superseded behaviour and was retaken at `7e84dd3` at the same widths and themes, so the acceptance
+set shows what ships. Nothing else in the accepted visuals changed: the rule governs which item
+carries `aria-current` and its 2px bottom rule, not how the bar or the item is drawn. The designer's
+acceptance stands.
