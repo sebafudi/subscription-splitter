@@ -1466,24 +1466,24 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 3.1 Typecheck passes across all three projects
-- [x] 3.2 The whole suite passes with no test file changed
-- [x] 3.3 The production build succeeds
-- [x] 3.4 The create payload still sends name, currency, locale, time_zone, start_month and owner_name
-- [x] 3.5 The list is a ul of li each holding exactly one native button and no role="button" exists
+- [x] 3.1 Typecheck passes across all three projects — 48410c3
+- [x] 3.2 The whole suite passes with no test file changed — 48410c3
+- [x] 3.3 The production build succeeds — 48410c3
+- [x] 3.4 The create payload still sends name, currency, locale, time_zone, start_month and owner_name — 48410c3
+- [x] 3.5 The list is a ul of li each holding exactly one native button and no role="button" exists — 48410c3
 
 #### Manual
 
-- [x] 3.6 Home populated matches design-spec 4.3 at 1280 in light and in dark
-- [x] 3.7 Home empty shows only the design-spec 3.11 sentence with no rules
-- [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field
-- [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button
-- [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span
+- [x] 3.6 Home populated matches design-spec 4.3 at 1280 in light and in dark — 48410c3
+- [x] 3.7 Home empty shows only the design-spec 3.11 sentence with no rules — 48410c3
+- [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field — 48410c3
+- [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button — 48410c3
+- [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span — 48410c3
 - [ ] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
 - [ ] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
-- [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again
-- [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll
-- [x] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open
+- [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again — 48410c3
+- [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll — 48410c3
+- [x] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open — 48410c3
 
 ### Phase 4: The detail summary, the section index, Participants and Price history
 
