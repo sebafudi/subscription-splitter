@@ -5,6 +5,10 @@ and posts the result as a pull request comment and a label. It never blocks a me
 
 ## Local usage
 
+Needs npm 11 or newer, which Node 24 bundles. `package-lock.json` is an npm 11 tree; npm 10 places
+two `googleapis-common` transitives elsewhere and rejects the lockfile as out of sync, so `npm ci`
+fails before anything runs. The workflow pins Node 24 for the same reason.
+
 ```bash
 cd tools/reviewer
 npm ci
