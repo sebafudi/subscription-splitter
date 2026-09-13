@@ -1,5 +1,207 @@
 # google-sign-in gates
 
+## Phase 3
+
+The test phase. Every Phase 3 row was already satisfied by a file that landed in phase 1 or phase 2,
+so this phase added no test and re-ran the whole suite twice instead, on the tree that also carries
+the button border fix. Run A moves `.dev.vars` aside, which is the state continuous integration runs
+in and the state the pool binds nothing Google into. Run B restores it, so the pool binds the local
+pair. The new integration file sets and restores the two names around each half of itself, so its own
+cases mean the same thing in either run.
+
+== Run A: no Google values in the test environment (.dev.vars moved aside) ==
+$ npm run typecheck
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+exit=0
+
+$ npm run test:unit
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+
+ Test Files  18 passed (18)
+      Tests  214 passed (214)
+   Start at  11:26:40
+   Duration  613ms (transform 635ms, setup 0ms, import 1.51s, tests 142ms, environment 1ms)
+
+exit=0
+
+$ npm run test:integration
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+
+ Test Files  12 passed (12)
+      Tests  119 passed (119)
+   Start at  11:26:42
+   Duration  13.21s (transform 14.71s, setup 46.91s, import 416ms, tests 26.84s, environment 1ms)
+
+exit=0
+
+$ npm run build
+
+> build
+> vite build
+
+vite v8.3.0 building subscription_splitter environment for production...
+transforming...
+✓ 675 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/subscription_splitter/wrangler.json                                          1.52 kB │ gzip:   0.75 kB
+dist/subscription_splitter/.vite/manifest.json                                    3.69 kB │ gzip:   0.62 kB
+dist/subscription_splitter/assets/kysely-adapter-C8A9b7_p.js                      0.13 kB │ gzip:   0.10 kB
+dist/subscription_splitter/assets/kysely-migration-tables-DFfmKhq--BmaT-cAq.js    0.80 kB │ gzip:   0.45 kB
+dist/subscription_splitter/assets/sqlite-adapter-CuhN6gCj.js                      2.12 kB │ gzip:   0.82 kB
+dist/subscription_splitter/assets/bun-sqlite-dialect-C7ftEUSI-D89iQww2.js         4.62 kB │ gzip:   1.63 kB
+dist/subscription_splitter/assets/node-sqlite-dialect-DQlwED9W.js                 4.62 kB │ gzip:   1.62 kB
+dist/subscription_splitter/assets/d1-sqlite-dialect-D4qp4-wW-DUBzZRdx.js          5.14 kB │ gzip:   1.82 kB
+dist/subscription_splitter/assets/dist-CXx7FqTT.js                               14.56 kB │ gzip:   4.08 kB
+dist/subscription_splitter/assets/default-query-compiler-2C8slTxe.js             44.92 kB │ gzip:   7.91 kB
+dist/subscription_splitter/assets/dist-BsFroIdu.js                              218.25 kB │ gzip:  39.54 kB
+dist/subscription_splitter/assets/compiled-query-CTMHavmA.js                    235.66 kB │ gzip:  39.26 kB
+dist/subscription_splitter/assets/factory-CWV6QwZY.js                           268.20 kB │ gzip:  59.83 kB
+dist/subscription_splitter/index.js                                             869.09 kB │ gzip: 206.76 kB
+
+✓ built in 94ms
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 54 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                                               0.03 kB
+dist/client/index.html                                                  0.53 kB │ gzip:  0.31 kB
+dist/client/assets/ibm-plex-sans-latin-ext-400-normal-C5H60-Va.woff2   15.98 kB
+dist/client/assets/ibm-plex-sans-latin-ext-600-normal-DOrvGEcy.woff2   16.44 kB
+dist/client/assets/ibm-plex-sans-latin-400-normal-CDDApCn2.woff2       22.58 kB
+dist/client/assets/ibm-plex-sans-latin-600-normal-CuJfVYMP.woff2       24.25 kB
+dist/client/assets/index-CLEnPkyw.css                                  16.89 kB │ gzip:  4.09 kB
+dist/client/assets/index-CQZzLfmQ.js                                  276.66 kB │ gzip: 82.70 kB
+
+✓ built in 105ms
+exit=0
+
+== Run B: both Google values present in the test environment (.dev.vars restored) ==
+$ npm run typecheck
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+exit=0
+
+$ npm run test:unit
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+
+ Test Files  18 passed (18)
+      Tests  214 passed (214)
+   Start at  11:27:02
+   Duration  554ms (transform 601ms, setup 0ms, import 1.58s, tests 239ms, environment 1ms)
+
+exit=0
+
+$ npm run test:integration
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+
+ Test Files  12 passed (12)
+      Tests  119 passed (119)
+   Start at  11:27:03
+   Duration  12.74s (transform 14.78s, setup 47.09s, import 474ms, tests 25.87s, environment 0ms)
+
+exit=0
+
+$ npm run build
+
+> build
+> vite build
+
+vite v8.3.0 building subscription_splitter environment for production...
+transforming...
+✓ 675 modules transformed.
+rendering chunks...
+Using secrets defined in .dev.vars
+computing gzip size...
+dist/subscription_splitter/.dev.vars                                              0.55 kB
+dist/subscription_splitter/wrangler.json                                          1.52 kB │ gzip:   0.75 kB
+dist/subscription_splitter/.vite/manifest.json                                    3.69 kB │ gzip:   0.62 kB
+dist/subscription_splitter/assets/kysely-adapter-C8A9b7_p.js                      0.13 kB │ gzip:   0.10 kB
+dist/subscription_splitter/assets/kysely-migration-tables-DFfmKhq--BmaT-cAq.js    0.80 kB │ gzip:   0.45 kB
+dist/subscription_splitter/assets/sqlite-adapter-CuhN6gCj.js                      2.12 kB │ gzip:   0.82 kB
+dist/subscription_splitter/assets/bun-sqlite-dialect-C7ftEUSI-D89iQww2.js         4.62 kB │ gzip:   1.63 kB
+dist/subscription_splitter/assets/node-sqlite-dialect-DQlwED9W.js                 4.62 kB │ gzip:   1.62 kB
+dist/subscription_splitter/assets/d1-sqlite-dialect-D4qp4-wW-DUBzZRdx.js          5.14 kB │ gzip:   1.82 kB
+dist/subscription_splitter/assets/dist-CXx7FqTT.js                               14.56 kB │ gzip:   4.08 kB
+dist/subscription_splitter/assets/default-query-compiler-2C8slTxe.js             44.92 kB │ gzip:   7.91 kB
+dist/subscription_splitter/assets/dist-BsFroIdu.js                              218.25 kB │ gzip:  39.54 kB
+dist/subscription_splitter/assets/compiled-query-CTMHavmA.js                    235.66 kB │ gzip:  39.26 kB
+dist/subscription_splitter/assets/factory-CWV6QwZY.js                           268.20 kB │ gzip:  59.83 kB
+dist/subscription_splitter/index.js                                             869.09 kB │ gzip: 206.76 kB
+
+✓ built in 92ms
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 54 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                                               0.03 kB
+dist/client/index.html                                                  0.53 kB │ gzip:  0.31 kB
+dist/client/assets/ibm-plex-sans-latin-ext-400-normal-C5H60-Va.woff2   15.98 kB
+dist/client/assets/ibm-plex-sans-latin-ext-600-normal-DOrvGEcy.woff2   16.44 kB
+dist/client/assets/ibm-plex-sans-latin-400-normal-CDDApCn2.woff2       22.58 kB
+dist/client/assets/ibm-plex-sans-latin-600-normal-CuJfVYMP.woff2       24.25 kB
+dist/client/assets/index-CLEnPkyw.css                                  16.89 kB │ gzip:  4.09 kB
+dist/client/assets/index-CQZzLfmQ.js                                  276.66 kB │ gzip: 82.70 kB
+
+✓ built in 104ms
+exit=0
+
+### Rows read from the tree rather than from a command's output
+
+$ git diff --stat c842f64 -- tests/integration/auth.test.ts
+  -> empty: the password path is byte-identical to its state at c842f64
+
+$ git diff --stat c842f64 -- .github/workflows/ci.yml
+  -> empty: continuous integration is unchanged and still holds no secret; the
+  plan's second-project fallback was not needed, because mutating `env` reaches the Worker behind
+  `SELF.fetch`.
+
+$ grep -n "10.8.0" tests/integration/accounts.ts
+  17: * `10.8.0.x` google-auth.test.ts. Two files take no prefix because neither
+
 ## Phase 2
 
 The client half: the action row, the Google button, the return-leg mapping and the url cleanup.
