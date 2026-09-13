@@ -48,12 +48,15 @@ earliest month any dependent record uses, checked on the server in one place: th
 participant join month, the earliest price month, the earliest skipped month, the month of the
 earliest payment date and the earliest standing-order first month. The owner's opening range is the
 one exception: when its join month equals the old first month it is moved to the new first month in
-the same atomic write, so it is excluded from the minimum check; if that range has a leave month
-earlier than the new first month the change is refused naming that leave month. A refusal names the
-binding month and the kind of record that pins it, in this order when tied: "a participant is active
-from", "a price is recorded from", "a month is skipped in", "a payment is dated in", "a standing order
-starts in". Wire sentence shape: `start_month cannot be later than 2026-03 because a price is
-recorded from that month`. The client transform of 3.8 renders it as "First month cannot be later
+the same atomic write, so it is excluded from the minimum check. The owner's ranges are editable through
+the participant route, so the shifted set is revalidated before writing with the same range rules
+the participant route applies (ordered, non-overlapping, open range last): if the shifted range would
+end before it starts, or would reach into the owner's next range, the change is refused naming the
+binding month. A refusal names the binding month and the kind of record that pins it, in this order
+when tied: "a participant is active from", "a price is recorded from", "a month is skipped in", "a
+payment is dated in", "a standing order starts in", and for the owner's own ranges "your own first
+active range ends then" or "your own next active range starts then". Wire sentence shape:
+`start_month cannot be later than 2026-03 because a price is recorded from that month`. The client transform of 3.8 renders it as "First month cannot be later
 than 2026-03 because a price is recorded from that month".
 
 **Deletion.** A confirmed deletion removes the subscription and everything reachable from it:
@@ -252,7 +255,15 @@ Server refusal sentences begin with the wire name so 3.8's transform applies: `c
 change while prices, payments or standing orders are recorded`; `start_month cannot be later than
 YYYY-MM because <kind> that month`, with the five kinds listed under Rulings; and, for the owner's
 opening range, `start_month cannot be later than YYYY-MM because your own first active range ends
-then`.
+then` or `start_month cannot be later than YYYY-MM because your own next active range starts then`.
+
+## Rulings on planning questions
+
+1. Owner range shift: the shifted owner range set is revalidated before writing and refused with the
+   two owner-specific kinds above. Accepted as the planner recommended.
+2. First month has no bounds, so the select fallback lists the full default range (about 144
+   options) on both the create and edit forms. Accepted; narrowing would hide the move-earlier case
+   the rulings allow. A native select handles that count, and typing a month name jumps to it.
 
 ## 11. Acceptance checklist (additions)
 
