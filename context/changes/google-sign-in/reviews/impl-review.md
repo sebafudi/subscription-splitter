@@ -326,14 +326,14 @@ decided; one of them, O4, was re-checked against the code rather than accepted f
 | O5 | OBSERVATION | DEFERRED to the archive step | the guard text becomes `grep -n "scope:"` when the change is archived |
 | O6 | OBSERVATION | ACKNOWLEDGED, no change | the deviation is disclosed in both checkpoints and every row cites the commit that satisfies it |
 
-### F1 — fourteen phase 2 Progress rows carried no commit
+### F1: fourteen phase 2 Progress rows carried no commit
 
 Fixed exactly as the finding specifies. `cf3e3de` now follows rows 2.1, 2.3, 2.4, 2.5 and 2.6, and
 `751d4df` follows the nine manual rows 2.7 to 2.15, in the ` — <sha>` separator the convention at
 `plan.md:824` states. Row 2.2 already carried `e6b3dab` and was left alone. All fifty-six Progress
 rows in the change now map to a commit.
 
-### F2 — the "no secret in the tree" guard read wider than what it checked
+### F2: the "no secret in the tree" guard read wider than what it checked
 
 Fixed by narrowing the stated conclusion and adding the two commands that actually clear the secret.
 The `git diff | grep -E "GOOGLE_CLIENT_(ID|SECRET)=.+"` line now says what it proves, that the diff
@@ -349,7 +349,7 @@ Two wider checks were then run in this task and recorded beneath it, with the va
 
 The reviewer's blind spot stands unchanged: neither command scans loose or unreferenced objects.
 
-### F-obs — O4, the boot `Promise.all` and the delta's failed-read rule
+### F-obs: O4, the boot `Promise.all` and the delta's failed-read rule
 
 Re-read rather than accepted. The delta rule at `design-delta.md:92` is "if that read fails, treat
 Google as not configured". The code already satisfies it, at the source rather than at the call
