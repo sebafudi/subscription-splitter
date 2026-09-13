@@ -1,7 +1,7 @@
 ---
 change_id: google-sign-in
 title: Add Google sign-in alongside the existing password login
-status: plan_reviewed
+status: implemented
 ---
 
 ## Notes
@@ -25,5 +25,18 @@ its tests. It changes no domain rule, no ownership check and no stored subscript
 
 The plan review (`reviews/plan-review.md`) is resolved. All six required findings and all four
 observations were applied across `plan.md`, `plan-brief.md`, `research.md` and `design-delta.md`, and
-each is mapped to its commit in that file's `## Resolution` section. `status` stays `plan_reviewed`,
-which is where the schema leaves a change whose plan review is closed and whose phase 1 has not begun.
+each is mapped to its commit in that file's `## Resolution` section.
+
+All four phases have landed and every Progress row in `plan.md` is ticked with the commit that
+satisfies it, so `status` is now `implemented`. Phase 1 at `43f41f2`, phase 2 at `cf3e3de` and
+`e6b3dab`, the designer's amendment to design-spec 3.3 at `a1f9977` and its application at `7a3a3ce`,
+the phase 3 gate runs at `461b950`, and the phase 4 acceptance pass and its sixteen captures at
+`9ce597a`. `design-delta.md` now carries a "## 3.3 Buttons (amended)" section: every button variant
+reserves a 1px border in every state, transparent where 3.3 shows none, so a state change never moves
+a neighbour.
+
+One thing this change deliberately does not claim. The live Google consent roundtrip on the deployed
+origin is goal G05, not a row here: it needs `GOOGLE_CLIENT_ID` on the deployed Worker followed by a
+deploy, and the consent audience stays External in Testing, so no artifact in this change says that
+public Google login works. Everything local is verified, including the state a deployment without
+credentials is in, which is what continuous integration runs.

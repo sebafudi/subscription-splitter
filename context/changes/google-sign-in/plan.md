@@ -895,19 +895,19 @@ function and the browser pass.
 
 #### Automated
 
-- [ ] 4.1 Typecheck, the whole suite and the build all pass, with and without Google values set
-- [ ] 4.2 Every stability guard still holds
+- [x] 4.1 Typecheck, the whole suite and the build all pass, with and without Google values set — 461b950 (the phase 3 gate runs are that pair, and they ran on the tree that already carried the border fix; no code changed in phase 4)
+- [x] 4.2 Every stability guard still holds — 9ce597a (all eight read against `c842f64` and recorded in the Phase 4 section of `evidence/runs/google-sign-in-manual-rows.md`)
 
 #### Manual
 
-- [ ] 4.3 Login idle with the Google button at 1280 and 390, in light and in dark, matching the delta
-- [ ] 4.4 Login idle without the Google button at both widths in both themes, identical to the shipped screen
-- [ ] 4.5 The mark is unmodified in both themes, including while the button is disabled
-- [ ] 4.6 The quiet variant meets the design-spec 2.1 contrast requirement in both themes, measured
-- [ ] 4.7 Tab order and the 2.4 focus ring hold, Space and Enter both activate, Escape does nothing
-- [ ] 4.8 The busy state disables both fields and both buttons and keeps the label
-- [ ] 4.9 Each return outcome renders in the right tone and position, takes focus, and leaves a clean URL
-- [ ] 4.10 Nothing animates with reduced motion on or off
-- [ ] 4.11 The action row holds one line at 1280 and stacks at 390 with no horizontal scroll
-- [ ] 4.12 The captures the delta's amended checklist names are written under `evidence/screenshots/`
-- [ ] 4.13 An HTTP error from the social call shows the did-not-finish alert and a request that never reaches the server shows the connection sentence
+- [x] 4.3 Login idle with the Google button at 1280 and 390, in light and in dark, matching the delta — 9ce597a
+- [x] 4.4 Login idle without the Google button at both widths in both themes, identical to the shipped screen — 9ce597a (produced by removing the two names from the local environment, so the server answers false and 404 rather than the client being fed a false. Identical but for the primary's reserved 1px border, which is the 3.3 amendment and holds on every screen)
+- [x] 4.5 The mark is unmodified in both themes, including while the button is disabled — 9ce597a
+- [x] 4.6 The quiet variant meets the design-spec 2.1 contrast requirement in both themes, measured — 9ce597a (text on `--ground` 14.59:1 light and 15.57:1 dark; border on `--ground` 3.29:1 light and 4.19:1 dark; disabled text the same pair as the border)
+- [x] 4.7 Tab order and the 2.4 focus ring hold, Space and Enter both activate, Escape does nothing — 9ce597a
+- [x] 4.8 The busy state disables both fields and both buttons and keeps the label — 9ce597a (and the row no longer reflows: the Google button holds x 567.78px in rest and busy alike, per `7a3a3ce`)
+- [x] 4.9 Each return outcome renders in the right tone and position, takes focus, and leaves a clean URL — 9ce597a
+- [x] 4.10 Nothing animates with reduced motion on or off — 9ce597a (repeated in a Chrome launched with `--force-prefers-reduced-motion`)
+- [x] 4.11 The action row holds one line at 1280 and stacks at 390 with no horizontal scroll — 9ce597a
+- [x] 4.12 The captures the delta's amended checklist names are written under `evidence/screenshots/` — 9ce597a (sixteen, `google-sign-in-accept-01` through `-08` in light and dark)
+- [x] 4.13 An HTTP error from the social call shows the did-not-finish alert and a request that never reaches the server shows the connection sentence — 9ce597a (404, 500 and 401 each take the did-not-finish sentence)
