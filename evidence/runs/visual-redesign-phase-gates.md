@@ -62,3 +62,42 @@ Measured during the same session rather than captured:
   No positive `tabindex` exists and focus leaves the page after the last control, so nothing traps.
 - At 390 the block is 358px inside the 16px page padding, the button fills it, every control is
   44px and the page does not scroll horizontally.
+
+## Phase 3: Home
+
+| Capture | What it shows |
+| --- | --- |
+| `phase-3-home-light-desktop.png` | Home populated at 1280 in light: the h1 with its count, the primary in the heading row, and two ledger rows each closed by a hairline with the currency and month in the figure column |
+| `phase-3-home-panel-light-desktop.png` | the New subscription panel open under the heading, the button gone from the heading row, Currency and Locale paired, every other field spanning, and focus on Name |
+| `phase-3-home-panel-dark-desktop.png` | the same in dark |
+| `phase-3-home-success-light-desktop.png` | after a create: the status line first and the primary second in the heading row, focus back on the primary |
+| `phase-3-home-empty-light-desktop.png` | Home empty: one sentence in the list position, no rules, the primary the only call to action |
+| `phase-3-home-load-error-light-desktop.png` | a failed list load in the permanent section alert under the heading row, carrying the quiet Try again |
+| `phase-3-home-light-mobile.png` | Home at 390: heading, status line and primary on three left-aligned lines, the figure column under the primary line |
+
+Measured during the same session rather than captured:
+
+- Escape and Cancel both close the panel, empty the Name field and put focus back on the New
+  subscription button as it remounts; the closed panel computes `inert` and `data-open="false"`.
+  Focus never reached the document body on any close path.
+- A create closed the panel, appended the row, put "Subscription created" in the status line and gave
+  the new row the `entry-highlight` animation at 1.2s with a 0.2s delay. Nothing is highlighted on a
+  first render of the list.
+- A refused create marked only the offending control `aria-invalid="true"`, rendered one sentence
+  under it and moved focus to that control. See design question D8 for the sentence itself.
+- The list is a `ul` of three `li`, each holding exactly one native `button`; no `role="button"`
+  exists anywhere under `src/client/`.
+- Above 640px the panel grid computes `303px 303px` with Currency and Locale sharing a row; at 390 it
+  computes one column, the two stack, every control in the panel is at least 44px high and the page
+  does not scroll horizontally.
+- The load failure was forced by refusing `GET /api/subscriptions` in the page, and Try again
+  restored the list and cleared the alert.
+
+Two observations for the designer, neither a design question:
+
+- The month in the figure column renders through the subscription's own `locale`, which design-spec
+  3.12 requires. With the seeded `pl-PL` subscriptions that reads "from lip 2026" rather than the
+  "from Jul 2026" the mockup and the plan's examples show in English. The formatter is right; the
+  examples assume an English locale.
+- Home shows its count while the list is still loading, so it reads "(0)" for the length of the
+  request. Design-spec 4.3 specifies no loading state for Home and the shipped screen had none.

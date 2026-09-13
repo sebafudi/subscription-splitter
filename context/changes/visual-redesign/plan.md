@@ -1326,8 +1326,31 @@ implement the answers rather than the questions.
 | D5 the button and the status line in the heading row | design-spec 3.5 | One flex group, status line first and button second, three stacked lines below 640px, in phases 2, 3, 4 and 5 |
 | D6 section bodies on first load | design-spec 4.4 | Subtitles present, counts blank, action buttons disabled, two skeleton entries per list, in phase 4 |
 
-Nothing further is open. Questions found during implementation are added below under the protocol
-above.
+Questions found during implementation are added below under the protocol above.
+
+**D7, raised in phase 3. Design-spec 4.3: the Home success feedback and the screen it opens.**
+Design-spec 4.3 ends the create flow with "status line 'Subscription created' in the Home heading
+row, then the detail screen opens", and design-spec 3.9 gives that status line four seconds and the
+created row the entry highlight, which design-spec 2.5 runs for 1200ms beginning 200ms after the row
+appears. Opening the detail screen unmounts Home, so neither the sentence nor the highlight can be
+seen, and no interval between the two is specified. Choosing one would be choosing a motion. This
+blocks phase 3 change 2's last clause and Progress row 3.11. Left in place for it: the shipped
+behaviour, in which the created subscription is appended to the list and the screen stays on Home.
+Everything else in that clause is implemented, so the panel closes, the heading row reads
+"Subscription created" and the new row takes the highlight.
+
+**D8, raised in phase 3. Design-spec 3.8: the sentence a field error carries.**
+Design-spec 3.8 fixes the shape of a field error and forbids prefixing it with the wire name, and
+its display map turns the wire name into the field's label. The sentence itself still comes from the
+server, and the shipped server's messages name the wire field inside the sentence: `start_month must
+be in YYYY-MM format with a valid month`, `time_zone must be a valid IANA time zone`,
+`currency must be a three-letter uppercase ISO code` and the same pattern for every other rule in
+`src/server/validation/`. `src/server/` is out of this change's scope, and writing replacement copy
+per rule in the client would be inventing copy. So the label beside the field is correct while the
+wire name survives inside the server's own sentence. This blocks Progress row 3.12, and the same
+condition reaches every refused field in phases 4 and 5. Left in place for it: the server's message
+verbatim, with the client prefix that phase 3 removes gone. The phase 5 gate on `error.field` is
+unaffected, because no wire name is interpolated by the client anywhere.
 
 ## Testing strategy
 
@@ -1443,24 +1466,24 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes across all three projects
-- [ ] 3.2 The whole suite passes with no test file changed
-- [ ] 3.3 The production build succeeds
-- [ ] 3.4 The create payload still sends name, currency, locale, time_zone, start_month and owner_name
-- [ ] 3.5 The list is a ul of li each holding exactly one native button and no role="button" exists
+- [x] 3.1 Typecheck passes across all three projects
+- [x] 3.2 The whole suite passes with no test file changed
+- [x] 3.3 The production build succeeds
+- [x] 3.4 The create payload still sends name, currency, locale, time_zone, start_month and owner_name
+- [x] 3.5 The list is a ul of li each holding exactly one native button and no role="button" exists
 
 #### Manual
 
-- [ ] 3.6 Home populated matches design-spec 4.3 at 1280 in light and in dark
-- [ ] 3.7 Home empty shows only the design-spec 3.11 sentence with no rules
-- [ ] 3.8 New subscription opens the disclosure under the heading with focus on the Name field
-- [ ] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button
-- [ ] 3.10 Currency and Locale pair above 640px and stack below it while other fields span
+- [x] 3.6 Home populated matches design-spec 4.3 at 1280 in light and in dark
+- [x] 3.7 Home empty shows only the design-spec 3.11 sentence with no rules
+- [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field
+- [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button
+- [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span
 - [ ] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
 - [ ] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
-- [ ] 3.13 A load failure shows the section alert under the heading row with a quiet Try again
-- [ ] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll
-- [ ] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open
+- [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again
+- [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll
+- [x] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open
 
 ### Phase 4: The detail summary, the section index, Participants and Price history
 

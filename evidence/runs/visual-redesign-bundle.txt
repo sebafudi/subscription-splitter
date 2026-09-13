@@ -36,3 +36,12 @@ Fonts         79,268 bytes, the same four woff2 files and no other font format
 
 Delta against the baseline: JavaScript 2,499 bytes, CSS 12,134 bytes,
 fonts 79,268 bytes.
+
+## Phase 3
+
+JavaScript   259,276 bytes
+CSS           15,432 bytes
+Fonts         79,268 bytes, the same four woff2 files and no other font format
+
+Delta against the baseline: JavaScript 7,343 bytes, CSS 12,420 bytes,
+fonts 79,268 bytes.
