@@ -4,8 +4,8 @@
 
 Add "Continue with Google" to the shipped login screen through the Better Auth integration that is
 already mounted, keeping password sign-in for the seeded demo and reviewer accounts exactly as it is.
-`context/changes/google-sign-in/design-delta.md` is the design authority for everything the login
-screen shows, and it rules on decision D-013. `context/changes/google-sign-in/research.md` is the
+`context/archive/google-sign-in/design-delta.md` is the design authority for everything the login
+screen shows, and it rules on decision D-013. `context/archive/google-sign-in/research.md` is the
 authority for what the installed `better-auth@1.7.4` does. This plan turns both into four phases an
 implementer can land one at a time.
 
@@ -800,9 +800,9 @@ the database, so no migration is rolled back and no stored value is affected.
 
 ## References
 
-- Design authority: `context/changes/google-sign-in/design-delta.md`
-- Research: `context/changes/google-sign-in/research.md`
-- Framing: `context/changes/google-sign-in/frame.md`
+- Design authority: `context/archive/google-sign-in/design-delta.md`
+- Research: `context/archive/google-sign-in/research.md`
+- Framing: `context/archive/google-sign-in/frame.md`
 - Brief: `context/foundation/google-sign-in-brief.md`
 - Decisions: `context/decisions/D-012-google-oauth-provisioning.md`,
   `context/decisions/D-013-google-account-linking.md`, `context/decisions/D-001-auth-solution.md`,

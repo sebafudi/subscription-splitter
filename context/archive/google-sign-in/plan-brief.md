@@ -1,9 +1,9 @@
 # Google sign-in - plan brief
 
-> Full plan: `context/changes/google-sign-in/plan.md`
-> Design authority: `context/changes/google-sign-in/design-delta.md`
-> Frame: `context/changes/google-sign-in/frame.md`
-> Research: `context/changes/google-sign-in/research.md`
+> Full plan: `context/archive/google-sign-in/plan.md`
+> Design authority: `context/archive/google-sign-in/design-delta.md`
+> Frame: `context/archive/google-sign-in/frame.md`
+> Research: `context/archive/google-sign-in/research.md`
 
 ## What and why
 

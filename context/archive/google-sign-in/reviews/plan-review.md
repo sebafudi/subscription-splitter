@@ -1,12 +1,12 @@
 <!-- PLAN-REVIEW-REPORT -->
 # Plan review: Implementation plan, Google sign-in
 
-- **Plan**: `context/changes/google-sign-in/plan.md`
+- **Plan**: `context/archive/google-sign-in/plan.md`
 - **Mode**: Deep
 - **Repository state**: commit `a6cf39b` on `main`. Nothing of this change is on disk yet. The working
   tree carries four other tasks' uncommitted edits, of which two are load bearing for this review and
   were read but not staged: the designer's HTTP-error paragraph in
-  `context/changes/google-sign-in/design-delta.md`, and the Cloudflare secret tail in
+  `context/archive/google-sign-in/design-delta.md`, and the Cloudflare secret tail in
   `context/checkpoints/g02-oauth-provision.md`.
 - **Verdict**: REVISE
 - **Findings**: 3 critical, 3 warnings, 4 observations

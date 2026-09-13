@@ -1,6 +1,6 @@
 # Designer acceptance: Google sign-in on the login screen
 
-Designer: Fable 5.1. Compared against `context/changes/google-sign-in/design-delta.md` using the
+Designer: Fable 5.1. Compared against `context/archive/google-sign-in/design-delta.md` using the
 Phase 4 captures `evidence/screenshots/google-sign-in-accept-01` to `-08` (light and dark) and the
 computed values in `evidence/runs/google-sign-in-manual-rows.md`, at the implementation closed as
 `implemented` (`4d3fc77`).

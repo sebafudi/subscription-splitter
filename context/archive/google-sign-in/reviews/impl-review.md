@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Implementation Review: Google sign-in alongside the existing password login
 
-- **Plan**: `context/changes/google-sign-in/plan.md`
+- **Plan**: `context/archive/google-sign-in/plan.md`
 - **Scope**: Phases 1 to 4 of 4 (Progress shows 56 of 56 boxes checked)
 - **Commits reviewed**: `cf3e3de`, `e6b3dab`, `43f41f2`, `a1f9977`, `7a3a3ce`, `461b950`,
   `f66a431`, `ec7b3b0`, `9ce597a`, `4d3fc77`, against the pre-change baseline `c842f64`
@@ -145,7 +145,7 @@ neither value was printed. The client secret appears in no tracked file and in n
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Success Criteria
-- **Location**: `context/changes/google-sign-in/plan.md:851-868`
+- **Location**: `context/archive/google-sign-in/plan.md:851-868`
 - **Detail**: The Progress convention the plan states at line 824 is that a row appends the commit sha
   after its title when the step lands. Every row in phases 1, 3 and 4 complies. In phase 2, only row 2.2 carries a commit;
   rows 2.1, 2.3, 2.4, 2.5, 2.6 and the nine manual rows 2.7 to 2.15 are ticked with nothing after
@@ -253,7 +253,7 @@ neither value was printed. The client secret appears in no tracked file and in n
 - **Severity**: 💡 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Success Criteria
-- **Location**: `context/changes/google-sign-in/plan.md:239-252`, Progress row 1.6
+- **Location**: `context/archive/google-sign-in/plan.md:239-252`, Progress row 1.6
 - **Detail**: The guard is `grep -n "scope" src/server/auth.ts` returns nothing. It returns three
   lines: a pre-existing "module scope" in the file's opening comment and two words in the comments
   the change itself added. No `scope` option is set, which is the thing the guard exists to prove,
@@ -317,7 +317,7 @@ decided; one of them, O4, was re-checked against the code rather than accepted f
 
 | Finding | Severity | Decision | Where |
 |---|---|---|---|
-| F1 | WARNING | FIXED | `context/changes/google-sign-in/plan.md`, Progress phase 2 |
+| F1 | WARNING | FIXED | `context/archive/google-sign-in/plan.md`, Progress phase 2 |
 | F2 | WARNING | FIXED | `evidence/runs/google-sign-in-gates.txt`, Stability guards |
 | O1 | OBSERVATION | ACKNOWLEDGED, no change | `dist/` is git-ignored and the behaviour predates the change |
 | O2 | OBSERVATION | ACKNOWLEDGED, no change | `.login-submit` is kept as the test handle the manual rows select on |

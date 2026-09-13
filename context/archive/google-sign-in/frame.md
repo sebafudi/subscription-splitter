@@ -167,7 +167,7 @@ Research deliberately answers none of these. Each one changes what implementers 
 
 ## References
 
-- Research: `context/changes/google-sign-in/research.md`
+- Research: `context/archive/google-sign-in/research.md`
 - Brief: `context/foundation/google-sign-in-brief.md`
 - Proposed decision: `context/decisions/D-013-google-account-linking.md`
 - Login screen: `src/client/screens/Login.tsx`; auth factory: `src/server/auth.ts`

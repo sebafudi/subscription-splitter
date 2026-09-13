@@ -1,7 +1,7 @@
 ---
 change_id: google-sign-in
 title: Add Google sign-in alongside the existing password login
-status: impl_reviewed
+status: archived
 ---
 
 ## Notes
@@ -46,3 +46,25 @@ findings, F1 on the phase 2 Progress commits and F2 on the wording of the secret
 and all six observations are decided in that file's `## Resolution` section. The designer acceptance
 in `reviews/design-acceptance.md` accepts the delta without corrections. `status` is now
 `impl_reviewed`.
+
+## Closing note
+
+Archived. Google sign-in is live. Release 4, `bad3f2816611c00cd691b4ef67f1108d618bed60`, deployed as
+Cloudflare version `1d0f71c1-6832-4bc1-aace-5feef621e715` and recorded in
+`evidence/runs/release-4.md`, carries the one thing the change itself could not: the callback fix
+decided in `context/decisions/D-014-run-worker-first-for-api.md`. Release 3 shipped the change and
+found that a top-level browser navigation to `/api/auth/callback/google` was answered by Cloudflare's
+asset layer before the Worker ran, so the Google return leg could not complete on the deployed
+origin. D-014 sets `"run_worker_first": ["/api/*"]` in `wrangler.jsonc`, and its five automated and
+five manual Progress rows sit under the "Post-review fix" block in `plan.md`.
+
+Goal G05 is closed on release 4. The owner completed a real Google consent roundtrip there and
+reports consent, a new account with an empty Home, a sign-out, and a second sign-in returning to that
+same account. It is recorded as the owner's report, with count-only corroboration from the remote
+database, under "Consent roundtrip" in `evidence/runs/release-4.md`: one `account` row carrying
+`providerId = 'google'`, three users against the two D-005 seeded, no user carrying more than one
+provider, and the demo owner's two subscriptions unchanged. The consent audience stays External in
+Testing with the owner as its only test user, so nothing here claims that public Google login works.
+
+Roadmap S-07 is `done`. Date fields (`created`, `updated`, `archived_at`) are omitted: this
+repository records progress by change ID, migration ID and commit, not by calendar.
