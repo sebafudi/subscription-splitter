@@ -284,6 +284,13 @@ then`; and for the lower bound, `start_month cannot be earlier than YYYY-MM`.
    options) on both the create and edit forms. Accepted; narrowing would hide the move-earlier case
    the rulings allow. A native select handles that count, and typing a month name jumps to it.
 
+## Ruling on an implementation question from phase 1
+
+When the guarded first-month update matches no row and the re-read finds no binding record (a
+doubly lost race that D1's sequential execution makes unreachable in practice), the server answers
+`start_month cannot be later than <stored month>` with no because-clause. Accepted: the sentence is
+truthful and the branch has no fixture, so no extra copy is specified for it.
+
 ## Rulings on plan review design findings
 
 1. The "next active range" refusal kind is withdrawn; see Rulings on product questions.
