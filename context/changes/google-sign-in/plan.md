@@ -828,21 +828,21 @@ function and the browser pass.
 
 #### Automated
 
-- [ ] 1.1 Typecheck passes across all three projects
-- [ ] 1.2 The unit suite passes, including the provider and linking assertions
-- [ ] 1.3 The integration suite passes with no Google value bound anywhere
-- [ ] 1.4 The production build succeeds
-- [ ] 1.5 `/api/auth-config` answers `{"google":false}` unconfigured and `{"google":true}` configured
-- [ ] 1.6 No `scope` option appears in `src/server/auth.ts`
-- [ ] 1.7 Nothing under `src/domain`, `migrations` or `src/client` has changed
-- [ ] 1.8 No credential value appears in the diff and `.dev.vars.example` carries two empty names
-- [ ] 1.9 `createAuth` registers no `google` provider when either value is absent and registers it when both are present
-- [ ] 1.10 The resolved options disable implicit linking and list no trusted provider, configured or not
-- [ ] 1.12 The resolved options carry the app-root error URL, configured or not, so a state failure lands on the login screen
+- [x] 1.1 Typecheck passes across all three projects — 43f41f2
+- [x] 1.2 The unit suite passes, including the provider and linking assertions — 43f41f2
+- [x] 1.3 The integration suite passes with no Google value bound anywhere — 43f41f2
+- [x] 1.4 The production build succeeds — 43f41f2
+- [x] 1.5 `/api/auth-config` answers `{"google":false}` unconfigured and `{"google":true}` configured — 43f41f2
+- [x] 1.6 No `scope` option appears in `src/server/auth.ts` — 43f41f2
+- [x] 1.7 Nothing under `src/domain`, `migrations` or `src/client` has changed — 43f41f2
+- [x] 1.8 No credential value appears in the diff and `.dev.vars.example` carries two empty names — 43f41f2
+- [x] 1.9 `createAuth` registers no `google` provider when either value is absent and registers it when both are present — 43f41f2
+- [x] 1.10 The resolved options disable implicit linking and list no trusted provider, configured or not — 43f41f2
+- [x] 1.12 The resolved options carry the app-root error URL, configured or not, so a state failure lands on the login screen — 43f41f2
 
 #### Manual
 
-- [ ] 1.11 `POST /api/auth/sign-in/social` answers 200 with an `accounts.google.com` url when configured and 404 when not
+- [x] 1.11 `POST /api/auth/sign-in/social` answers 200 with an `accounts.google.com` url when configured and 404 when not — 43f41f2
 
 ### Phase 2: The login screen
 
