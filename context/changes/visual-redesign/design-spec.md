@@ -234,7 +234,7 @@ same section. Errors raised inside a panel stay inside the panel per 3.8.
 Every list on Detail and the Home list uses the ledger entry:
 
 ```
-Primary line at t-entry                                   figure column (tnum, right aligned)
+Primary line at t-entry                                   figure column (t-entry, 600, tnum, right aligned)
 secondary line at t-small ink-soft                        secondary figure at t-small
 [Edit] [Delete]      (link variant at t-small, always visible, never on hover only)
 ──────────────────────────────────────────────────────────  1px rule
@@ -311,7 +311,8 @@ Unified across participant, price, payment and standing order deletion (particip
 the confirmation it lacks today; the API call is unchanged). The entry's action row is replaced in
 place by a confirmation strip: ground `--red-tint`, 3px left rule `--red`, padding `--s-3`,
 radius 4px, containing the question at `--t-body` and two buttons: `[Delete]` (destructive variant)
-and `[Keep]` (quiet). Focus moves to Keep. Escape acts as Keep. On Keep the action row remounts and
+and `[Keep]` (quiet). The strip spans the full width of the entry (the whole ledger row, not
+fit-to-content). Focus moves to Keep. Escape acts as Keep. On Keep the action row remounts and
 focus moves to that entry's Delete button. After a successful delete the row is gone; focus moves to
 the section's `h2` (which carries `tabindex="-1"`) and the status line announces the deletion. Only
 one confirmation may be open per section. Non-blocking: the rest of the page stays usable.
@@ -466,7 +467,10 @@ against a plan total of 210,00 zł. You are on this plan as Organizer.    t-body
   viewport under the app bar (`position: sticky; top: 56px`), ground `--ground`, bottom hairline,
   height 44px. The item whose section is currently at or above the top of the viewport carries
   `aria-current="true"` and a 2px bottom rule `--ink` (an `IntersectionObserver` on headings with a
-  top `rootMargin` of -100px, the height of the bar plus the index, is fine). Below 640px the list scrolls horizontally with `overflow-x: auto`, hidden scrollbar, 8px inline
+  top `rootMargin` of -100px, the height of the bar plus the index, is fine). The `nav` itself keeps
+  an opaque `--ground` background at every width; on mobile the `mask-image` fade is applied to an
+  inner scrolling list element, never to the `nav`, so page content scrolling underneath never shows
+  through the bar's edges. Below 640px the list scrolls horizontally with `overflow-x: auto`, hidden scrollbar, 8px inline
   padding so the first and last items sit clear of the 8px fading edges made with a `mask-image`
   gradient.
 - Loading (first load): the leading figure and each `dd` are static skeleton bars in `--paper`
@@ -549,7 +553,9 @@ Subtitle "Money you saw arrive. Every amount here is recorded, not assumed." Pri
 a payment"; refusal per 3.11 when there are no participants other than the organizer.
 
 Filter: a labelled `select` "Show" (Everyone, then each participant) at the right end of the
-subtitle line, `--t-small` label, 32px high control. Below 640px it sits under the subtitle.
+subtitle line, `--t-small` label, 32px high control above 640px. Below 640px it sits under the
+subtitle and takes the 44px height every select has there (section 8); the 32px is a desktop
+density choice only.
 
 Entries:
 
@@ -733,6 +739,13 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 | 7 standing-order question | 3.10: consequence clause added |
 | 8 payments count under filter | 5.4: N is the rows listed under the current filter |
 | 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
+
+Designer acceptance round (reviews/design-acceptance.md, A1 to A3): 3.6 makes the figure column
+weight 600 explicit; 3.10 makes the strip span the entry width; 4.4 constrains the mobile index fade
+to an inner scroller so the bar's ground stays opaque.
+
+Implementation round, after Phase 6 (plan D11): 5.4 now states the filter select is 32px above
+640px and 44px below it, consistent with section 8.
 
 Implementation round, after Phase 5 (plan D9 and D10, and three copy observations): 5.2 drops the
 Replace and Keep buttons on the price create 409 because no replace route exists; the 409 is the
