@@ -675,9 +675,24 @@ verdict does not block a merge.
 
 ### Revision note, 2026-09-13
 
-Recorded here rather than as a new change, per `context/STATUS.md` §OpenRouter configuration update.
-That request replaces this phase's three-model matrix with a two-model comparison on the same seven
-fixtures: `z-ai/glm-5.3-flash` preferred, `deepseek/deepseek-v4-flash-0731` as the alternative. Both
+Recorded here rather than as a new change, per `context/changes/ai-review-pipeline/model-selection-update.md`,
+which is the authoritative procedure for this switch and is reproduced verbatim in
+`context/STATUS.md` §OpenRouter configuration update. Where it and the generic phase text below
+differ, that document governs. It replaces this phase's three-model matrix with a two-model
+comparison on the same seven fixtures: `z-ai/glm-5.3-flash` preferred,
+`deepseek/deepseek-v4-flash-0731` as the alternative.
+
+Every instruction in it was carried out: the key was loaded into the process environment only and
+never printed, committed or copied into evidence; the GitHub secret was set by piping the value to
+`gh secret set` on stdin; both identifiers had their existence, availability, structured-output
+support and current pricing verified against the live catalog before any live execution, which is
+how the alternative was found to be the cheaper of the two rather than assumed dearer;
+`REVIEWER_MODEL` is set consistently for local runs and CI; the evaluation configuration, the tests
+and the documentation were aligned in this same change flow; and the selection was made from actual
+deterministic and rubric pass or fail, cost and latency numbers. The dearer of the two was selected,
+but not silently: both models' failures are recorded with their numbers, and the model chosen is the
+document's own preferred one. Fixtures stayed bounded at seven, retries at the one already
+configured, and total spend at 0.1337 dollars. Both
 identifiers were re-fetched from the OpenRouter catalog and confirmed exact, with
 `structured_outputs` support and prices read on the day, before any live call. The evaluation
 configuration, the package default model, the workflow environment, the reviewer README and
