@@ -6,4 +6,4 @@
 - **Security constraints:** PR text and diffs are untrusted input. The workflow runs with read-only repository permission plus pull-request write for the comment, bounded diff size, bounded tokens and retries. The reviewer is installed from the PR head with `npm ci --omit=dev --ignore-scripts` and runs against the diff text; PR code is never executed as a build step, and forks receive no secret.
 - **Rejected alternative:** Building a shared skill/agent registry (M5L4). Rejected because the review pipeline exercises the SDK, evaluation and CI skills the course teaches and produces the required screenshots directly.
 - **Affected tests:** `tools/reviewer` unit tests for schema validation and malformed-output handling; promptfoo fixtures as a regression gate.
-- **Commit:** recorded when `tools/reviewer` lands.
+- **Commit:** `727b90f` (package skeleton), `104a32c` (model call and `reviewDiff()`), `8bbabb9` (evaluation harness), `b344f86` (workflow). Model selection settled live in Phase 5 and recorded separately in `D-011-reviewer-model-selection.md`.

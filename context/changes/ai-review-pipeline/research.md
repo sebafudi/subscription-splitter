@@ -92,6 +92,29 @@ All six list both `response_format` and `structured_outputs` in `supported_param
 list `tools`. The two model identifiers named in the course prompt, `z-ai/glm-5.1` and
 `deepseek/deepseek-v4-flash`, are absent from the catalog.
 
+### Catalog re-verification for the Phase 5 candidates, 2026-09-13
+
+`context/STATUS.md` §OpenRouter configuration update names a preferred model and an alternative. Both
+were re-fetched from `https://openrouter.ai/api/v1/models` on the day of the live run (445 models
+returned) and both exist as exact identifiers, so no substitution was needed.
+
+| Model ID | Input | Output | Context | Max output | `structured_outputs` |
+|---|---|---|---|---|---|
+| `z-ai/glm-5.3-flash` | 0.15 | 0.50 | 1,310,720 | 131,072 | yes |
+| `deepseek/deepseek-v4-flash-0731` | 0.04 | 0.08 | 1,310,720 | 943,718 | yes |
+
+The alternative is the cheaper of the two, not the dearer: it is roughly 3.8 times cheaper on input
+and 6.3 times cheaper on output. The earlier note above, that the course-named identifiers were
+absent, described the catalog as it stood when this document was first written; the `z-ai` and
+`deepseek` families have both moved since.
+
+Both candidates are reasoning models, and OpenRouter bills their reasoning tokens against the same
+`maxOutputTokens` budget the object must fit in. Probed on `eval/fixtures/money-rounding-bug.diff`,
+each consumed the whole 2,000 token allowance on reasoning alone, returned `finishReason: "length"`
+with zero text tokens, and surfaced as a `no_object_generated` outcome. At 8,000 tokens both returned
+a valid object first time. This supersedes the inference below that a verdict fits comfortably under
+2,000 output tokens: that holds for a non-reasoning model only.
+
 ### promptfoo, `0.123.0`
 
 - `npm view promptfoo version` returns `0.123.0`.

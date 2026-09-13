@@ -673,6 +673,20 @@ verdict does not block a merge.
 
 ## Phase 5: Live run, model comparison and evidence capture
 
+### Revision note, 2026-09-13
+
+Recorded here rather than as a new change, per `context/STATUS.md` §OpenRouter configuration update.
+That request replaces this phase's three-model matrix with a two-model comparison on the same seven
+fixtures: `z-ai/glm-5.3-flash` preferred, `deepseek/deepseek-v4-flash-0731` as the alternative. Both
+identifiers were re-fetched from the OpenRouter catalog and confirmed exact, with
+`structured_outputs` support and prices read on the day, before any live call. The evaluation
+configuration, the package default model, the workflow environment, the reviewer README and
+`research.md` were aligned to that in the same flow. Two defects the live run exposed were fixed in
+the same flow as well: the output token budget starved both reasoning candidates, and promptfoo's
+`cost` tripwire assertion discarded whole results when OpenRouter omitted `usage.cost`. Both are
+recorded with their measurements in `evidence/champion/eval-results.md`, and the selection itself in
+`context/decisions/D-011-reviewer-model-selection.md`.
+
 ### Overview
 
 The only phase that needs `OPENROUTER_API_KEY`. Run the evaluation matrix, choose the CI model on the
