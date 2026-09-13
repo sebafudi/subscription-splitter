@@ -277,8 +277,9 @@ an operator that the deployed Worker is missing a secret, is out of scope here.
 ### 6. Workers-specific constraints
 
 **Evidence.** `wrangler.jsonc` sets `compatibility_flags: ["nodejs_compat"]` for
-`AsyncLocalStorage`, per D-001, and holds `compatibility_date` at `2026-08-22` because raising it
-breaks the integration pool. Nothing in this change needs a newer date.
+`AsyncLocalStorage`, per D-001, and pins a `compatibility_date` held at the newest value the test
+pool's runtime accepts, because raising it breaks the integration suite. Nothing in this change needs
+a newer one, so that line is not touched.
 
 **Evidence.** The code paths this change adds use `generateRandomString`
 (`node_modules/better-auth/dist/crypto/random.mjs`) for the PKCE verifier and state, `jose` for
