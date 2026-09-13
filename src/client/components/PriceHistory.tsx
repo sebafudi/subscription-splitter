@@ -3,6 +3,7 @@ import { formatMoney } from '../../domain/money'
 import { ApiError, SignedOutError, createPrice, deletePrice, type PriceEntry } from '../api'
 import { formatMonth } from '../format'
 import { PRICE_HISTORY } from './sections'
+import { withoutApiInstruction } from './ui/apiMessages'
 import { ConfirmStrip } from './ui/ConfirmStrip'
 import { DisclosurePanel } from './ui/DisclosurePanel'
 import { Field } from './ui/Field'
@@ -30,20 +31,6 @@ type Props = {
 /** Major units in the field, minor units over the wire; the conversion happens here and nowhere else. */
 function toMinor(value: string): number {
   return Math.round(Number.parseFloat(value) * 100)
-}
-
-/**
- * The server's refusal names the months that would lose their price and then
- * tells an API caller to repeat the request with a flag. That last sentence is
- * developer-facing and carries nothing the organizer can act on, so it is the
- * one thing dropped; every other word is the server's own.
- */
-function withoutApiInstruction(message: string): string {
-  return message
-    .split(/(?<=\.)\s+/)
-    .filter((sentence) => !sentence.includes('confirm=true'))
-    .join(' ')
-    .trim()
 }
 
 /**
