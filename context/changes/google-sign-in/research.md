@@ -425,13 +425,24 @@ being true.
 - `context/checkpoints/g02-oauth-provision.md` verified the auth base path, the default callback
   path, the pinned library version, the three origins and the gcloud account state before this
   research began.
+- `context/decisions/D-012-google-oauth-provisioning.md` landed alongside this research and agrees
+  with it on every overlapping fact: the callback contract `<origin>/api/auth/callback/google`, the
+  same three origins, the scope set `openid`, `email`, `profile`, and the environment names
+  `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. It adds one constraint this research did not reach:
+  the consent screen's audience is External and deliberately kept in Testing, so sign-in is limited
+  to explicitly listed test users and Google's verification is avoided. The live roundtrip therefore
+  needs the authorized account on that test-user list, and no artifact may claim that public Google
+  login works while the audience stays in Testing. D-012 also records that the Web client and the
+  credentials do not exist yet, which is why open question 2 below remains open.
 
 ## Open questions
 
 1. Whether all six migrations are applied to the remote D1 database. Expected yes from D-010;
    confirm rather than assume before the live pass.
 2. Whether the OAuth consent screen's publishing status and test-user list allow the authorized
-   account to complete consent, which is provisioning (G02), not implementation.
+   account to complete consent. D-012 fixes the audience as External in Testing and records that the
+   Web client and credentials are not yet created, so this is provisioning (G02), not
+   implementation, and it gates the live pass.
 3. Whether the "provider present" integration cases run in the existing Vitest project with an
    overridden binding or in a second project. An implementation choice for the plan.
 4. Every design question in `frame.md`. None of them is answered here.

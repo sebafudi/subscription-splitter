@@ -175,4 +175,7 @@ Research deliberately answers none of these. Each one changes what implementers 
 - Prior decisions: `context/decisions/D-001-auth-solution.md`,
   `context/decisions/D-005-account-seeding.md`,
   `context/decisions/D-010-live-demo-data-and-reviewer-access.md`
-- Provisioning facts: `context/checkpoints/g02-oauth-provision.md`
+- Provisioning facts: `context/checkpoints/g02-oauth-provision.md` and
+  `context/decisions/D-012-google-oauth-provisioning.md`, which fixes the callback contract, the
+  three origins, the scope set and the environment names, and keeps the consent audience External in
+  Testing so a live roundtrip needs the authorized account on the test-user list
