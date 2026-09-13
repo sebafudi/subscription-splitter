@@ -202,10 +202,12 @@ button {
   gap: var(--s-2);
 }
 
+/* The 1px border is reserved in every state, transparent where 3.3 shows none, so a state
+   change never moves a neighbouring control. */
 .btn-primary {
   background: var(--ink);
   color: var(--on-ink);
-  border: 0;
+  border: 1px solid transparent;
 }
 
 .btn-primary:hover,
