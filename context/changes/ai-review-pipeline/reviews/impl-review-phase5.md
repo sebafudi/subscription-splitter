@@ -290,12 +290,12 @@ amount of re-reading the write-ups would have shown.
 
 | Finding | Severity | Outcome | Commit |
 |---|---|---|---|
-| F1 | warning | Fixed. Correction written onto the old matrix, which is now `evidence/champion/eval-results-8000-superseded.md` | `4c831bc` |
-| F2 | warning | Fixed by Fix B, the re-run. New authoritative matrix at `evidence/champion/eval-results.md`; `D-011` rewritten | `4c831bc` |
-| F3 | warning | Fixed. Supersession note at the top of `phase-5-runbook.md` | `4c831bc` |
-| F4 | warning | Fixed. Six stale sites swept to 16000, latency range corrected | `4c831bc` |
-| F5 | warning | Fixed. Rows 2.10, 2.11, 3.6, 3.7 and 3.9 closed against existing evidence; `change.md` count corrected | `4c831bc` |
-| F6 | observation | Fixed. One figure with the arithmetic shown | `4c831bc` |
+| F1 | warning | Fixed. Correction written onto the old matrix, which is now `evidence/champion/eval-results-8000-superseded.md` | `ee20cde` |
+| F2 | warning | Fixed by Fix B, the re-run. New authoritative matrix at `evidence/champion/eval-results.md`; `D-011` rewritten | `ee20cde` |
+| F3 | warning | Fixed. Supersession note at the top of `phase-5-runbook.md` | `ee20cde` |
+| F4 | warning | Fixed. Six stale sites swept to 16000, latency range corrected | `ee20cde` |
+| F5 | warning | Fixed. Rows 2.10, 2.11, 3.6, 3.7 and 3.9 closed against existing evidence; `change.md` count corrected | `ee20cde` |
+| F6 | observation | Fixed. One figure with the arithmetic shown | `ee20cde` |
 | F7 | observation | Implemented. `::warning::` annotation on exit code 2 | `d37417e` |
 | F8 | observation | Implemented. `timeout-minutes: 15` on the `review` job | `d37417e` |
 | F9 | observation | Implemented. Five `uses:` pinned to exact patch tags | `d37417e` |
