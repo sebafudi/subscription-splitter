@@ -1546,28 +1546,28 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 5.1 Typecheck passes across all three projects
-- [x] 5.2 The whole suite passes with no test file changed
-- [x] 5.3 The production build succeeds
-- [x] 5.4 scheduleMonthStatuses is called exactly once in src/client and decides every tile state
-- [x] 5.5 The exclusion map is still total over MonthExclusion with no two entries sharing a string
-- [x] 5.6 The payment and schedule payload keys are unchanged
-- [x] 5.7 The payments filter still reaches the server and nothing is filtered in the component
-- [x] 5.18 No wire name can reach a rendered string anywhere under src/client
-- [x] 5.19 The seven exclusion phrase values are byte-identical to main
+- [x] 5.1 Typecheck passes across all three projects — 43e90e4
+- [x] 5.2 The whole suite passes with no test file changed — 43e90e4
+- [x] 5.3 The production build succeeds — 43e90e4
+- [x] 5.4 scheduleMonthStatuses is called exactly once in src/client and decides every tile state — 43e90e4
+- [x] 5.5 The exclusion map is still total over MonthExclusion with no two entries sharing a string — 43e90e4
+- [x] 5.6 The payment and schedule payload keys are unchanged — 43e90e4
+- [x] 5.7 The payments filter still reaches the server and nothing is filtered in the component — 43e90e4
+- [x] 5.18 No wire name can reach a rendered string anywhere under src/client — 43e90e4
+- [x] 5.19 The seven exclusion phrase values are byte-identical to main — 43e90e4
 
 #### Manual
 
-- [x] 5.8 Skipped months matches design-spec 5.3 at 1280 in light and in dark
-- [x] 5.9 Payments received keeps its subtitle, places the Show filter and shows recorded amounts
-- [x] 5.10 Recording, editing and deleting a payment each confirm with their own status sentence
-- [x] 5.11 Both no-participant refusals render as a focusable disabled button with its describedby sentence
-- [x] 5.12 Standing order amounts carry the assumed treatment and never the recorded one
-- [x] 5.13 One standing order shows all three tile states, each identifiable in greyscale
-- [x] 5.14 Each dashed tile carries its own exclusion phrase with no prefix and no two conditions share one
-- [x] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary
-- [x] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss
-- [x] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally
+- [x] 5.8 Skipped months matches design-spec 5.3 at 1280 in light and in dark — 43e90e4
+- [x] 5.9 Payments received keeps its subtitle, places the Show filter and shows recorded amounts — 43e90e4
+- [x] 5.10 Recording, editing and deleting a payment each confirm with their own status sentence — 43e90e4
+- [x] 5.11 Both no-participant refusals render as a focusable disabled button with its describedby sentence — 43e90e4
+- [x] 5.12 Standing order amounts carry the assumed treatment and never the recorded one — 43e90e4
+- [x] 5.13 One standing order shows all three tile states, each identifiable in greyscale — 43e90e4
+- [x] 5.14 Each dashed tile carries its own exclusion phrase with no prefix and no two conditions share one — 43e90e4
+- [x] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary — 43e90e4
+- [x] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss — 43e90e4
+- [x] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally — 43e90e4
 
 ### Phase 6: The responsive, accessibility and acceptance pass
 
