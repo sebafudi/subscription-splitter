@@ -844,7 +844,7 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Manual
 
-- [ ] 1.7 tools/reviewer references nothing under src/ and holds no secret
+- [x] 1.7 tools/reviewer references nothing under src/ and holds no secret - 4db78e8 (no import escapes the package: a grep for `"../../"` or deeper across src, eval, test, package.json and tsconfig.json returns nothing, and the only mentions of the application tree are prose inside the prompt and criteria text plus one fixture string; `tools/reviewer/.env` is matched by the root .gitignore and is untracked, and the only credential-shaped literal is the `sk-or-v1-test` placeholder plus a negative assertion)
 
 ### Phase 2: Prompt, model call and the reusable reviewDiff()
 
@@ -892,7 +892,7 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 - [x] 4.1 Workflow appears in gh workflow list
 - [x] 4.2 Trigger is pull_request and not pull_request_target - b344f86
-- [ ] 4.3 A run on a throwaway pull request reaches the reviewer step
+- [x] 4.3 A run on a throwaway pull request reaches the reviewer step - run 34727750896 (a real pull request rather than a throwaway one, GOALS C07 asks for a real one; the reviewer step ran for 2m 26s and printed pass)
 - [x] 4.4 No run block interpolates the pull request title or body - b344f86
 - [x] 4.5 Permissions are exactly contents read and pull-requests write - b344f86
 - [x] 4.10 The upsert step calls github.paginate - b344f86
@@ -900,27 +900,27 @@ call. The concurrency group means a burst of pushes costs one run, not one per p
 
 #### Manual
 
-- [ ] 4.6 A second push updates the existing comment in place
-- [ ] 4.7 Exactly one verdict label is present after a run
-- [ ] 4.8 The ai-cr:review label re-runs the review and is removed by the run
-- [ ] 4.9 A fork pull request shows the job as skipped
-- [ ] 4.12 The marker is found on a pull request carrying more than one page of comments
-- [ ] 4.13 The fork notice job explains why the review was skipped
-- [ ] 4.14 A deliberately absent repository secret fails the job naming OPENROUTER_API_KEY
+- [ ] 4.6 A second push updates the existing comment in place - not demonstrated: the two pushes before the successful run failed at the install step, so only one run ever reached the upsert and there was never an existing comment to update. The paginated upsert path is unit-covered but has not run twice against a live pull request
+- [x] 4.7 Exactly one verdict label is present after a run - run 34727750896 (`gh pr view 1 --json labels` returns exactly `ai-cr:passed`)
+- [ ] 4.8 The ai-cr:review label re-runs the review and is removed by the run - not demonstrated: the review passed first time, so there was no reason to re-run it on the one pull request that existed
+- [ ] 4.9 A fork pull request shows the job as skipped - not demonstrated: no fork of this repository exists and creating one was outside this run's scope. The complementary case did run, the fork-notice job skipping on a same-repository pull request
+- [ ] 4.12 The marker is found on a pull request carrying more than one page of comments - not demonstrated: the pull request carried one comment. Manufacturing a hundred comments to exercise `github.paginate` was judged not worth the noise on the repository's only pull request
+- [ ] 4.13 The fork notice job explains why the review was skipped - not demonstrated for the same reason as 4.9
+- [ ] 4.14 A deliberately absent repository secret fails the job naming OPENROUTER_API_KEY - not demonstrated: deleting the repository secret to watch the job fail would have been a deliberate break of a working pipeline. The mapping is unit-covered (CLI exit 3 on `missing_credential`) and the workflow step that reads exit code 3 is visible in `.github/workflows/ai-review.yml`
 
 ### Phase 5: Live run, model comparison and evidence capture
 
 #### Automated
 
-- [ ] 5.1 The evaluation writes eval/results.json
-- [ ] 5.2 The evaluation exits 0 for the chosen model
-- [ ] 5.3 The workflow run on a real pull request concludes successfully
-- [ ] 5.4 The pull request carries one review comment and one verdict label
+- [x] 5.1 The evaluation writes eval/results.json - 7b3a7b7, promptfoo eval `eval-4uc-2026-09-12T23:43:00` (the file is a working artefact and is deliberately not committed; `evidence/champion/eval-results.md` is the curated record)
+- [ ] 5.2 The evaluation exits 0 for the chosen model - **not met, and left unchecked rather than explained away.** `promptfoo eval` exited 100. The chosen model passed 5 of the 7 deterministic assertions, not all 7: it missed the criterion-attribution check on `missing-migration.diff` and returned `no_object_generated` on `untested-risk-change.diff`. The alternative also passed 5 of 7. The criterion as written assumes a model that passes every fixture exists among the candidates; neither does. Loosening `eval/asserts/verdict.js` would have turned this green without changing any model behaviour, so it was not done. The full per-fixture result is in `evidence/champion/eval-results.md`
+- [x] 5.3 The workflow run on a real pull request concludes successfully - run 34727750896, pull request 1 (two earlier runs, 34727635662 and 34727724451, failed at the install step; the fix is 4db78e8)
+- [x] 5.4 The pull request carries one review comment and one verdict label - run 34727750896 (`gh pr view 1 --json comments,labels`: one comment bearing the `<!-- ai-code-review -->` marker, one label `ai-cr:passed`)
 
 #### Manual
 
-- [ ] 5.5 OPENROUTER_API_KEY provisioned locally and as a repository secret
-- [ ] 5.6 Three Champion screenshots captured under evidence/champion/
-- [ ] 5.7 Evaluation spend is under the two dollar ceiling
-- [ ] 5.8 The comment's findings are specific to the change
-- [ ] 5.9 STATUS.md no longer lists the credential as a blocker
+- [x] 5.5 OPENROUTER_API_KEY provisioned locally and as a repository secret - `gh secret list -R sebafudi/subscription-splitter` names it; loaded locally into the process environment only, never written into this repository (see `evidence/runs/ai-review-live-call.md`)
+- [x] 5.6 Three Champion screenshots captured under evidence/champion/ - `ai-review-pipeline-run.png`, `ai-review-job-log.png`, `ai-review-pr-comment.png`
+- [x] 5.7 Evaluation spend is under the two dollar ceiling - 0.026870 dollars for the reported matrix, summed from each call's own `usage.cost`; 0.1148 dollars total on the key for the whole phase including the discarded first attempt, the probes and every grading call
+- [x] 5.8 The comment's findings are specific to the change - run 34727750896 (every finding cites a file and line in the diff; three correct observations nobody planted are quoted in `evidence/champion/hosted-review-run.md`)
+- [x] 5.9 STATUS.md no longer lists the credential as a blocker
