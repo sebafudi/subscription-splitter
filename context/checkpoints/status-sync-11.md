@@ -57,3 +57,15 @@ Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, Next exec
 ### Next action
 
 Whoever picks up the Phase 1 review or Phase 4 writes their own checkpoint; the next status sync reads those before touching these files again.
+
+## Third pass: phase 1 server review resolved, Phase 4 landed
+
+- **Status:** complete
+
+Verified against `reviews/phase1-server-review.md` (verdict, severity counts, findings W1/O1-O5, gate figures at `f625f92`), `context/checkpoints/m03-server-review.md`, the resolution commits `688757a`/`3e69d15` (read diffs directly, checked the resolution table and the re-run gate figures), and `context/checkpoints/m02-phase4-header.md` (commits, changed paths, ticked rows 4.1-4.6/4.16, pending manual rows 4.7-4.15/4.17). Confirmed `m05-phase5-browser.md` and `m06-phase6-docs.md` do not exist yet, and found the phase 6 agent's uncommitted edits to `AGENTS.md` and three foundation documents in the shared tree; stashed them only to permit the pull, popped them back untouched.
+
+Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, item 12), `evidence/index.md` (M02/M03/M04 rows), `evidence/work-log.md` (one entry), and `GOALS.md` M02/M03/M04 (still unchecked, worded "server implemented and reviewed; client landed; browser verification and implementation review pending" per instruction).
+
+### Next action
+
+Phase 5 (browser verification) and Phase 6 (foundation docs) are in progress; the next status sync reads their checkpoints before touching these four files again.
