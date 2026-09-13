@@ -480,3 +480,84 @@ The designer is content and ruled that the grouping stands. One sentence is adde
 under the outcomes table, in the designer's own words: the three state codes share one sentence
 deliberately, staleness, replay and tampering all end the same way for the person at the keyboard, start
 again from this page, and the interface does not accuse. No code change and no copy change.
+
+## Re-verification
+
+Performed by an independent task that wrote neither the plan nor the resolutions. Every cited commit
+was read as a diff, every library claim was re-read in the installed `better-auth@1.7.4` rather than
+recalled, and the Progress section was checked row by row against the design delta.
+
+### Findings
+
+| Finding | Verified | Evidence |
+| --- | --- | --- |
+| F1 | yes | `2fe573c` adds `onAPIError: { errorURL: '/' }` to the server phase unconditionally (`plan.md:290`), Progress row 1.12 asserts the resolved options carry it configured or not, and the phase 3 body now says row 3.10 asserts the `Location` is the app root carrying `error=state_mismatch` rather than `${baseURL}/error` (`plan.md:629`). `d73ad99` carries the same correction into `research.md:224-242`, attributed to this finding. The default the fix overrides is confirmed at `callback.mjs:37`, and the root-relative form is safe: `appendQueryParams` keeps a `/` path relative and returns it without an origin (`@better-auth/core/dist/utils/url.mjs:40-49`). |
+| F2 | yes | Fix A taken in `2fe573c`. The plan names the whole mechanism at `plan.md:635-660`: `seedUser`, then `handleOAuthUserInfo` with `{ context: await auth.$context }`, a fabricated `google` account and a `userInfo` carrying the seeded email with `emailVerified: true`, asserting `{ error: 'account not linked', data: null }`. Fix B is written in as an instruction, not a hope: if the context does not satisfy the call, drop the case and row 3.11, do not mock the adapter, and correct the credential dependency table. The underscore transform and the library-versus-route trade-off are both recorded. |
+| F3 | yes | `91fcbce` commits the designer's paragraph unmodified (`design-delta.md:115-118`). `2fe573c` splits the failure in "Busy states" by what `request()` threw (`plan.md:405`), deletes design question 1 and replaces that section with "None open" (`plan.md:810-822`), and adds rows 2.15, 3.16 and 4.13 beside the existing network-blocked rows rather than replacing them. |
+| F4 | yes | The `trustedOrigins` risk row now opens "**Unverified from here.**" and says why: `APP_ORIGINS` is a Cloudflare secret and `wrangler secret list` shows names only (`plan.md:783`). The G05 live gate gains the check ahead of consent: on the deployed origin, confirm the social call answers 200 with an `accounts.google.com` url and not 403 with `INVALID_CALLBACK_URL` (`plan.md:752-756`). |
+| F5 | yes | The credential paragraph is rewritten to the half-provisioned state and names the Boolean AND that makes it safe (`plan.md:185-220`); `69f326d` carries the same into `plan-brief.md`. The binding is decided rather than deferred: `wrangler secret put` for the client id, with the `vitest.integration.config.ts` `configPath` argument, the mechanical diff guard and the matched-pair rotation argument all stated, and the public-id counter-argument stated honestly against them. |
+| F6 | yes | `GOOGLE_CONNECTION_FAILURE` is introduced in `googleErrors.ts`, the plan states the module does not import `CONNECTION_FAILURE` (`plan.md:547`), and both sentences are quoted side by side in a two-row table at the point of the edit (`plan.md:412-419`). Progress row 3.16 pins both in full. |
+| F7 | yes | The plan records that the library writes the key even though the client never reads it, that the replace drops the whole query rather than the `error` key, and that it runs on mount whenever either key is present, including for unrecognised codes and for an `error_description` arriving alone (`plan.md:357-363`). Row 2.13's title already covers the query rather than one key, and titles are immutable once reviewed. |
+| F8 | yes, as a stated choice | The Overview records that the accepted S-06 specification is deliberately not edited, that the archive carries it as accepted, and that `design-delta.md` is the standing amendment for sections 4.1, 9 and 11 (`plan.md:17-23`). |
+| F9 | yes | "The configuration endpoint" states the body is exactly `{ "google": boolean }` and nothing else, and that the route is deliberately unauthenticated and unthrottled because it is read before a session exists and sits outside the `/api/auth/*` catch-all the library's limiter covers, with nil exposure (`plan.md:264-273`). |
+| F10 | yes | `91fcbce` adds the designer's own sentence under the outcomes table: the three state codes share one sentence deliberately, and the interface does not accuse (`design-delta.md:108-110`). No code or copy change, which is what the finding asked for. |
+
+### The installed package, re-read
+
+Three claims the plan depends on were checked against `node_modules`, not memory.
+
+- `onAPIError.errorURL` exists as an option and is documented as the redirect target on error, with
+  the default the plan overrides (`@better-auth/core/dist/types/init-options.d.mts:1430-1450`), and
+  `callback.mjs:37` reads exactly `c.context.options.onAPIError?.errorURL || ${baseURL}/error`.
+- `handleOAuthUserInfo` is exported from the `better-auth/oauth2` entry point
+  (`dist/oauth2/index.mjs:5`) and its signature is `(c, opts)`
+  (`dist/oauth2/link-account.mjs:12`), where the plan's `{ context: await auth.$context }` is the
+  `c`. The refusal branch reads only `c.context.internalAdapter`, `c.context.options`,
+  `c.context.trustedProviders` and `c.context.logger`, which is what makes the narrowed blind spot
+  credible.
+- The refusal's return shape is `{ error: "account not linked", data: null }`
+  (`link-account.mjs:79-85`), matching the plan's assertion exactly, and the branch is entered when
+  `accountLinking?.disableImplicitLinking === true`, which is the option the plan sets.
+
+### Progress coverage against the delta
+
+Every delta requirement carries a row. The button present and absent: 2.7, 2.14, 4.3, 4.4. Busy
+states: 2.10, 4.8. The five sentences the delta introduces, the four outcomes plus the Google
+connection sentence: 2.12, 3.2, 3.16, 4.9, 4.13. The URL cleanup dropping both `error` and
+`error_description`: 2.13, with 2.5 guarding the client never reading the second key. The
+configuration endpoint's exact `{ google: boolean }` shape: 1.5. `disableImplicitLinking` with no
+trusted provider: 1.10. `onAPIError`: 1.12, with 3.10 asserting where a state failure lands.
+Secretless continuous integration: 1.3, 3.4 and 3.14. `tests/integration/auth.test.ts` unchanged:
+3.5, plus the standing stability guard. Rows 1.12 and 3.16 sit after the manual rows in their phase
+numbering because titles are immutable once a plan is reviewed and new rows append; that is the
+convention working, not a defect.
+
+### The `GOOGLE_CLIENT_ID` binding, checked for consistency
+
+Consistent across all three. `plan.md:212-220` decides `wrangler secret put` and gives three reasons.
+`plan-brief.md` carries the same decision in its decisions table and its risks. `D-012` records the
+client id in full as public and leaves the binding "pending the implementation goal's choice of
+`vars` vs `secret`", which this plan is that goal answering; the plan says explicitly it does not
+edit D-012 and that the line is completed in place when G02 closes. No contradiction, and no
+credential value appears in any of the three.
+
+### Two things left open, neither blocking
+
+- `design-delta.md:4` still names the specification at `context/changes/visual-redesign/`. It is one
+  path in a file this task is not permitted to touch, and the Overview already records that
+  pre-archive artifacts name the old path for the same file.
+- `frame.md`'s framing table cites the login block at `design-spec.md:366-382`; in the archived file
+  the sentence it quotes is at line 386, the spec having grown through S-06 design questions D9 to
+  D11 after the frame was written. The section reference, 4.1, and the quoted sentence both still
+  hold, so the evidence stands; only the line range drifted. Left as written rather than silently
+  restated, since it is a historical framing artifact.
+
+### Verdict
+
+**SOUND.** All six required findings are closed at the commits they cite, and the closures are
+substantive rather than acknowledgements: F1 changes the server options and both the plan and the
+research, F2 names an executable mechanism and an honest fallback, F3 absorbs a design ruling into
+three Progress rows. The four observations are resolved too, F8 as a stated choice rather than an
+edit, which is the right call. Every library claim the resolutions rest on survives re-reading in the
+installed package. The plan is approved to implement; `change.md` keeps `status: plan_reviewed`,
+which the schema's own sequence puts between `planned` and `implementing`.
