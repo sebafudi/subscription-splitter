@@ -97,3 +97,19 @@ total                               79,268
 No .woff, .ttf, .eot or .otf file exists anywhere under dist/client; the count of non-woff2 font
 files is zero. package.json dependencies differ from the baseline by @fontsource/ibm-plex-sans and
 nothing else.
+
+## After the designer's answer to D11
+
+JavaScript   273,424 bytes   unchanged
+CSS           16,604 bytes   plus 56 bytes for the filter select's below-640px height
+Fonts         79,268 bytes   the same four woff2 files and no other font format
+
+Delta against the baseline: JavaScript 21,491 bytes, CSS 13,592 bytes.
+
+## After the designer's acceptance corrections A1 to A3
+
+JavaScript   273,424 bytes   unchanged
+CSS           16,703 bytes   plus 99 bytes for the three corrections
+Fonts         79,268 bytes   the same four woff2 files and no other font format
+
+Delta against the baseline: JavaScript 21,491 bytes, CSS 13,691 bytes.

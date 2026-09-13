@@ -63,4 +63,26 @@ to retake.
 
 ## Resolution
 
-To be appended by the implementer with commit SHAs per correction, then re-checked by the designer.
+All three required corrections are implemented in `src/client/index.css`, browser-checked at 1280
+and 390 in light and dark, and the affected captures are retaken. No appearance was changed beyond
+what A1 to A3 ask for. SHA for all three: recorded below once the commit lands.
+
+| Correction | What changed | Measured after the change | Captures retaken |
+| --- | --- | --- | --- |
+| A1 balance weight | `.entry-figure` now sets `font-weight: var(--t-entry-weight)`; a following rule returns `var(--t-small-weight)` to any figure column carrying `--t-small`, so only the entry-scale figure moves | every participant balance computes 600 at 17px, in both subscriptions, including "settled"; the six small figure columns (Home's currency and month, the two price months, the two payment dates, the two standing order ranges) still compute 400 at 13px | 09, 13, 14, 15, 16, 17, 18, 19 at 1280 and 09, 13, 14 at 390, both themes |
+| A2 strip width | `.entry-confirm` is now `display: block`, so the strip is a block-level flex container instead of a shrink-to-fit flex child | strip 672px against an entry of 672px, on the participant delete and on the price delete's second step; focus still lands on Keep and Escape still returns to that entry's Delete | 19 and 20 at 1280, both themes |
+| A3 mobile index fade | the `overflow-x` and the `mask-image` moved from the `nav` to its inner `ul`; the `nav` keeps its opaque `--ground`; `.section-index li` takes `flex: none` so items do not shrink | the nav computes `mask-image: none` over `rgb(238, 242, 234)`; the list scrolls 640px against a 358px viewport; the "Unskip" fragment that bled through the bar in the previous capture is gone | 22 at 390, both themes, and 09, 13, 14, 21 at 390 because they also show the index |
+
+On the non-required observation about the first item's left edge: after A3 the 8px inline padding is
+on the scrolling list, so the first and last items clear the fade. Verified in capture 22 mobile,
+where "Price history" sits clear of the left edge.
+
+The second observation, server validation sentences without a trailing full stop, is agreed as the
+server's copy and out of this change's scope; `src/server/` is untouched by the whole change.
+
+Gates after the corrections: `npm run typecheck` clean across all three projects, 185 unit tests in
+15 files and 112 integration tests in 11 files passing with no test file changed, and the production
+build succeeding at 273,424 bytes of JavaScript, 16,703 bytes of CSS and 79,268 bytes across four
+woff2 files with no other font format.
+
+Re-check by the designer is requested.

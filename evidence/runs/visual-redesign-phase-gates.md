@@ -300,14 +300,57 @@ Measured during the pass rather than captured:
   panels open at once. The section index scrolls sideways inside itself, which is what design-spec 8
   asks for, and the page does not.
 - At 390 every primary, quiet and destructive button and every input computes at least 44px, and the
-  link-variant buttons compute 24px, which design-spec 8 exempts by name. One control does not meet
-  44px and is not exempt: the Payments received filter `select` computes 32px, because
+  link-variant buttons compute 24px, which design-spec 8 exempts by name. One control did not meet
+  44px when the pass first ran: the Payments received filter `select` computed 32px, because
   `.filter-label select { height: 32px }` outranks the breakpoint's `input, select { height: 44px }`.
-  That is design question D11 below rather than a fix, because design-spec 5.4 states 32px and
-  design-spec 8 states 44px and the two cannot both be satisfied. The appearance is left as built.
+  That was raised as design question D11 rather than fixed, because design-spec 5.4 stated 32px and
+  design-spec 8 stated 44px and the two could not both be satisfied. The designer answered by
+  rewriting 5.4: 32px is a desktop density choice above 640px and the control takes 44px below it.
+  Implemented as a second `@media (max-width: 640px)` block beside the 32px rule rather than inside
+  the existing breakpoint block, because at equal specificity the later rule would otherwise win on
+  source order. Measured after the change: 32px at 1280, still at the right end of the subtitle line
+  in a `--border` box, and 44px at 390, where it sits under the subtitle. With all five add panels
+  open at 390, no non-link control among the 55 visible is under 44px and `scrollWidth - clientWidth`
+  is still 0.
 - No console error or warning was logged during the whole phase 6 session.
 
 The captures were taken against the two seeded subscriptions with three throwaway participants and
 one moved standing order, all of them reverted; `visual-redesign-keyboard.md` records exactly what
 was created, what was forced in the client because no product route can fail on demand, and the
 verification that the local database ended the session in the state it started in.
+
+## Designer acceptance and its three corrections
+
+The designer reviewed the capture set against design-spec 11 and recorded the result in
+`context/changes/visual-redesign/reviews/design-acceptance.md`: accepted, with three required
+corrections. All three are implemented, browser-checked at both widths in both themes, and the
+affected captures retaken.
+
+- **A1, spec 3.6 and 5.1, participant balance weight.** The entry figure column set the entry
+  scale's size and leading but not its weight, so the balance inherited 400 where `--t-entry` is
+  600. `.entry-figure` now sets `font-weight: var(--t-entry-weight)`, and a following rule returns
+  the small scale's own weight to any figure column carrying `--t-small`, so Home's currency and
+  month line, the price history months, the payment dates and the standing order ranges all stay
+  400 at 13px. Measured after the change: every participant balance, "owes 40,00 zl", "ahead
+  16,67 zl" and "settled", computes 600 at 17px, and all six small figure columns still compute 400
+  at 13px.
+- **A2, spec 3.10, confirmation strip width.** The strip was a flex child of the entry's action row,
+  so it shrank to its question. `.entry-confirm` is now `display: block`, which makes the strip a
+  block-level flex container. Measured after the change: the strip is 672px against an entry of
+  672px, on both the participant delete and the price delete's second step, with focus still landing
+  on Keep.
+- **A3, spec 4.4, mobile index fade.** The `mask-image` was on the `nav`, so the sticky bar's own
+  ground went transparent at both edges and the page content scrolling underneath showed through.
+  The scrolling and the mask now belong to the inner `ul`, the `nav` keeps its opaque `--ground`,
+  and the index items take `flex: none` so they do not shrink to fit. Measured after the change: the
+  nav computes `mask-image: none` over `rgb(238, 242, 234)`, the list scrolls sideways at 640px
+  against a 358px viewport, and the bleed-through visible in the previous capture 22 mobile is gone.
+
+Captures retaken against the answered design: 09, 12, 13, 14, 15, 16, 17, 18, 19 and 20 at 1280 in
+both themes, and 09, 13, 14, 21 and 22 at 390 in both themes. Rows 01 to 08, 10, 11, 21 and 22 at
+1280 were left as they were, because none of them shows a participant balance, a confirmation strip
+or the mobile index. The set is still sixty-two files at a 2x device pixel ratio.
+
+The three throwaway participants and the one moved standing order needed for the retakes were
+created and reverted again; the local database was verified through the API afterwards and holds
+exactly what it held before.

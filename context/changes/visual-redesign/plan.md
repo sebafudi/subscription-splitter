@@ -1416,8 +1416,8 @@ Verified in a browser: in the payment panel From and Date received now share a t
 and Kind, and in the participant panel a refused From keeps its input level with To while the error
 runs on under it alone.
 
-**D11, raised in phase 6. Design-spec 5.4 and 8: how tall the Payments received filter select is
-below 640px.** Design-spec 5.4 fixes the filter as "a labelled `select` 'Show' (Everyone, then each
+**D11, raised in phase 6, RESOLVED. Design-spec 5.4 and 8: how tall the Payments received filter
+select is below 640px.** Design-spec 5.4 fixes the filter as "a labelled `select` 'Show' (Everyone, then each
 participant) at the right end of the subtitle line, `--t-small` label, 32px high control", and its
 next sentence says only that below 640px the control sits under the subtitle, without restating a
 height. Design-spec 8 fixes the other end: at or below 640px the page has "44px controls (primary,
@@ -1434,6 +1434,17 @@ the specification's own section 5.4 states, so the appearance is the one that sh
 nothing was improvised. Deciding between 32px everywhere and 44px below the breakpoint is a target-size
 decision for the designer, not a mechanical code choice.
 
+*Designer's answer, folded into design-spec 5.4.* The 32px is a desktop density choice only: above
+640px the filter stays 32px at the right end of the subtitle line, and below 640px it sits under the
+subtitle and takes the 44px height every select has there, per section 8. Section 12 records the
+resolution. Implemented in `src/client/index.css` as a second `@media (max-width: 640px)` block
+placed beside the 32px rule rather than inside the existing breakpoint block, because the two
+selectors have equal specificity and the later one would otherwise win on source order. Verified in a
+browser: 32px at 1280 in a `--border` box at the right end of the subtitle line, 44px at 390 under
+the subtitle, and with all five add panels open at 390 no non-link control among the 55 visible is
+under 44px while the page still does not scroll horizontally. Progress row 6.13 closes with this
+change.
+
 ### Designer hand-off, phase 6
 
 Phase 6 change 5 asks the implementer to state that the acceptance material exists and is readable,
@@ -1448,12 +1459,14 @@ and then to request the designer's review against design-spec 11. It exists and 
 | The guards record | `evidence/runs/visual-redesign-guards.txt` | All eleven Stability guards rows re-checked in one pass, each with its result |
 | The phase record | `evidence/runs/visual-redesign-phase-gates.md` | The phase 6 section, in the same form as phases 1 to 5 |
 
-**The designer's review against design-spec 11 is requested.** One checkpoint is open and is the
-implementer's only finding: D11 above, the height of the Payments received filter select below 640px,
-where design-spec 5.4 and design-spec 8 ask for different numbers. Nothing else in the pass diverged
-from the specification, no token value was changed, and no appearance was altered in response to
-anything found. Progress row 6.13 is left unticked for D11 and row 6.14 is left unticked until the
-designer answers, which is what phase 6's implementation note requires.
+**The designer's review against design-spec 11 is requested.** The pass raised one checkpoint, D11
+above, the height of the Payments received filter select below 640px, where design-spec 5.4 and
+design-spec 8 asked for different numbers. The designer answered it by rewriting 5.4, the answer is
+implemented, and the four mobile captures that show the filter, rows 09 and 22 in both themes, were
+retaken against the answered design. Nothing else in the pass diverged from the specification, no
+token value was changed, and no appearance was altered except in response to that answer. No
+checkpoint is open. Progress row 6.14 stays unticked until the designer's review of the capture set
+itself lands, which is what phase 6's implementation note requires.
 
 ## Testing strategy
 
@@ -1667,5 +1680,5 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes — fac48ee
 - [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border — fac48ee
 - [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5 — fac48ee
-- [ ] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
+- [x] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings

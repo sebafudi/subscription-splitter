@@ -617,11 +617,16 @@ label {
   font-variant-numeric: tabular-nums;
   font-size: var(--t-entry-size);
   line-height: var(--t-entry-leading);
+  font-weight: var(--t-entry-weight);
 }
 
+/* A figure column carrying --t-small keeps that scale's own weight; only the
+   entry-scale figure, the balance, is 600. */
+.entry-figure.t-small,
 .entry-figure-secondary {
   font-size: var(--t-small-size);
   line-height: var(--t-small-leading);
+  font-weight: var(--t-small-weight);
 }
 
 .entry-secondary {
@@ -635,6 +640,12 @@ label {
   flex-wrap: wrap;
   gap: var(--s-3);
   margin-top: var(--s-1);
+}
+
+/* The confirmation strip spans the whole entry rather than shrinking to its
+   question, so it reads as the row's own state and not as one more control. */
+.entry-confirm {
+  display: block;
 }
 
 .entry-button {
@@ -859,6 +870,7 @@ label {
 
 .section-index li {
   display: flex;
+  flex: none;
 }
 
 .section-index button {
@@ -940,8 +952,18 @@ main section {
   white-space: nowrap;
 }
 
+/* 32px is a desktop density choice; below the breakpoint the filter takes the
+   44px every select has there. The override sits beside the rule it outranks
+   rather than in the breakpoint block, which this rule would otherwise beat on
+   source order at equal specificity. */
 .filter-label select {
   height: 32px;
+}
+
+@media (max-width: 640px) {
+  .filter-label select {
+    height: 44px;
+  }
 }
 
 .section-refusal {
@@ -1136,8 +1158,12 @@ main section {
     gap: var(--s-4);
   }
 
-  /* The index scrolls sideways below 640px, its edges faded rather than cut. */
-  .section-index {
+  /* The index scrolls sideways below 640px, its edges faded rather than cut. The
+     scrolling and the fade belong to the list, not to the nav: masking the nav
+     would make its own ground transparent at both edges and let the page content
+     passing underneath show through the sticky bar. */
+  .section-index ul {
+    padding-inline: var(--s-2);
     overflow-x: auto;
     scrollbar-width: none;
     mask-image: linear-gradient(
@@ -1149,13 +1175,8 @@ main section {
     );
   }
 
-  .section-index::-webkit-scrollbar {
+  .section-index ul::-webkit-scrollbar {
     display: none;
-  }
-
-  .section-index ul {
-    padding-inline: var(--s-2);
-    width: max-content;
   }
 
   .subtitle-line {
