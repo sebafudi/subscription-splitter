@@ -3,7 +3,8 @@
 - Task id: `status-sync-5`
 - Model: Opus
 - Status: complete
-- HEAD before this task's commit: `866ae3a`
+- HEAD when this task started reading: `866ae3a`. Three S-07 commits landed while it wrote
+  (`751d4df`, `d55921e`, `a1f9977`), so this task's commit sits on `a1f9977`.
 
 ## Summary
 
