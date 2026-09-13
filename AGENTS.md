@@ -5,10 +5,11 @@ and reports what each owes. TypeScript throughout: a Hono API and a React client
 Worker over D1. Four ledger slices shipped the product behaviour: sessions over two seeded accounts,
 subscriptions, participants with inclusive active ranges, effective-dated prices, break months,
 payments, standing orders with per-month exceptions, and the summary that derives every balance from
-them. The roadmap ledger `F-01` through `S-07` is archived under `context/archive/`, `S-07`
-`google-sign-in` having added Google sign-in beside the password login. `S-08`
-`subscription-management-and-date-inputs` is the active change: editing and deleting the subscription
-itself, and native browser calendar controls in place of the plain-text month and date fields.
+them. The roadmap ledger `F-01` through `S-08` is archived under `context/archive/`, `S-07`
+`google-sign-in` having added Google sign-in beside the password login and `S-08`
+`subscription-management-and-date-inputs` having added editing and deleting the subscription itself
+and native browser calendar controls in place of the plain-text month and date fields. No roadmap
+item is open.
 
 ## Hard rules
 
