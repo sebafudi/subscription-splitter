@@ -1222,10 +1222,10 @@ exercised on data that matters.
 #### Automated
 
 - [ ] 6.1 Typecheck, the whole suite and the production build all still pass
-- [ ] 6.2 No file under `src/`, `tests/` or `migrations/` changed in this phase
-- [ ] 6.3 No calendar date, timestamp, deadline or duration estimate appears in any edited file
+- [x] 6.2 No file under `src/`, `tests/` or `migrations/` changed in this phase — 890a50a
+- [x] 6.3 No calendar date, timestamp, deadline or duration estimate appears in any edited file — 890a50a
 
 #### Manual
 
-- [ ] 6.4 Every document reads as a description of the shipped product
-- [ ] 6.5 The `AGENTS.md` carve-out states the rule and its boundary in one sentence each
+- [x] 6.4 Every document reads as a description of the shipped product — 890a50a
+- [x] 6.5 The `AGENTS.md` carve-out states the rule and its boundary in one sentence each — 890a50a
