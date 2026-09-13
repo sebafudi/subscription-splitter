@@ -22,3 +22,8 @@ appearance. Opus and Sonnet implement.
 Hard constraint: the shipped accounting, ownership and persistence behaviour is untouched. This
 change adds an authentication provider, one public configuration read, a login-screen affordance and
 its tests. It changes no domain rule, no ownership check and no stored subscription value.
+
+The plan review (`reviews/plan-review.md`) is resolved. All six required findings and all four
+observations were applied across `plan.md`, `plan-brief.md`, `research.md` and `design-delta.md`, and
+each is mapped to its commit in that file's `## Resolution` section. `status` stays `plan_reviewed`,
+which is where the schema leaves a change whose plan review is closed and whose phase 1 has not begun.
