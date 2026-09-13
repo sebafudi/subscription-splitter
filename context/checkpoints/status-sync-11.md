@@ -95,3 +95,17 @@ Checked M02, M03, M04 and M05 in `GOALS.md` with full evidence trails (commits, 
 ### Next action
 
 Whoever runs release 5 writes `context/checkpoints/release-5.md`; the next status sync reads it before checking M06.
+
+## Sixth pass: release 5 recorded
+
+- **Status:** complete
+
+Verified against `context/checkpoints/release-5.md` (`cf928cf`), `evidence/runs/release-5.md` and `evidence/runs/release-5-live-smoke.txt` directly: release SHA, Cloudflare version, ancestry gates, fresh-clone gate figures, hosted CI run, the 22-of-22 live smoke result and its five named checks, and the two non-defect notes all read from the files rather than trusted from the handoff. Confirmed the five affected certification captures (`release-03`, `-04`, `-05`, `-06`, `-08`) match the checkpoint's own list.
+
+Searched `GOALS.md` for lines explicitly calling release 4 the final release: only B13 does ("The final release for this package is **release 4**"); B08, B12 and D05 reference an older release (`c842f64`, release 2) as "final" and do not mention release 4, so were left untouched per instruction. Updated B13 to release 5's values with a note that the submission documents and five captures are not yet refilled/retaken.
+
+Updated `context/STATUS.md` (Deployment section: release 4 retitled history, a new release 5 entry added; Current SHA; Active change/phase; Checks; item 12), `evidence/index.md` (M06 row), `evidence/work-log.md`, and `GOALS.md` (M06 checked with the deploy/live-verify evidence and the pending-work note; B13 updated).
+
+### Next action
+
+Whoever retakes the five affected captures and refills the submission documents, and whoever archives the change and flips roadmap S-08 to `done`, should each write their own checkpoint; the next status sync reads those before touching these files again.
