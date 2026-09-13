@@ -142,7 +142,7 @@ rather than the record:
   - Confidence: HIGH — both offsets are computed from custom properties read at one site.
   - Blind spot: Not re-measured in a browser; the conclusion is read from the code and corroborated
     by two captures and the implementer's own note.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F2 — Progress row 3.11's ticked title contradicts the shipped behaviour
 
@@ -159,7 +159,7 @@ rather than the record:
 - **Fix**: Append a parenthetical to the row pointing at the amendment, for example
   `(judged against design-spec 4.3: the screen stays on Home)`, which records the truth without
   rewriting the step.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F3 — Phases 1 to 5 record no output for their automated gates
 
@@ -174,7 +174,7 @@ rather than the record:
   numbers match exactly. The backing for phases 1 to 5 is a commit SHA rather than a recorded run.
 - **Fix**: For future changes, append each phase's gate output to the run file as the phase closes,
   as phase 6 did.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F4 — Roughly nineteen manual rows rest on the implementer's own prose
 
@@ -190,7 +190,7 @@ rather than the record:
   measurements it reports were independently confirmed here by reading the stylesheet.
 - **Fix**: Where a measurement is load-bearing, record the computed value it came from, as the
   reduced-motion table at `visual-redesign-keyboard.md:67-74` does.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F5 — Two miscounts in the evidence record
 
@@ -203,7 +203,7 @@ rather than the record:
   780 by 1688 "except the two full-column captures of row 09"; four files deviate, both desktop and
   both mobile row-09 captures. The substance is right in both cases and only the counts are wrong.
 - **Fix**: Correct "eleven" to "ten" in both places and "two" to "four" in the capture note.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F6 — `withoutApiInstruction` depends on the server punctuating its refusal
 
@@ -219,7 +219,7 @@ rather than the record:
   coupling to note rather than a defect to fix here.
 - **Fix**: Fall back to the untransformed message when the filter would leave nothing, so the strip
   degrades to the server's own words rather than to none.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F7 — Two design answers ratified code that had already shipped
 
@@ -238,7 +238,7 @@ rather than the record:
   answer first in `7485476`, then code in `f642b89`.
 - **Fix**: None required. For future design-gated work, raise the checkpoint before building the
   candidate rather than alongside it.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ## Notes on what this review did not cover
 
@@ -268,3 +268,85 @@ rather than the record:
   verified from what was assumed, and then reasons about whether any specific capture is invalidated
   and names where the one at-risk capture was actually taken. Its central claim was corroborated
   here from `redesign-09-detail-populated-light.png`, whose figures are self-consistent in frame.
+
+## Resolution
+
+Author's response. All seven findings are resolved: F1 and F6 in code, the rest in the record. Each
+was re-checked against the code or the file it names before being acted on, and the two behavioural
+claims were re-measured in a browser rather than reasoned about.
+
+| Finding | Severity | Outcome | Commit |
+|---|---|---|---|
+| F1 | warning | Fixed. The index reads the heading's own `scroll-margin-top` and tracks the line one pixel below it; design-spec 4.4 fixes that line at 117px | `da99573` |
+| F2 | warning | Fixed. Progress row 3.11 keeps its title and gains the parenthetical naming design-spec 4.3 as the standard it is judged against | `5c02639` |
+| F3 | observation | Fixed. `evidence/runs/visual-redesign-gates.txt` records every automated gate verbatim with its exit code, referenced from Progress | `5c02639` |
+| F4 | observation | Fixed. `evidence/runs/visual-redesign-manual-rows.md` re-measures nineteen manual rows in a browser and records the computed value behind each | `5c02639` |
+| F5 | observation | Fixed. "eleven" corrected to "ten" in both places, "two" to "four" in the capture note | `5c02639` |
+| F6 | observation | Fixed. The transform falls back to the server's own words when the filter would leave nothing, with four unit cases | `3d94766` |
+| F7 | observation | Recorded. The plan's design-question protocol now carries what this change learned about raising a checkpoint before building the candidate | `5c02639` |
+
+**F1.** The fix is not the one the finding proposes, and the difference matters. The finding asks for
+the root margin to be derived from `--scroll-offset`; an unregistered custom property computes to its
+unresolved `calc()` text, so parsing it would have produced `NaN`. The observer now reads
+`getComputedStyle(heading).scrollMarginTop`, the landing offset itself, which is one step closer to
+the truth than either custom property: whatever the stylesheet derives that offset from, the line the
+observer watches is the line a click lands on. The single pixel above it is what the designer's
+amendment to design-spec 4.4 fixes at 117px, so a heading that has just been scrolled into place
+counts as reached rather than missed.
+
+Verified in a real browser at 1280 and at 375, in light and dark, with a keyboard activation and
+again under `--force-prefers-reduced-motion`. Every heading a click can reach lands between 116.0px
+and 116.4px and its own index item takes `aria-current`; the numbers, the method and the four new
+captures are in `evidence/runs/visual-redesign-index-current-item.md`. One consequence is worth
+stating plainly: when the document has already scrolled to its end, a last section whose heading sits
+below the line is not marked, and the section above it stays current. That is what the rule
+prescribes, it is visible at 1280 and not at 375, and it is not a defect the offset can fix.
+
+The accepted captures `redesign-22-index-current-item-light.png` and its mobile pair still show the
+superseded behaviour. They are left untouched, because the acceptance set records what the designer
+reviewed; the four `impl-review-f1-*` captures record the behaviour that now ships.
+
+**F2.** The row keeps its title, as `plan.md` requires, and now reads "... and opens Detail (judged
+against design-spec 4.3 as amended in `02b213e`: the screen stays on Home and the new row is itself
+the button that opens Detail)". The spec is the standard here, not the title: 4.3 was amended by the
+designer after the row was written, and the shipped behaviour follows the amendment. Re-measured in a
+browser for this resolution: the panel collapses to `grid-template-rows: 0px` and goes `inert`, the
+status line reads "Subscription created", the new row runs `entry-highlight` for 1200ms after a 200ms
+delay, focus returns to the heading-row button and the `h1` still reads "Your subscriptions".
+
+**F3.** The gate file records typecheck, the unit suite, the integration suite and the production
+build as they ran in one pass, each with its command and exit code. It is a re-run at the resolution
+revision, not a reconstruction of the phase runs, and it says so: the phase runs were not recorded
+and cannot be recovered. This repository has no lint script and no end-to-end suite, so those four
+are every automated gate there is.
+
+**F4.** Nineteen rows were re-walked in a browser with real key events where the row is about the
+keyboard. The softest claims are now numbers: forty-five consecutive Tab stops each computing
+`2px solid rgb(31, 111, 74)` at `2px` offset with no stop on `document.body`; two same-origin woff2
+requests on Login and zero third-party ones; `document.getAnimations().length` of 0 on load in both
+motion modes; the Currency and Locale pair at one shared `top` at 1280 and at one shared `left` at
+375; a refused create pointing one field's `aria-describedby` at one sentence carrying the mapped
+label; ledger values unchanged and zero skeletons 150ms into a refetch; focus on a `tabIndex` of -1
+`h2` after a completed delete; three distinct payment sentences; three tile states with three
+distinct phrases; one tile changed by a toggle with the assumed total falling by exactly one month's
+amount; and two forced failures each landing in one section's own alert and clearing on Dismiss.
+
+**F5.** Both counts corrected, and both were only counts: the guards table has ten rows and ten were
+re-checked, and the four row-09 captures that run the height of the page are both desktop and both
+mobile, at 2560 by 3330 and 780 by 4198.
+
+**F6.** The transform moved out of `PriceHistory.tsx` into `src/client/components/ui/apiMessages.ts`
+so it can be tested without a DOM, which is what the unit runner collects. It keeps the narrow
+sentence filter and adds the fallback the finding asks for: when the filter would leave nothing, the
+organizer reads the server's own words, instruction included, rather than a bare " Delete anyway?".
+Four cases pin it: the two-sentence refusal loses only the instruction, a refusal without one is
+untouched, a single unpunctuated sentence survives whole, and a message whose every sentence carries
+the instruction survives whole. The unit suite moves from 185 tests in 15 files to 189 in 16.
+
+**F7.** No code changed, which is what the finding asks. The plan's design-question protocol now
+carries a short paragraph naming D7 and D9 as answers that ratified built code, the commit order that
+shows it, what still held (every answer commit touches only the spec, every implementing commit only
+source), and the practice to carry forward.
+
+**Nothing was rejected or deferred.** The verdict's two required corrections are in, and all five
+observations are resolved rather than noted. Re-review is a separate pass and not this author's.
