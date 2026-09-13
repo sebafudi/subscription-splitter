@@ -42,8 +42,11 @@ three domain calls are untouched, and the designer accepts the result from captu
 | --- | --- | --- | --- |
 | Information architecture | One page with a sticky section index, no router | A router would be a functional change outside this change's scope | Design spec 4.4 |
 | Visual language | Ledger paper: green ground, ink text, hairline rules, red only for owed money | Borrows the object people used for this job before software | Design spec 1 |
-| Typeface | Self-hosted IBM Plex Sans through `@fontsource/ibm-plex-sans@5.3.0`, weights 400 and 600, latin and latin-ext | The mockup's Google Fonts load is convenience only; latin-ext carries `zl` | Design spec 2.2, Plan |
-| Money display | One leading figure plus a three cell ledger line; recorded is ink, assumed is pencil | Principle 1 of the design, and the recorded-versus-assumed split is shipped accounting | Design spec 3.12, 4.4 |
+| Typeface | Self-hosted IBM Plex Sans through `@fontsource/ibm-plex-sans@5.3.0`, weights 400 and 600, latin and latin-ext, declared as four hand-written `@font-face` blocks | The package's CSS entry points would ship a woff fallback beside each woff2, doubling the payload to 154,380 bytes against a 160 KB budget | Design spec 2.2, Plan |
+| Money display | One leading figure plus a four cell ledger line; recorded is ink, assumed is pencil | Principle 1 of the design, and the recorded-versus-assumed split is shipped accounting | Design spec 3.12, 4.4 |
+| Participants heading | No count; "Active participants" stays a ledger cell with the API value | The API count includes the organizer, who is never a row, so a heading count could not agree with the list | Design spec 4.4, 5.1 |
+| Control boundaries | A second token, `--border`, separate from the hairline `--rule` | A 1px `--rule` box reaches 1.5:1 and fails non-text contrast on a screen whose whole model is filling in fields | Design spec 2.1 |
+| Focus | Every close path has a named destination, down to the section `h2` after a delete | Otherwise Keep and a completed delete drop focus to the body, in a column roughly 4200px tall | Design spec 3.7, 3.10, 7 |
 | Validation | One convention: a sentence under its own field, with a per-form wire-name display map | Two conventions coexist today and two forms leak wire names | Design spec 3.8 |
 | Destructive confirmation | One in-place strip across all four flows, non-blocking, focus on Keep | Participant delete gains the confirmation it lacks; the other three converge | Design spec 3.10 |
 | Phase gate | A browser check, not a test run | A green suite proves nothing for a client-only change | Frame |
@@ -85,9 +88,9 @@ are regression guards on the contract underneath the markup, not evidence of app
 | 1. Tokens, typeface and app bar | Both themes as custom properties, self-hosted Plex, button and input styling, focus, reduced motion, glyph, favicon, app bar | The stylesheet is replaced wholesale, so a missed base rule is invisible until a later phase renders over it |
 | 2. Shared layer on Login | Section opening, ledger entry, disclosure panel, field and its error, status line, confirmation strip, money treatments, month formatter, all proven on Login and session loading | Parts Login does not exercise are only inspected at their first use in phase 3 |
 | 3. Home | The list as ledger rows, the create form as a disclosure, the first status line and entry highlight | First contact with the wire-name display maps, which is where a leaked field name would show |
-| 4. Detail top, index, Participants, Price history | Leading figure and three cell line replacing five cards, sticky section index, participant form moved inside its section, the two-step price delete, the Archive toggle | The participant form changes ownership, and the price delete runs two steps inside one strip against a server-driven refusal |
+| 4. Detail top, index, Participants, Price history | Leading figure and four cell line replacing five cards, sticky section index at a 116px offset, participant form moved inside its section, the two-step price delete, the Archive toggle | The participant form changes ownership, and the price delete runs two steps inside one strip against a server-driven refusal |
 | 5. Skipped months, Payments, Standing orders | The three remaining sections and the three tile states | Assumed money must never render in the recorded treatment, and the tile state must keep coming from one domain call |
-| 6. Responsive, accessibility and acceptance | Full pass at both widths in both themes with motion on and off, contrast and bundle recorded, eighteen captures for the designer | Findings here are design questions rather than fixes whenever they would change a specified appearance |
+| 6. Responsive, accessibility and acceptance | Full pass at both widths in both themes with motion on and off, text and non-text contrast and the bundle recorded, sixty-two captures for the designer | Findings here are design questions rather than fixes whenever they would change a specified appearance |
 
 **Prerequisites:** none beyond what is on main. S-04 is done, the app is deployed and certified, and
 the design specification and its mockups are committed. No phase waits on anything outside this
@@ -97,10 +100,12 @@ change.
 
 ## Open risks and assumptions
 
-- **The six specification gaps found during planning are closed.** Design questions D1 to D6 were
-  answered by the designer and folded into design-spec 3.2, 3.5, 3.6, 4.4, 5.1 and 5.2, and the phases
-  implement the answers. The protocol that produced them stays in the plan for anything implementation
-  turns up: record it, stop that item, continue the rest, never improvise.
+- **The specification gaps are closed twice over.** Design questions D1 to D6 from planning, and the
+  nine design findings the independent plan review raised, were all answered by the designer and folded
+  into the specification, which records both sets in design-spec 12. The eleven engineering findings
+  F1 to F11 are resolved in the plan and recorded in `reviews/plan-review.md` under `## Resolution`.
+  The checkpoint protocol stays in the plan for anything implementation turns up: record it, stop that
+  item, continue the rest, never improvise.
 - **The suite cannot fail on appearance.** Every phase depends on a human walking its manual rows in a
   browser. A phase reported complete on its automated rows alone is not complete.
 - **Two states cannot be produced locally through the product**: the detail screen's 409 no-owner
@@ -111,7 +116,14 @@ change.
   specification's 160 KB budget, measured from the package; the shipped total is measured from the
   build.
 - **Assumes `@fontsource/ibm-plex-sans@5.3.0` stays available at that exact version.** If it does not,
-  the version is a plan-level correction and the four entry points and the budget are unchanged.
+  the version is a plan-level correction and the four faces and the budget are unchanged. The four
+  `@font-face` blocks are hand-written against the package's published `./files/*.woff2` export, so a
+  version bump needs a glance at the package's aggregate CSS for the `unicode-range` values.
+- **The shipped client already derives four figures** that design-spec 5.5 and the forms require on
+  screen: the assumed total and elapsed-month counts at `RecurringSection.tsx:111-112` and the
+  major-to-minor conversions in three forms. They are preserved verbatim. The boundary this change
+  holds is that no component starts deriving a share, a balance, an owed amount or an active count it
+  does not derive today.
 
 ## Success criteria
 

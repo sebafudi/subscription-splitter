@@ -29,10 +29,13 @@ currently a sibling of `MemberList` rather than a child of the Participants sect
 disclosure model in design-spec 3.7 requires the add and edit forms to move inside the section they
 belong to. Every other section already owns its own form.
 
-Feedback is inconsistent in exactly the way design-spec 3.8 unifies. `SubscriptionForm.tsx:82` and
-`MemberForm.tsx:108` render `` `${field}: ${message}` ``, which is why a user sees `effective_from`
-and `start_month`; `PaymentForm.tsx:101` and `ScheduleForm.tsx:103` place the message under its own
-field. No component renders any success state.
+Feedback is inconsistent in exactly the way design-spec 3.8 unifies. Four forms render
+`` `${error.field}: ${error.message}` `` and so show a raw wire name to the user:
+`SubscriptionForm.tsx:82`, `MemberForm.tsx:108`, `PriceHistory.tsx:130` and `BreakMonths.tsx:73`.
+Two place the message under its own field instead, `PaymentForm.tsx:101` and `ScheduleForm.tsx:103`.
+The four leaking forms are converted across three phases: the subscription form in phase 3, the
+participant form and the price form in phase 4, the skipped-month form in phase 5, so the gate that
+proves no wire name is left belongs to phase 5. No component renders any success state.
 
 Price deletion is the one destructive flow driven by the server rather than the client: the first
 attempt is sent unconfirmed, the server answers 409 with the months that would lose their price, and
@@ -52,20 +55,31 @@ zero tests, which is why every phase below carries a browser check as its gate.
 - **A green suite proves nothing.** `npm test` and `npm run typecheck` pass on a client that renders
   a blank page. The automated rows in each phase guard the contract underneath the markup; the manual
   rows are the only thing that can fail on appearance.
-- **`@fontsource/ibm-plex-sans` at `5.3.0`** ships `latin-400.css`, `latin-600.css`,
-  `latin-ext-400.css` and `latin-ext-600.css` as the four entry points design-spec 2.2 names, each
-  already declaring `font-display: swap`. The four upright woff2 files they reference total 79,268
-  bytes (22,588 + 24,252 + 15,980 + 16,448), which is under half the 160 KB budget. The exact figure
-  is still measured from the built output in phase 6, because Vite decides what ships.
+- **`@fontsource/ibm-plex-sans` at `5.3.0` must not be imported through its CSS entry points.** Each
+  of `latin-400.css`, `latin-600.css`, `latin-ext-400.css` and `latin-ext-600.css` declares a
+  two-format `src`, woff2 followed by a woff fallback, and Vite emits every `url()` it finds in
+  imported CSS. Importing the four would ship eight files: 79,268 bytes of woff2 plus 75,112 bytes of
+  woff, 154,380 bytes in total against design-spec 2.2's 160 KB budget, about 4 percent of headroom
+  for 75 KB no browser in scope needs. The package's `exports` map publishes `./files/*.woff2`
+  explicitly, so phase 1 declares the four `@font-face` blocks in `src/client/index.css` by hand and
+  ships exactly the four woff2 files at 79,268 bytes (22,588 + 24,252 + 15,980 + 16,448). The per
+  subset CSS files carry no `unicode-range`; only the package's aggregate `index.css` does, so the two
+  latin and two latin-ext ranges are copied from there, otherwise the latin-ext faces load on every
+  page rather than only where `zł` appears. The shipped total is still measured from the build,
+  because Vite decides what is emitted.
 - **The three domain calls stay.** `formatMoney` (`src/domain/money.ts:19`) is called by five client
   files, `scheduleMonthStatuses` once at `RecurringSection.tsx:104`, and the `MemberMonthInputs`
   shape is assembled at `SubscriptionDetail.tsx:152`. Design-spec 3.12 keeps money coming from
   `formatMoney`; the new month and date display formatter is `Intl.DateTimeFormat` over a `YYYY-MM`
   string and touches no amount.
-- **The Participants heading count is the server's number.** Design-spec 5.1 asks for
-  "Participants (N active)". The only count of active participants that is not a client derivation is
-  `summary.currentActiveCount`, which the current screen already renders as a card. Every other
-  heading count is an array length, which is a row count and not an accounting figure.
+- **The Participants heading carries no count, and "Active participants" stays a cell.**
+  `summary.currentActiveCount` is `activeMembersInMonth(state, current).length` (`src/domain/calc.ts:108`)
+  over `state.members` with no owner exclusion (`src/domain/members.ts:14-16`), so it counts the
+  organizer. `summary.members`, the array `MemberList` renders, is built from `nonOwnerMembers`
+  (`src/domain/calc.ts:88-103`), so the organizer is never a row. The two can never agree, which is why
+  design-spec 4.4 keeps the figure as the fourth cell of the ledger line, labelled as today, and
+  design-spec 5.1 gives the Participants heading no count at all. Every heading count that does appear
+  is the number of rows that list is rendering, which is presentation and not an accounting figure.
 - **No Content Security Policy exists**, so inline SVG for the wordmark glyph and a `background-image`
   data URI for the select chevron are both available. `src/server/index.ts:27` sets no response header
   and nothing in `src/` does either.
@@ -97,9 +111,16 @@ The designer accepts the result against design-spec 11 from captured evidence.
 - **No component library, no icon set, no animation library, no CSS framework and no preprocessor.**
   The only dependency this plan adds is the font package. Everything else is plain CSS over custom
   properties and native elements.
-- **No client-side arithmetic.** No card, badge, tile or heading computes a share, a balance, a
-  counted month or an active count. Comparing a figure the API already returned against zero, to
-  choose a colour, is allowed and is the only comparison design-spec 4.4 asks for.
+- **No new client-side derivation of money.** No component starts deriving a share, a balance, an
+  owed amount or an active count. The boundary is about new arithmetic, not about all arithmetic, and
+  the specification's opening paragraph says so: five pieces of shipped client code do compute, four of
+  them are what design-spec 5.5 and the forms require on screen, and all of them are preserved
+  verbatim. They are: the assumed total and the elapsed-month counts at `RecurringSection.tsx:111-112`,
+  the major-to-minor conversions at `PriceHistory.tsx:16`, `PaymentForm.tsx:24` and
+  `ScheduleForm.tsx:21`, and the inverse that fills an edit field at `PaymentForm.tsx:28` and
+  `ScheduleForm.tsx:25`. Reading a wire amount as zero or not zero, whether for a colour (design-spec
+  4.4) or for the "settled" wording and the settled-archived filter (`MemberList.tsx:29-30`,
+  design-spec 3.12 and 5.1), is presentation, as is counting the rows a list is rendering.
 - **No replacement of a native element by a styled div.** `button`, `select`, `input`, `textarea`,
   `fieldset` and `label` stay native, which is what keeps the keyboard behaviour that no test covers.
 - **No change to any Zod schema, any route, any repository or anything under `src/domain/` or
@@ -136,15 +157,15 @@ These hold at the end of every phase, not only at the end. They come from `frame
 
 | Guard | Check |
 | --- | --- |
-| Wire field names unchanged | `grep -rn "member_id\|effective_from\|start_month\|end_month\|joined_month\|left_month\|active_ranges\|time_zone\|owner_name\|owner_share" src/client/api.ts` shows the same keys the schemas name |
+| Wire field names unchanged | Every name `frame.md` lists still appears in `src/client/api.ts`: `member_id`, `date`, `amount`, `note`, `kind`, `effective_from`, `start_month`, `end_month`, `joined_month`, `left_month`, `active_ranges`, `time_zone`, `owner_name`, `currency`, `locale`, `name`. Capture the per-name match counts from `main` before phase 1 into `evidence/runs/visual-redesign-guards.txt` and require the same counts at every phase end; a changed count is a finding, not a pass |
 | Routes unchanged | `git diff --stat src/server/ src/domain/ migrations/` is empty for the whole change |
 | Money formatting stays in the domain | `grep -rn "NumberFormat" src/client/` returns nothing; `formatMoney` is the only producer of a money string |
 | Month status stays in the domain | `scheduleMonthStatuses` is called exactly once in `src/client/` and is the only thing that decides a tile state |
 | `MemberMonthInputs` assembly unchanged | the `monthInputs` object keeps its `settings` and `breakMonths` shape and is still built from the subscription and the break-month list |
-| No client-side arithmetic | no component sums, divides or rounds an amount; the only numeric operation on a money value is a comparison against zero for colour |
+| No new client-side derivation | no component derives a share, a balance, an owed amount or an active count that it does not derive today. The six shipped exceptions stay verbatim: `RecurringSection.tsx:111-112`, `PriceHistory.tsx:16`, `PaymentForm.tsx:24` and `:28`, `ScheduleForm.tsx:21` and `:25`. Zero comparisons on a wire amount and counts of rendered rows are presentation, per design-spec's opening constraint paragraph |
 | Native elements kept | `grep -rn 'role="button"\|role="checkbox"\|role="listbox"' src/client/` returns nothing |
 | No router | `grep -n "router" package.json` returns nothing and `src/client/App.tsx` still holds one `useState` for the selection |
-| Seven exclusion phrases stay distinct and total | the `Record<MonthExclusion, string>` in `RecurringSection.tsx` still has one entry per union member and no two entries share a string |
+| Seven exclusion phrases stay distinct and total | the `Record<MonthExclusion, string>` at `RecurringSection.tsx:42-50` still has one entry per union member, no two entries share a string, and every value is byte-identical to `main` |
 | Suite unchanged and green | `npm test` and `npm run typecheck` pass with no test file added, removed or edited |
 
 ## Critical implementation details
@@ -162,11 +183,36 @@ participant delete, a failed archive or unarchive, a failed unskip, a failed til
 list load. Both stay mounted and empty when idle. An implementation that routes an out-of-panel
 failure into the panel alert, or that mounts either on demand, is wrong on both counts.
 
-**Focus moves in four places and nowhere else.** On opening a disclosure panel, to the first field;
-on Cancel or Escape, back to the button that opened it; on a failed submit, to the first invalid
-field or else to the alert line; on opening a confirmation strip, to Keep. Design-spec 7 forbids any
-focus trap and any positive `tabindex`. Nothing else in the product moves focus today, and adding a
-fifth movement would be a design change.
+**Focus never reaches the document body.** Design-spec 7 fixes every destination and 3.7 and 3.10
+carry the detail. The rule is that focus returns to the control that opened a panel or a strip
+whenever either closes, by any route, and to the section's `h2` when that control no longer exists.
+Concretely:
+
+| Event | Focus lands on |
+| --- | --- |
+| A disclosure panel opens | its first field |
+| Cancel or Escape on a panel | the heading-row button, as it remounts |
+| A panel closes on success | that same heading-row button |
+| A submit fails | the first invalid field, or the panel alert when there is none |
+| A confirmation strip opens | Keep |
+| Keep or Escape on a strip | that entry's Delete button, as the action row remounts |
+| A delete succeeds | the section's `h2`, which carries `tabindex="-1"` |
+
+Every section `h2` therefore carries `tabindex="-1"` and no focus ring treatment beyond the standard
+outline. Without the last two rows, pressing Keep or completing a delete unmounts the focused button
+and drops focus to `<body>`, which loses a keyboard user's place in a column roughly 4200px tall at
+390. No focus trap and no positive `tabindex` anywhere.
+
+**The Escape-and-native-select case needs no code.** Design-spec 3.7 removed the earlier special
+case: a native select consumes Escape itself while its list is open, so the key never reaches the
+panel's handler. The requirement is satisfied by handling Escape normally and building no detection
+for an open select popup, which the browser exposes no way to observe.
+
+**The sticky stack obscures 100px and two offsets follow from it.** The app bar holds 56px at `top:
+0` and the section index 44px at `top: 56px`. Design-spec 4.4 therefore sets `scroll-margin-top` on
+every section heading to 116px, the two heights plus `--s-4`, and gives the `IntersectionObserver` a
+top `rootMargin` of -100px so `aria-current` changes when a heading crosses the visible top rather
+than the viewport top. Express both as one custom property so they cannot drift apart.
 
 **The status line element is permanent.** Design-spec 3.9 requires the `role="status"` element to
 stay mounted and be empty when idle, because a `role="status"` node inserted at the moment it gains
@@ -178,6 +224,17 @@ of unknown height and is not what the specification asks for.
 
 **Nothing animates on load.** Design-spec principle 5 and 2.5 both say it. The entry highlight starts
 200ms after a row appears in response to an action, never on first render of a list.
+
+**The no-participant refusal means no non-owner participant.** `PaymentForm.tsx:32` and
+`ScheduleForm.tsx:29` already hold `members.filter((member) => !member.isOwner)`, which is the
+condition design-spec 3.11 and 5.4 need. A refusal keyed on "no members" would never fire, because the
+organizer is always a member.
+
+**`tsconfig.app.json` sets `noUnusedLocals` and `noUnusedParameters`.** A shared component built in
+phase 2 with a prop that phases 3 to 5 have not adopted yet fails `npm run typecheck` at the end of
+phase 2, not at the end of phase 5. So phase 2 ships only what Login and session loading consume plus
+what phase 3 adopts immediately, and a part with no consumer yet is declared in the phase that first
+uses it.
 
 ## Phase 1: Tokens, typeface, base elements and the app bar
 
@@ -202,17 +259,22 @@ which the mockup does only for convenience.
 **Contract**: `@fontsource/ibm-plex-sans` as a dependency at the exact version `5.3.0`, with no range
 prefix, matching the exact-pinning rule in `AGENTS.md`. The lockfile is committed with it.
 
-#### 2. The font imports
+#### 2. The four font faces
 
-**File**: `src/client/main.tsx`
+**File**: `src/client/index.css`
 
-**Purpose**: Pull in only the four faces design-spec 2.2 names, so the build ships four woff2 files
-and not the family's full matrix.
+**Purpose**: Ship exactly the four faces design-spec 2.2 names and nothing else. The package's four
+CSS entry points each declare a woff2 followed by a woff fallback, and Vite emits every `url()` in
+imported CSS, so importing them would ship eight files and 154,380 bytes against a 160 KB budget.
 
-**Contract**: Four CSS imports beside the existing `index.css` import:
-`@fontsource/ibm-plex-sans/latin-400.css`, `latin-600.css`, `latin-ext-400.css`, `latin-ext-600.css`.
-The `latin-ext` pair is what carries `zł`. No italic and no other weight is imported. Each of those
-files already declares `font-display: swap`; do not override it.
+**Contract**: Four hand-written `@font-face` blocks at the top of `src/client/index.css`, family
+`"IBM Plex Sans"`, `font-style: normal`, `font-display: swap`, weights 400 and 600, each with a single
+`src` pointing at `@fontsource/ibm-plex-sans/files/ibm-plex-sans-<subset>-<weight>-normal.woff2` for
+subsets `latin` and `latin-ext`. That subpath is an explicit entry in the package's `exports` map, so
+it resolves without reaching into `node_modules`. Copy the four `unicode-range` declarations from the
+package's aggregate `index.css`, which is the only file that carries them: without them the latin-ext
+faces load on every page rather than only where `zł` appears. Nothing is imported into
+`src/client/main.tsx`; no italic and no other weight exists anywhere in the build.
 
 #### 3. The token layer and the base stylesheet
 
@@ -222,12 +284,18 @@ files already declares `font-display: swap`; do not override it.
 edit in the change and everything after it is additive.
 
 **Contract**: Custom properties on `:root` for every token in design-spec 2.1, 2.2 and 2.3, with the
-dark values redefined inside one `@media (prefers-color-scheme: dark)` block. `color-scheme: light
+dark values redefined inside one `@media (prefers-color-scheme: dark)` block. Note that `--rule` and
+`--border` are two tokens with two jobs: `--rule` is decorative separation only, the hairline between
+entries and the bottom lines of the bar and the index, and must never be the sole boundary of a
+control; `--border` is the 1px boundary of every input, select, quiet button, disclosure panel and
+month tile, and is the token that has to reach 3:1 for non-text contrast. `color-scheme: light
 dark` stays on `:root` so native controls follow the theme. The font stack is
 `"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`.
 
 Then: the base element rules, the four button variants of design-spec 3.3 with their rest, hover,
-active and disabled states, the input, select and textarea box of 3.4 including the chevron glyph as
+active and disabled states, including the disabled primary, which is transparent with a 1px
+`--border` and `--ink-soft` text rather than a filled `--ink-faint` block, the input, select and
+textarea box of 3.4 bordered in `--border` including the chevron glyph as
 a `background-image` data URI with `appearance: none`, the single `:focus-visible` rule of 2.4, the
 `--tnum` utility, the content column at `max-width: 720px` with its two page paddings, and one
 `@media (prefers-reduced-motion: reduce)` block that sets the three motion durations to `0ms`.
@@ -263,16 +331,26 @@ carrying `aria-current="page"` and doing nothing when already on Home. Right: th
 `sr-only` and the other two stay. The component takes the email, an `onHome` handler that may be
 absent, and an `onSignOut` handler.
 
-#### 6. Adopting the app bar
+#### 6. Adopting the app bar, and threading what it needs
 
-**Files**: `src/client/screens/Home.tsx`, `src/client/screens/SubscriptionDetail.tsx`
+**Files**: `src/client/App.tsx`, `src/client/screens/Home.tsx`,
+`src/client/screens/SubscriptionDetail.tsx`
 
-**Purpose**: Put the app bar on both signed-in screens and retire the two headers it replaces.
+**Purpose**: Put the app bar on both signed-in screens. Home can feed it today; the detail screen
+cannot, so this change adds the path.
 
-**Contract**: Home's `home-header` block with "Signed in as" and its bare Sign out button is replaced
-by `AppBar`; the detail screen's header keeps the "All subscriptions" link-variant button above the
-title per design-spec 4.4 and loses its own sign-out affordance to the bar. Both keep every other
-element and every handler they have. The sign-out call and the `onSignedOut` flow are unchanged.
+**Contract**: `AppBar` needs the email and a sign-out handler. `Home` has both: it receives `user` and
+owns `handleSignOut` at `Home.tsx:34-37`. `SubscriptionDetail` has neither: its props are
+`subscription`, `onBack` and `onSignedOut` (`SubscriptionDetail.tsx:26-30`), it never receives the
+user and never imports `signOut`. The email lives only in `App.tsx:8`. So `handleSignOut` lifts out of
+`Home` into `App`, which then passes `user.email` and that one handler to both screens, and
+`SubscriptionDetail` gains the two props. One handler serves both screens and the `onSignedOut` flow
+that clears the selection and the user is unchanged.
+
+Home's `home-header` block with "Signed in as" and its bare Sign out button is replaced by `AppBar`.
+The detail screen keeps the "All subscriptions" link-variant button above the title per design-spec
+4.4 and **gains** a sign-out control, which it does not have today; nothing is relocated there. Both
+screens keep every other element and every handler they have. No API call changes.
 
 ### Success criteria:
 
@@ -282,8 +360,13 @@ element and every handler they have. The sign-out call and the `onSignedOut` flo
 - The whole suite passes with no test file changed: `npm test`
 - The production build succeeds: `npm run build`
 - `@fontsource/ibm-plex-sans` is pinned to `5.3.0` with no range prefix in `package.json`
-- The built output contains four woff2 files and no other font file, and their total byte count is
-  recorded in `evidence/runs/visual-redesign-bundle.txt` against the 160 KB budget from design-spec 2.2
+- The built output contains four woff2 files and no `.woff`, `.ttf`, `.eot` or `.otf` file at all, and
+  their total is 79,268 bytes, recorded in `evidence/runs/visual-redesign-bundle.txt` against the
+  160 KB budget from design-spec 2.2
+- `grep -rn "fontsource" src/client/main.tsx` returns nothing, because the faces are declared in
+  `src/client/index.css` rather than imported as CSS
+- The per-name match counts for every wire field name in the Stability guards table are captured from
+  `main` into `evidence/runs/visual-redesign-guards.txt` and are unchanged at this phase's end
 - `grep -rn "NumberFormat" src/client/` returns nothing
 - `git diff --stat src/server/ src/domain/ migrations/` is empty
 
@@ -360,6 +443,15 @@ rendering the 12px check glyph and the sentence at `--t-small` colour `--green` 
 itself after 4 seconds or when the section fires another action. It uses the status-line motion from
 design-spec 2.5.
 
+The entry highlight belongs to the same state, not to CSS alone. Design-spec 2.5 gives it a
+reduced-motion alternative that is not a duration change: the row shows `--green-tint` statically and
+clears together with the status line. That couples a row's background to the status line's timer, so
+one small shared hook per section owns both: it holds the sentence and the id of the row just created
+or edited, starts the 4 second timer, and clears both together. `LedgerEntry` takes a `highlighted`
+prop from it. With motion, the row runs the 1200ms linear fade beginning 200ms after it appears; under
+reduced motion it holds `--green-tint` for the status line's lifetime and clears with it. Nothing
+highlights on first render of a list.
+
 #### 3. The section alert
 
 **File**: `src/client/components/ui/SectionAlert.tsx` (new)
@@ -400,11 +492,13 @@ opened from here on.
 **Contract**: A wrapper whose open and close use the disclosure motion of design-spec 2.5, animating
 `grid-template-rows` from `0fr` to `1fr` with the content set to `overflow: hidden`, 180ms opening
 and 140ms closing on `cubic-bezier(0.2, 0, 0, 1)`, reduced to instant under the reduced-motion block
-from phase 1. The panel is ground `--paper`, 1px `--rule`, radius 6px, padding `--s-5`, with an `h3`
-at `--t-entry` naming the action. The opening button carries `aria-expanded` and `aria-controls`. On
-open, focus moves to the first field; Cancel and Escape both close the panel, discard the field
-values and return focus to the opening button, which reappears. Escape does not close the panel while
-a native select is open. Field layout inside the panel is a two-column grid at
+from phase 1. The panel is ground `--paper`, 1px `--border`, radius 6px, padding `--s-5`, with an
+`h3` at `--t-entry` naming the action. The opening button carries `aria-expanded` and
+`aria-controls`. On open, focus moves to the first field. Cancel and Escape both close the panel,
+discard the field values and return focus to the opening button as it reappears; closing on success
+returns focus to that same button. Escape is handled normally with no special case for an open native
+select, because the select consumes the key itself while its list is open and the browser exposes no
+way to observe that popup; build no detection for it. Field layout inside the panel is a two-column grid at
 `repeat(2, minmax(0, 1fr))` with gap `--s-4`, collapsing to one column below 640px; which fields pair
 is per form in design-spec 6.
 
@@ -449,7 +543,10 @@ currently three different shapes plus one absence.
 **Contract**: Replaces an entry's action row in place with a strip on `--red-tint`, 3px left rule
 `--red`, padding `--s-3`, radius 4px, holding the question at `--t-body` and two buttons, `[Delete]`
 in the destructive variant and `[Keep]` in the quiet variant. Focus moves to Keep on open and Escape
-acts as Keep. The rest of the page stays usable; nothing blocks. Only one strip may be open per
+acts as Keep. On Keep the action row remounts and focus moves to that entry's Delete button; after a
+successful delete the row is gone, so focus moves to the section's `h2`, which carries
+`tabindex="-1"`, and the status line announces the deletion. Neither path may leave focus on the
+document body. The rest of the page stays usable; nothing blocks. Only one strip may be open per
 section. The focus ring inside the strip stays green per design-spec 2.4.
 
 #### 9. The money treatments
@@ -481,7 +578,13 @@ with their existing `autoComplete` values, and a primary "Sign in" that is full 
 right. Try again." with focus moving to the email field; a network failure uses the connection copy.
 The submitting state is design-spec 3.3: the label is unchanged, the form and the button carry
 `aria-busy="true"`, every field is disabled and there is no spinner, which replaces the current
-"Signing in…" label swap.
+"Signing in…" label swap. What stays unchanged is the visible label, not the button's behaviour: while
+the form is busy the primary button also carries `aria-disabled="true"` and its submit handler returns
+early, which is the same mechanism design-spec 3.3 already uses for a refused action and is how the
+double-submit guard every form has today (`Login.tsx:58`, `MemberForm.tsx:113`,
+`SubscriptionForm.tsx:87`, `PaymentForm.tsx:156`, `ScheduleForm.tsx:158`) survives the change. Losing
+it would let a second Enter during an in-flight request record a second payment, which is an
+accounting effect from a change whose premise is that no accounting behaviour moves.
 
 Session loading in `App.tsx` becomes the app bar with the wordmark only, then one static 240x27
 skeleton bar on `--paper` in the column, with an `sr-only` `role="status"` reading "Loading your
@@ -494,7 +597,11 @@ session". The skeleton is `aria-hidden`.
 - Typecheck passes across all three projects: `npm run typecheck`
 - The whole suite passes with no test file changed: `npm test`
 - The production build succeeds: `npm run build`
-- `grep -rn '${field}' src/client/` returns nothing, so no wire name can reach a rendered string
+- No wire name reaches a rendered string in the files this phase touches:
+  `grep -rn 'error\.field' src/client/screens/Login.tsx src/client/App.tsx src/client/components/ui/`
+  finds no interpolation into a message. The four forms that do leak today
+  (`SubscriptionForm.tsx:82`, `MemberForm.tsx:108`, `PriceHistory.tsx:130`, `BreakMonths.tsx:73`) are
+  converted in phases 3, 4 and 5, so the repository-wide gate is phase 5's criterion, not this one
 - `grep -rn "DateTimeFormat" src/client/` finds it only in `src/client/format.ts`
 - `grep -rn "NumberFormat" src/client/` still returns nothing
 
@@ -506,7 +613,8 @@ session". The skeleton is `aria-hidden`.
 - A refused sign-in shows "Email or password is not right. Try again." as the generic error line above
   the fields, the panel takes the 3px red left rule, and focus lands on the email field
 - Submitting keeps the button label unchanged, disables both fields, sets `aria-busy` on the form and
-  shows no spinner
+  shows no spinner, and a second Enter or click while the request is in flight sends nothing, because
+  the button carries `aria-disabled="true"` and the handler returns early
 - Session loading shows the app bar with the wordmark only and one static skeleton bar, and a screen
   reader announces "Loading your session" while the skeleton itself is not announced
 - At 390 the Login block fills the width, the primary button is full width and every control is at
@@ -598,8 +706,8 @@ heading action. No new token and no new radius.
   only call to action
 - "New subscription" opens the panel under the heading with the disclosure motion, the button leaves
   the heading row, and focus moves to the Name field
-- Escape and Cancel both close the panel, discard the typed values and return focus to the button,
-  which reappears
+- Escape and Cancel both close the panel, discard the typed values and return focus to the button as
+  it reappears, and a successful create returns focus to that same button rather than to the body
 - Currency and Locale sit side by side above 640px and stack below it, and every other field spans
 - Creating a subscription closes the panel, shows "Subscription created" in the heading row, highlights
   the new row for the duration in design-spec 2.5, and opens the detail screen
@@ -642,14 +750,20 @@ label "Owed to you now" at `--t-small` above the figure at `--t-figure`, coloure
 `summary.owedToYouNow` is greater than zero and `--ink` when it is zero. That comparison is the only
 numeric operation on the value; nothing is computed.
 
-Then a `dl` of three `div` groups for "Per person this month", "Your share this month" and "Collected
-this month", with `dt` at `--t-small` colour `--ink-soft` and `dd` at `--t-entry` weight 600 tabular,
-in a row with `--s-6` gaps and a hairline `--rule` above and below. Below 640px they stack with the
-`dt` left and the `dd` right on one line. "Collected this month" keeps its "X of Y" form.
+Then a `dl` of four `div` groups for "Per person this month", "Your share this month", "Collected
+this month" and "Active participants", with `dt` at `--t-small` colour `--ink-soft` and `dd` at
+`--t-entry` weight 600 tabular, in a row with `--s-6` gaps that wraps if needed, and a hairline
+`--rule` above and below. Below 640px they stack with the `dt` left and the `dd` right on one line.
+"Collected this month" keeps its "X of Y" form.
 
-The summary sentence keeps its current content with its bold spans removed and its figures tabular.
-The "Active participants" card is gone; its number moves into the Participants heading and comes from
-`summary.currentActiveCount`, not from anything the screen counts.
+"Active participants" stays a cell and keeps `summary.currentActiveCount` exactly as today, organizer
+included, which is what makes it agree with "Per person this month" beside it. Design-spec 4.4 and 5.1
+keep it out of the Participants heading for the reason in the key findings above: the figure counts the
+organizer and the list never shows them, so a heading count could not agree with the rows under it.
+
+The summary sentence keeps its current content and order with its bold spans removed and its figures
+tabular, and its month names go through the phase 2 display formatter, so it opens "Sep 2026 costs
+110,00 zł" rather than "2026-09 costs ...".
 
 Loading on first load, per design-spec 4.4: the figure and each `dd` are static skeleton bars on
 `--paper` at 160x34 and 96x21, the sentence area is one 100%x15 bar, section headings render with
@@ -663,8 +777,10 @@ line instead.
 
 The error state and the 409 no-owner state use the generic alert line, with a quiet "Try again" for
 the first and a link-variant "All subscriptions" for the second. The no-owner state cannot be produced
-locally through the product, so its appearance is checked against
-`evidence/screenshots/detail-no-owner-state.png` and the code path rather than a fresh capture.
+through the product on a local database, so this phase builds it against the code path and the content
+shown in `evidence/screenshots/detail-no-owner-state.png`, and phase 6 captures the new design by
+forcing the state in the client during a dev session. The prior capture is a reference for what the
+state says, never a substitute for the new capture.
 
 #### 2. The section index
 
@@ -677,10 +793,14 @@ question 1 without a router.
 **Contract**: A `nav` with `aria-label="Sections"` holding a horizontal list of link-variant buttons
 labelled exactly as the five section headings without their counts. Each scrolls its section heading
 into view with `scrollIntoView({ block: "start" })`, and every heading carries a `scroll-margin-top`
-equal to the index height plus `--s-4`. The nav is sticky at `top: 56px`, directly under the app bar
-that design-spec 3.2 fixes at `top: 0`, on ground `--ground` with a bottom hairline, 44px high. The item whose section is at or above the top of the viewport
+of 116px, which design-spec 4.4 derives as the 56px app bar plus the 44px index plus `--s-4`. The nav
+is sticky at `top: 56px`, directly under the app bar that design-spec 3.2 fixes at `top: 0`, on ground
+`--ground` with a bottom hairline, 44px high. The item whose section is at or above the visible top
 carries `aria-current="true"` and a 2px `--ink` bottom rule; an `IntersectionObserver` over the
-headings is the intended mechanism. Below 640px the list scrolls horizontally with `overflow-x: auto`,
+headings with a top `rootMargin` of -100px, the bar plus the index, is the intended mechanism. Without
+that root margin the current item changes a full screen-third late, because the true viewport top sits
+100px behind the visible one. Express the 116px and the 100px as custom properties derived from the
+same two heights, so the offsets cannot drift apart. Below 640px the list scrolls horizontally with `overflow-x: auto`,
 a hidden scrollbar, 8px inline padding and 8px fading edges made with a `mask-image` gradient. In tab
 order it comes after the summary and before the first section.
 
@@ -692,8 +812,8 @@ order it comes after the summary and before the first section.
 **Purpose**: Design-spec 5.1. This is the section whose form currently sits outside it, and the one
 whose delete has no confirmation today.
 
-**Contract**: The section opens per design-spec 3.5 with the heading "Participants (N active)" where N
-is `summary.currentActiveCount`, and a primary "Add participant". `MemberForm` moves inside this
+**Contract**: The section opens per design-spec 3.5 with the heading "Participants", carrying no count
+at all per design-spec 5.1, and a primary "Add participant". `MemberForm` moves inside this
 section: as the add disclosure panel headed "Add a participant" when adding, and in place of the entry
 being edited, headed "Edit <name>", when editing. Only one edit panel may be open; opening another
 closes the first and discards its values. The `editing` state that `SubscriptionDetail.tsx` holds today
@@ -766,8 +886,10 @@ cells, and the tag treatment. No new token.
 - Typecheck passes across all three projects: `npm run typecheck`
 - The whole suite passes with no test file changed: `npm test`
 - The production build succeeds: `npm run build`
-- The Participants heading count reads `summary.currentActiveCount`, and
-  `grep -n "activeRanges" src/client/components/MemberList.tsx` returns nothing, so no active count is
+- The Participants heading carries no count, "Active participants" is the fourth cell of the ledger
+  line reading `summary.currentActiveCount` unchanged, and every other heading count equals the number
+  of rows its list renders
+- `grep -n "activeRanges" src/client/components/MemberList.tsx` returns nothing, so no active count is
   derived in the client
 - Every money string on the detail screen comes from `formatMoney`, and `grep -rn "NumberFormat"
   src/client/` still returns nothing
@@ -808,6 +930,9 @@ cells, and the tag treatment. No new token.
   following
 - Deleting a price that the server refuses keeps one strip open across both steps, showing the server's
   months verbatim with "Delete anyway?" and focus back on Keep, and "Delete anyway" completes it
+- Pressing Keep on a confirmation strip returns focus to that entry's Delete button, and completing a
+  delete moves focus to the section's `h2`; in neither case does focus land on the document body,
+  checked by tabbing once afterwards and seeing where the ring appears
 - The section alert clears on Dismiss and again on the next successful action in the same section, and
   an error raised inside a panel never appears in it
 - At 390 the figure column moves under the secondary line, the actions take their own line, the three
@@ -847,10 +972,12 @@ alert of design-spec 3.5, not in a panel. The empty sentence is "No months skipp
 
 **Purpose**: Design-spec 5.4. This is the recorded half of the ledger and its subtitle is load bearing.
 
-**Contract**: Heading "Payments received (N)" with the subtitle "Money you saw arrive. Every amount
-here is recorded, not assumed." unchanged, and a primary "Record a payment". With no participants the
-button is disabled but still focusable per design-spec 3.3, with "Add a participant before recording a
-payment." at `--t-small` colour `--ink-soft` under the heading and referenced by the button's
+**Contract**: Heading "Payments received (N)" where N is the number of rows listed under the current
+filter, with the subtitle "Money you saw arrive. Every amount here is recorded, not assumed."
+unchanged, and a primary "Record a payment". With no participant other than
+the organizer, which is the condition `PaymentForm.tsx:32` already computes, the button is disabled but
+still focusable per design-spec 3.3, with "Add a participant before recording a payment." at
+`--t-small` colour `--ink-soft` under the heading and referenced by the button's
 `aria-describedby`; both disappear when a participant exists.
 
 The "Show" filter is a labelled native `select` listing Everyone and then each participant, at the
@@ -858,8 +985,10 @@ right end of the subtitle line above 640px and under the subtitle below it, with
 `--t-small` label. It keeps going to the server as it does today; nothing is filtered in the component.
 
 Each payment is a ledger entry: the amount in the recorded treatment followed by "from <name>" as the
-primary line, the note as the secondary line when there is one, the date through the date formatter as
-the figure column, and `[Edit] [Delete]` as link-variant buttons at `--t-small`. The add panel pairs "From" with "Date received" and "Amount"
+primary line; the secondary line is the kind label exactly as the shipped client names it ("One-off",
+"Yearly lump sum" and any other existing label), followed by ", " and the note when a note exists, so
+the kind is never dropped; the date through the date formatter as the figure column; and
+`[Edit] [Delete]` as link-variant buttons at `--t-small`. The add panel pairs "From" with "Date received" and "Amount"
 with "Kind", with "Note" spanning and hinted "Optional", and a primary "Record this payment" producing
 "Payment recorded". Editing opens in place with "Save changes" producing "Changes saved". Deleting
 uses the confirmation strip with "Delete the <amount> payment from <name>?" and produces "Payment
@@ -886,18 +1015,20 @@ N of M elapsed months". Actions are `[Edit] [Delete]` as link-variant buttons at
 Under each entry, a wrapping row of month tiles with `flex-wrap` and gap `--s-2`, each 156px wide,
 padding `--s-3`, radius 6px, ground `--paper`, falling into a two-column grid at full width below
 640px. The month name is the tile's first line at `--t-small` weight 600. The three states are
-exactly design-spec 5.5: counted takes a 3px `--green` left rule, a 1px `--rule` border, the assumed
+exactly design-spec 5.5: counted takes a 3px `--green` left rule, a 1px `--border` border, the assumed
 amount and a `[Mark not received]` link-variant button; excluded by rule takes no left rule, a 1px
-dashed `--rule` border, no figure, the exclusion phrase at `--t-small` colour `--ink-soft` and no
-toggle; marked not received takes a 3px `--red` left rule, a 1px `--rule` border, no figure, "marked
+dashed `--border` border, no figure, the exclusion phrase at `--t-small` colour `--ink-soft` and no
+toggle; marked not received takes a 3px `--red` left rule, a 1px `--border` border, no figure, "marked
 as not received" at `--t-small` colour `--red` and a `[Mark received]` link-variant button. Each state
 is distinguishable with colour removed.
 
 Which state a tile is in comes from the single existing call to `scheduleMonthStatuses` at
-`RecurringSection.tsx:104` and from nothing else. The seven exclusion phrases in
-`RecurringSection.tsx:42-50` stay one per `MonthExclusion` and the map stays total over the union; the
-only permitted edit is removing the leading "not counted, " from each, because the dashed tile already
-says it. The rest of each phrase stays verbatim.
+`RecurringSection.tsx:104` and from nothing else. The seven values in the `Record<MonthExclusion,
+string>` at `RecurringSection.tsx:42-50` are already bare phrases such as "the plan was paused that
+month"; the leading "not counted, " lives in the template that renders them at
+`RecurringSection.tsx:142`. So the map is not edited at all: its seven values stay byte-identical and
+total over the union, and the prefix is simply not reproduced in the new tile, because the dashed
+border already says the month did not count.
 
 A failed tile toggle lands in the section alert of design-spec 3.5 with the server's message verbatim
 and leaves the tile in the state it was in.
@@ -905,8 +1036,8 @@ and leaves the tile in the state it was in.
 The add panel has "From" spanning, "Amount each month" paired with "First month", and "Last month"
 spanning with the hint "Leave empty while it is still running". The primary "Record this standing
 order" produces "Standing order added"; editing produces "Changes saved"; the toggles produce "Marked
-not received" and "Marked received". Deleting uses the confirmation strip with "Delete <name>'s
-standing order?"
+not received" and "Marked received". Deleting uses the confirmation strip with "Delete <name>'s standing
+order? Its assumed receipts and not-received marks go with it. Recorded payments stay."
 
 The payload keys are unchanged: `member_id`, `amount`, `start_month`, `end_month`.
 
@@ -933,6 +1064,11 @@ wrap below 640px, and the refusal sentence. No new token.
 - The payment and schedule payload keys are unchanged: `member_id`, `date`, `amount`, `note`, `kind`,
   `start_month`, `end_month`
 - The payments filter still reaches the server and nothing is filtered in the component
+- No wire name can reach a rendered string anywhere: `grep -rn 'error\.field' src/client/` finds
+  `error.field` only where it is compared against a literal or looked up in a display map, never
+  interpolated into a message. This is the gate F7 asks for and it can only pass once the last of the
+  four leaking forms is converted, which happens in this phase
+- The seven exclusion phrase values at `RecurringSection.tsx:42-50` are byte-identical to `main`
 
 #### Manual verification:
 
@@ -952,8 +1088,8 @@ wrap below 640px, and the refusal sentence. No new token.
   side by side with a payment
 - One standing order shows all three tile states at once, and with the page rendered in greyscale each
   state is still identifiable from its rule, its border and its words
-- The seven exclusion phrases still read one per condition, with only the leading "not counted, "
-  removed, and no two tiles in any state share a phrase
+- Each dashed tile carries its own exclusion phrase with no "not counted, " prefix, one phrase per
+  condition, and no two conditions sharing a phrase
 - Marking a month not received and then received again changes only that month, shows "Marked not
   received" and "Marked received", and leaves the assumed total matching what the summary reports
 - A failed unskip and a failed tile toggle each put the server's message in their own section alert,
@@ -997,11 +1133,29 @@ hover. No page scrolls horizontally at 390 in any state.
 **Purpose**: Design-spec 2.1 requires the contrast checks to be run and design-spec 11 item 8 requires
 the tool to be named.
 
-**Contract**: Every pair design-spec 2.1 lists, in both themes, with its measured ratio, the WCAG AA
-threshold it is held to, and the tool used. `--ink-faint` is held to 3:1 because it carries only
-placeholder text, disabled text and the word "settled". A failing pair is fixed by darkening the light
-foreground or lightening the dark foreground, never by changing a ground, and the changed token value
-is recorded beside the original.
+**Contract**: Two tables, both in both themes, each row carrying its measured ratio, the threshold it
+is held to, and the tool used.
+
+Text pairs, WCAG 1.4.3 at AA: every pair design-spec 2.1 lists. `--ink-faint` is held to 3:1 because
+it carries only placeholder text, disabled text and the word "settled".
+
+Non-text pairs, WCAG 1.4.11 at 3:1, which design-spec 2.1 now requires and which a text-only record
+would miss entirely: `--border` on `--paper` and on `--ground`, since it is the sole visual boundary of
+every input, select, quiet button, disclosure panel and month tile; `--green` and `--red` as tile left
+rules on `--paper`; and the focus outline `--green` on both grounds. `--rule` is not measured against
+3:1 because design-spec 2.1 exempts it as decorative separation, on the condition that it is never the
+sole boundary of a control; this phase checks that condition by reading the stylesheet, and a control
+bordered in `--rule` is a defect, not a contrast failure.
+
+Also record, without holding it to a threshold, the disabled primary button's `--ink-soft` on
+`--ground`. WCAG exempts inactive controls, but design-spec 3.3 deliberately keeps those buttons
+focusable and in the tab order with an `aria-describedby` explanation, so the designer should see the
+number.
+
+A failing pair is fixed by darkening the light foreground or lightening the dark foreground, never by
+changing a ground, and the changed token value is recorded beside the original. A failure on `--border`
+is raised to the designer as a token question rather than fixed here, because that token is the
+boundary of every control on the page.
 
 #### 3. The bundle record
 
@@ -1021,39 +1175,63 @@ beside it.
 **Purpose**: The designer reviews the implementation against design-spec 11 from captures, not from a
 running session.
 
-**Contract**: The capture set below, named so the review can be assembled by pattern, taken against
-`npm run dev` on a local database holding synthetic data only, at 1280 CSS pixels and at 390 CSS
-pixels with a 2x device pixel ratio, following the naming convention the existing sets in
-`evidence/screenshots/` use. Light and dark are separate files where the state is theme sensitive.
+**Contract**: Captures are taken against `npm run dev` on a local database holding synthetic data
+only, at a 2x device pixel ratio, following the naming convention the existing sets in
+`evidence/screenshots/` use.
 
-| File | State, per design-spec 11 |
-| --- | --- |
-| `redesign-01-login-idle.png` | 11.1 login idle |
-| `redesign-02-login-submitting.png` | 11.1 login submitting |
-| `redesign-03-login-error.png` | 11.1 login 401 |
-| `redesign-04-home-empty.png` | 11.2 home empty |
-| `redesign-05-home-populated.png` | 11.2 home populated |
-| `redesign-06-home-panel-open.png` | 11.2 home with the New subscription panel open |
-| `redesign-07-home-load-error.png` | 11.2 home load error |
-| `redesign-08-detail-loading.png` | 11.3 detail first load with skeletons |
-| `redesign-09-detail-populated.png` | 11.3 detail populated, full column |
-| `redesign-10-detail-error.png` | 11.3 detail error |
-| `redesign-11-detail-no-owner.png` | 11.3 the 409 no-owner state |
-| `redesign-12-section-states.png` | 11.4 one section in each of its eight states |
-| `redesign-13-tiles-three-states.png` | 11.5 one standing order showing all three tile states |
-| `redesign-14-section-index-current.png` | 11.7 the index with the current item marked mid-scroll |
-| `redesign-15-dark-desktop.png` | the detail screen in dark at 1280 |
-| `redesign-16-light-mobile.png` | the detail screen in light at 390 |
-| `redesign-17-dark-mobile.png` | the detail screen in dark at 390 |
-| `redesign-18-reduced-motion.png` | a disclosure and an entry highlight with reduced motion on |
-| `redesign-19-section-alert.png` | 11.4 a section alert carrying a refused participant delete |
-| `redesign-20-price-delete-step-two.png` | 11.4 the price delete strip on its second step with the server's months |
+**Naming rule**: `redesign-NN-<slug>-<theme>.png` at 1280 CSS pixels and
+`redesign-NN-<slug>-mobile-<theme>.png` at 390, where `<theme>` is `light` or `dark`. Every state is
+captured in both themes, so every row below yields two files at 1280 and, where it is also in the
+mobile set, two more at 390.
+
+The twenty-three states, each at 1280 in both themes, are forty-six files:
+
+| NN | Slug | State, per design-spec 11 |
+| --- | --- | --- |
+| 01 | `login-idle` | 11.1 login idle |
+| 02 | `login-submitting` | 11.1 login submitting |
+| 03 | `login-error` | 11.1 login 401 |
+| 04 | `home-empty` | 11.2 home empty |
+| 05 | `home-populated` | 11.2 home populated |
+| 06 | `home-panel-open` | 11.2 home with the New subscription panel open |
+| 07 | `home-load-error` | 11.2 home load error |
+| 08 | `detail-loading` | 11.3 detail first load with skeletons |
+| 09 | `detail-populated` | 11.3 detail populated, full column |
+| 10 | `detail-error` | 11.3 detail error |
+| 11 | `detail-no-owner` | 11.3 the 409 no-owner state |
+| 12 | `section-empty` | 11.4 a section empty |
+| 13 | `section-populated` | 11.4 a section populated |
+| 14 | `section-add-panel` | 11.4 its add panel open |
+| 15 | `section-edit-panel` | 11.4 its edit panel open |
+| 16 | `section-field-error` | 11.4 a field error inside that panel |
+| 17 | `section-generic-error` | 11.4 the section alert carrying a refused participant delete |
+| 18 | `section-success` | 11.4 the success status line with the entry highlight |
+| 19 | `section-confirm` | 11.4 a destructive confirmation open |
+| 20 | `price-delete-step-two` | the price delete strip on its second step with the server's months |
+| 21 | `tiles-three-states` | 11.5 one standing order showing all three tile states |
+| 22 | `index-current-item` | 11.7 the index with the current item marked mid-scroll |
+| 23 | `reduced-motion` | a disclosure and an entry highlight with reduced motion on |
+
+Design-spec 11.4 lists eight section states and they cannot coexist in one render, which is why rows
+12 to 19 are eight separate files per theme rather than one composite.
+
+The mobile set is the eight states where design-spec 8 changes the layout rather than only the width:
+`01 login-idle`, `05 home-populated`, `06 home-panel-open`, `09 detail-populated`,
+`13 section-populated`, `14 section-add-panel`, `21 tiles-three-states` and `22 index-current-item`.
+Each is captured at 390 in both themes, which is sixteen files.
+
+**Total: sixty-two files.** That number is the criterion; a set that does not reach it is incomplete.
 
 The keyboard pass of design-spec 11.6 is recorded as prose in
 `evidence/runs/visual-redesign-keyboard.md` rather than as an image, naming each step and what
-happened. The 409 no-owner state cannot be produced locally through the product, per `research.md`, so
-`redesign-11` is taken by driving the state directly in the client during a dev session and the note
-records that it was not produced through the API.
+happened.
+
+The 409 no-owner state cannot be produced through the product on a local database, per `research.md`.
+Row 11 is therefore captured by forcing that state in the client during a dev session, in both themes,
+and `evidence/runs/visual-redesign-keyboard.md` records that it was not produced through the API. The
+prior capture `evidence/screenshots/detail-no-owner-state.png` shows the old design and is a reference
+for the state's content only, not a substitute for row 11. Phase 4 uses it that way and this phase
+captures the new design; the two are not alternatives.
 
 #### 5. The designer handoff
 
@@ -1061,8 +1239,8 @@ records that it was not produced through the API.
 
 **Purpose**: Hand the designer a review that is complete against design-spec 11 and record the result.
 
-**Contract**: The implementer states that all twenty captures, the contrast record, the bundle record
-and the keyboard record exist and are readable, then requests the designer's review against design-spec
+**Contract**: The implementer states that all sixty-two captures, the contrast record with both its tables, the
+bundle record and the keyboard record exist and are readable, then requests the designer's review against design-spec
 11. The designer's findings are recorded under "Design questions" as checkpoints, each naming the
 specification section it concerns. The implementer changes no appearance in response to a finding until
 the designer has answered it.
@@ -1078,19 +1256,22 @@ the designer has answered it.
 - Every row of the Stability guards table above is re-checked in one pass and the result recorded in
   `evidence/runs/visual-redesign-guards.txt`
 - The bundle and font byte counts are recorded in `evidence/runs/visual-redesign-bundle.txt` against
-  the baseline and the budget
+  the baseline and the budget, and the built output still contains four woff2 files totalling 79,268
+  bytes and no `.woff`, `.ttf`, `.eot` or `.otf` file
 - `git diff --stat src/server/ src/domain/ migrations/ tests/` is empty for the whole change
 
 #### Manual verification:
 
-- All twenty captures listed above exist, show the state they name, and contain no real credential,
-  token or session cookie
+- All sixty-two captures exist under the naming rule above, show the state they name, and contain no
+  real credential, token or session cookie
 - The keyboard pass of design-spec 11.6 is walked and recorded: tab through the detail screen, open a
   panel, Escape it, delete with Keep, delete with Delete
 - The section index current-item tracking of design-spec 11.7 is walked while scrolling the whole
   detail column in both directions
-- The contrast record covers every pair in design-spec 2.1 in both themes, names the tool, and every
-  pair reaches AA with `--ink-faint` at 3:1
+- The contrast record covers the text pairs at AA with `--ink-faint` at 3:1, and the non-text pairs at
+  3:1 including `--border` on both grounds, in both themes, naming the tool
+- No control anywhere is bordered in `--rule`; every input, select, quiet button, panel and tile uses
+  `--border`
 - Reduced motion on and off are compared for all three motions of design-spec 2.5: the disclosure is
   instant, the entry highlight is static and clears with the status line, and the status line appears
   and dismisses instantly
@@ -1215,9 +1396,11 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 1.2 The whole suite passes with no test file changed
 - [ ] 1.3 The production build succeeds
 - [ ] 1.4 @fontsource/ibm-plex-sans is pinned to 5.3.0 with no range prefix
-- [ ] 1.5 Four woff2 files ship and their total byte count is recorded against the 160 KB budget
+- [ ] 1.5 Four woff2 files ship at 79,268 bytes with no woff, ttf, eot or otf, recorded against the budget
 - [ ] 1.6 No NumberFormat appears anywhere under src/client
 - [ ] 1.7 Nothing under src/server, src/domain or migrations has changed
+- [ ] 1.15 The faces are declared in index.css and nothing imports fontsource CSS from main.tsx
+- [ ] 1.16 The wire-name match counts are captured from main and are unchanged at this phase's end
 
 #### Manual
 
@@ -1236,7 +1419,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 2.1 Typecheck passes across all three projects
 - [ ] 2.2 The whole suite passes with no test file changed
 - [ ] 2.3 The production build succeeds
-- [ ] 2.4 No wire name reaches a rendered string anywhere under src/client
+- [ ] 2.4 No wire name reaches a rendered string in the files this phase touches
 - [ ] 2.5 DateTimeFormat appears only in src/client/format.ts
 - [ ] 2.6 No NumberFormat appears anywhere under src/client
 
@@ -1244,7 +1427,7 @@ certification screenshots are refreshed; both belong to that release step.
 
 - [ ] 2.7 Login matches design-spec 4.1 at 1280 in light and in dark
 - [ ] 2.8 A refused sign-in shows the generic error line and focus moves to the email field
-- [ ] 2.9 Submitting keeps the label, disables the fields, sets aria-busy and shows no spinner
+- [ ] 2.9 Submitting keeps the label, disables the fields, sets aria-busy and aria-disabled, and refuses a second submit
 - [ ] 2.10 Session loading shows the wordmark-only bar, a static skeleton and the status announcement
 - [ ] 2.11 At 390 the Login block fills the width with a full-width button and 44px controls
 - [ ] 2.12 Tab order is email, password, Sign in, each with the green focus ring and no trap
@@ -1264,7 +1447,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 3.6 Home populated matches design-spec 4.3 at 1280 in light and in dark
 - [ ] 3.7 Home empty shows only the design-spec 3.11 sentence with no rules
 - [ ] 3.8 New subscription opens the disclosure under the heading with focus on the Name field
-- [ ] 3.9 Escape and Cancel close the panel, discard values and return focus to the button
+- [ ] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button
 - [ ] 3.10 Currency and Locale pair above 640px and stack below it while other fields span
 - [ ] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
 - [ ] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
@@ -1279,20 +1462,21 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 4.1 Typecheck passes across all three projects
 - [ ] 4.2 The whole suite passes with no test file changed
 - [ ] 4.3 The production build succeeds
-- [ ] 4.4 The Participants count reads summary.currentActiveCount and no active count is derived in the client
+- [ ] 4.4 Participants carries no count, Active participants is the fourth cell, and other counts equal rows rendered
 - [ ] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists
 - [ ] 4.6 The member, range and price payload keys are unchanged
 - [ ] 4.7 No router was added and App.tsx still holds the selection in one useState
 
 #### Manual
 
-- [ ] 4.8 The leading figure and the three cell ledger line match design-spec 4.4 at 1280 in light and dark
-- [ ] 4.9 The summary sentence keeps its content with no bold spans and tabular figures
-- [ ] 4.10 The index sticks directly under the sticky app bar, tracks the current section and scrolls headings clear of both
+- [ ] 4.8 The leading figure and the four cell ledger line match design-spec 4.4 at 1280 in light and dark
+- [ ] 4.9 The summary sentence keeps its content and order, with no bold spans and months through the formatter
+- [ ] 4.10 The index sticks under the bar, clicking scrolls a heading clear of both 116px, and aria-current changes at the visible top
 - [ ] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells
 - [ ] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls
 - [ ] 4.13 Editing opens in place and opening a second edit closes the first and discards its values
 - [ ] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert
+- [ ] 4.23 Keep returns focus to that entry's Delete and a completed delete focuses the section h2, never the body
 - [ ] 4.15 Price history entries show the recorded amount and the short effective month
 - [ ] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly
 - [ ] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list
@@ -1313,6 +1497,8 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 5.5 The exclusion map is still total over MonthExclusion with no two entries sharing a string
 - [ ] 5.6 The payment and schedule payload keys are unchanged
 - [ ] 5.7 The payments filter still reaches the server and nothing is filtered in the component
+- [ ] 5.18 No wire name can reach a rendered string anywhere under src/client
+- [ ] 5.19 The seven exclusion phrase values are byte-identical to main
 
 #### Manual
 
@@ -1322,7 +1508,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 5.11 Both no-participant refusals render as a focusable disabled button with its describedby sentence
 - [ ] 5.12 Standing order amounts carry the assumed treatment and never the recorded one
 - [ ] 5.13 One standing order shows all three tile states, each identifiable in greyscale
-- [ ] 5.14 The seven exclusion phrases still read one per condition with only the leading phrase removed
+- [ ] 5.14 Each dashed tile carries its own exclusion phrase with no prefix and no two conditions share one
 - [ ] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary
 - [ ] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss
 - [ ] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally
@@ -1336,15 +1522,16 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 6.3 The production build succeeds
 - [ ] 6.4 package.json dependencies differ from the baseline by the font package and nothing else
 - [ ] 6.5 Every Stability guards row is re-checked in one pass and recorded
-- [ ] 6.6 The bundle and font byte counts are recorded against the baseline and the budget
+- [ ] 6.6 The bundle and font byte counts are recorded, with four woff2 files and no other font format
 - [ ] 6.7 Nothing under src/server, src/domain, migrations or tests has changed across the whole change
 
 #### Manual
 
-- [ ] 6.8 All twenty captures exist, show the state they name and contain no credential or cookie
+- [ ] 6.8 All sixty-two captures exist under the naming rule, show their state, and carry no credential
 - [ ] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded
 - [ ] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions
-- [ ] 6.11 The contrast record covers every design-spec 2.1 pair in both themes and names the tool
+- [ ] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes
+- [ ] 6.15 No control is bordered in --rule and every control boundary uses --border
 - [ ] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5
 - [ ] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings
