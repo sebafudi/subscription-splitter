@@ -47,7 +47,10 @@ exactly today's login screen, with nothing marking the absence, and registers no
 | Scopes | The provider's three defaults, `openid`, `email`, `profile`, with `includeGrantedScopes: false` and no `scope` option | Minimal identity set fixed by D-012; the option's own documentation says each flow should request only its own scopes | Research 2, D-012 |
 | Affordance | One more button in the existing action row, existing quiet variant, no divider, no "or", no card, no new colour token | Google is a second door into the same room, not a feature; the hierarchy in 3.3 already says the filled primary is the default | Design delta |
 | The mark | Google's unmodified asset in its own colours in both themes, exempt from the palette, never recoloured even while disabled | Google's branding requirement, and the delta states the exemption so it does not read as an oversight | Design delta |
-| Error handling | `errorCallbackURL` sent on every call; four sentences mapped from the `error` code; `error_description` never shown; `history.replaceState` afterwards | Without the callback URL a denied consent lands on the library's own unstyled error page two hops later | Research 4, design delta |
+| Error handling | `errorCallbackURL` sent on every call **and** `onAPIError: { errorURL: '/' }` set on the server; four sentences mapped from the `error` code; `error_description` never shown; `history.replaceState` drops the whole query afterwards | `errorCallbackURL` lives inside the OAuth state, so it governs only failures that happen after the state parses; a missing, fabricated or expired state has nothing to recover it from and falls back to the library's own unstyled error page unless the server sets one | Research 4, plan review F1, design delta |
+| A social call that answers an HTTP error | The did-not-finish sentence as an alert, not the connection sentence; the connection sentence is reserved for a request that never reached the server | Designer's ruling in the delta; `ApiError` and `SignedOutError` are the two things `request()` throws for a response that arrived, so the test is mechanical | Design delta, plan review F3 |
+| The connection sentence's constant | A new `GOOGLE_CONNECTION_FAILURE` in `googleErrors.ts`; the existing `CONNECTION_FAILURE` is never reused | Their texts differ, "Could not reach Google" against "Could not save", the existing one is in scope in the file being edited, and no test in this repository reads client markup | Plan review F6 |
+| `GOOGLE_CLIENT_ID` on Cloudflare | A `wrangler secret`, not a `wrangler.jsonc` var, even though the id is public | The integration pool loads `wrangler.jsonc`, so a var would bind the id into every test run; the no-credential-in-the-diff guard stays mechanical; one mechanism for a matched pair | Plan, plan review F5 |
 | Cancellation | A status line in `--ink-soft` with no red rule, not an alert | The user changed their mind; it is not a failure | Design delta |
 | The return leg | Reuses the 4.2 session loading screen unchanged, with the configuration read running in parallel with the session read | The login screen then paints with its final action row and never shifts | Design delta |
 | Onboarding | Nothing added; the existing Home empty state is already the invitation | A Google-created account is an ordinary new account | Design delta |
@@ -77,8 +80,10 @@ configuration endpoint, the two optional environment names, and three pure-optio
 need no bindings. Phase 2 is the login screen: the two client calls, both reads running in parallel
 behind the unchanged loading screen, the action row, the busy state, the error mapping and the URL
 cleanup. Phase 3 is the tests that need a running Worker: provider toggling, the authorize URL and its
-persisted state, a refused callback, the refusal for a seeded email, isolation for an OAuth-shaped
-account, and the untouched password suite passing both with Google configured and without it. Phase 4
+persisted state, a fabricated-state callback that must land on the app root with `error=state_mismatch`
+rather than on the library's error page, the refusal for a seeded email driven through the exported
+`handleOAuthUserInfo` against the real database, isolation for an OAuth-shaped account, and the
+untouched password suite passing both with Google configured and without it. Phase 4
 is a browser pass at 1280 and 390, in both themes, with the button present and absent.
 
 Phases 1 and 3 are gated by commands. Phases 2 and 4 are gated by a browser, because no test here reads
@@ -88,9 +93,9 @@ client markup and a green suite proves nothing about a button.
 
 | Phase | What it delivers | Key risk |
 | --- | --- | --- |
-| 1. The server, the provider and the configuration read | Conditional Google provider, `disableImplicitLinking`, `GET /api/auth-config`, two optional environment names, and the options assertions that pin D-013 | The provider must be absent rather than empty, or every click becomes a server error instead of an absent button |
+| 1. The server, the provider and the configuration read | Conditional Google provider, `disableImplicitLinking`, `onAPIError.errorURL`, `GET /api/auth-config`, two optional environment names, and the options assertions that pin D-013 and the error URL | The provider must be absent rather than empty, or every click becomes a server error instead of an absent button; and without the error URL the delta's expired-link sentence is unreachable |
 | 2. The login screen | The action row per the delta, the mark, the busy state, the four sentences, focus and `history.replaceState`, and nothing at all when unconfigured | Appearance cannot fail a test, so every row here is a browser row |
-| 3. The tests | Provider toggling, authorize URL and state, invalid-state callback, `account_not_linked`, OAuth-account isolation, and the password suite unchanged | The provider-present bindings must not make `npm test` need a secret, and the new file must take its own rate-limiter prefix |
+| 3. The tests | Provider toggling, authorize URL and state, a fabricated-state callback landing on the app root, `account_not_linked` through `handleOAuthUserInfo`, OAuth-account isolation, the two start-failure sentences, and the password suite unchanged | The provider-present bindings must not make `npm test` need a secret, the new file must take its own rate-limiter prefix, and if the `handleOAuthUserInfo` context cannot be built in the pool the case is dropped rather than mocked |
 | 4. The verification pass | Both widths, both themes, button present and absent, keyboard order, reduced motion, measured contrast, and the captures the delta's amended checklist names | A finding that would change a specified appearance is a design question, not a fix |
 
 **Prerequisites:** none inside the repository. Every row is executable against `main` plus the local
@@ -100,16 +105,21 @@ client markup and a green suite proves nothing about a button.
 
 ## Open risks and assumptions
 
-- **The credentials exist locally but not remotely.** `context/checkpoints/g02-oauth-provision.md`
+- **The credentials exist locally and half remotely.** `context/checkpoints/g02-oauth-provision.md`
   records that the consent screen, audience, scopes and Web client were created, all three origins and
   their `/api/auth/callback/google` redirects registered, and both values written to the ignored local
-  `.dev.vars`. Cloudflare secret provisioning did not complete, so the deployed Worker carries neither
-  value and renders no Google button. That is a supported state, and it is exactly the state
+  `.dev.vars`. `GOOGLE_CLIENT_SECRET` is now set on Cloudflare and appears in `wrangler secret list`;
+  `GOOGLE_CLIENT_ID` is not, pending this plan's choice of binding, which is `wrangler secret put`. A
+  deployment holding one value of the pair is indistinguishable from one holding neither, because both
+  the provider block and the configuration endpoint are a Boolean AND of the two, so the half-state
+  renders no button and registers no provider. That is a supported state, and it is exactly the state
   continuous integration runs in, so the rollback path is exercised continuously rather than believed.
   D-012's own "not yet created" line is superseded by that checkpoint and is completed when G02 closes.
-- **The live roundtrip is the only thing local work cannot produce.** It needs `wrangler secret put` for
-  both names with authorized Cloudflare credentials, then a deploy. It is goal G05, it is named in the
-  plan as a manual gate, and it is deliberately not a Progress row. The audience stays External in
+- **The live roundtrip is the only thing local work cannot produce.** It needs
+  `wrangler secret put GOOGLE_CLIENT_ID` with authorized Cloudflare credentials, then a deploy. It is
+  goal G05, it is named in the plan as a manual gate, and it is deliberately not a Progress row. Its
+  first step is one request confirming the deployed social call answers 200 rather than 403, because
+  the deployed `APP_ORIGINS` is a secret this repository cannot read. The audience stays External in
   Testing, so no artifact may claim that public Google login works.
 - **No mock proves Google authenticates anyone.** Every assertion available stops at the authorize URL.
   The boundary is written into phase 3's manual row and into the live gate.
@@ -117,10 +127,10 @@ client markup and a green suite proves nothing about a button.
   integration cases override the bindings inside the existing Vitest project; if that override does not
   reach the Worker behind `SELF.fetch`, the fallback is a second Vitest project with its own secretless
   continuous integration step. Whichever lands is recorded in the phase 3 commit.
-- **One design question is open.** A 404 from the social sign-in call after the configuration read said
-  true, which happens if credentials are removed between the two, matches none of the five sentences
-  the delta fixes. The plan uses the connection sentence as the nearest specified outcome and flags it
-  for the designer rather than inventing a sixth.
+- **No design question is open.** The one this plan raised, an HTTP error from the social call after the
+  configuration read said true, is ruled on in the delta: the did-not-finish sentence as an alert, with
+  the connection sentence reserved for a request that never reached the server. The plan and its
+  Progress rows carry the ruling.
 - **Two facts about live systems are confirmed rather than assumed at G05.** That all six migrations
   are applied to the remote D1 database, read with `wrangler d1 migrations list --remote`; and that the
   three registered origins still match, since a mismatch fails at Google rather than here.
