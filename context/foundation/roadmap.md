@@ -269,3 +269,12 @@ not recreate them.
 - **S-03: The organizer records, edits and deletes payments, records standing orders and marks single months of them as not received, and every balance moves accordingly.** - Archived to `context/archive/payments-and-recurring/`. Lesson: a per-route assertion made through the composed application can prove a contract a caller sees while proving nothing about the module that answers it, because routers mounted at one base share the pattern; the property only becomes testable when the router is asked on its own.
 - **S-04: The organizer walks the whole flow in a browser against a deployed instance carrying every migration, and the walkthrough is captured as evidence.** - Archived to `context/archive/verification-and-release/`. Lesson: a release SHA only describes the deployed bundle if the build runs from a tree nobody else can touch, because `vite build` reads the working tree rather than a git ref; building from a throwaway clone at the pinned SHA is what made the first deployment's recorded defect impossible to repeat here.
 - **S-05: (supporting) A pull request receives an automated review comment produced by the reviewer package, with its prompts exercised by an evaluation suite.** - Archived to `context/archive/ai-review-pipeline/`. Lesson: an evaluation is only evidence at the budget the code actually ships, because the first two-model comparison ran at an uncommitted `maxOutputTokens` of 8000 and two of its four model failures were `no_object_generated`, the failure that budget itself caused; re-running at the shipped 16000 withdrew one pillar of the model decision and confirmed the other.
+
+## S-07: Google sign-in
+
+- **Change ID:** `google-sign-in`
+- **Status:** ready
+- **Prerequisites:** existing authentication; coordinate login UI with S-06 visual redesign.
+- **Source:** explicit user request; `context/foundation/google-sign-in-brief.md`.
+- **Outcome:** Google sign-in works on the deployed app while password login and private-account isolation remain intact.
+- **Done when:** course change flow, complete Fable design delta, independent reviews, secure project/OAuth provisioning, regression checks and actual live Google sign-in all complete.
