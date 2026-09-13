@@ -8,49 +8,47 @@ type Props = {
 }
 
 /**
- * The height the app bar and this index hold between them, read from the two
- * custom properties the stylesheet derives every other offset from, so the
- * observer's root margin and the headings' `scroll-margin-top` cannot drift.
+ * The line the current item is measured against: the offset a click actually
+ * scrolls a heading to, read from that heading's own `scroll-margin-top`, plus
+ * the single pixel that makes a heading just landed by a click count as
+ * reached. Reading the landing offset itself is what keeps the observer and the
+ * click on the same line, whatever the stylesheet derives that offset from.
  */
-function stickyStack(): number {
-  const root = getComputedStyle(document.documentElement)
-  return (
-    Number.parseFloat(root.getPropertyValue('--bar-height')) +
-    Number.parseFloat(root.getPropertyValue('--index-height'))
-  )
+function currentItemLine(heading: HTMLElement): number {
+  return Number.parseFloat(getComputedStyle(heading).scrollMarginTop) + 1
 }
 
 /**
  * In-page navigation for a column roughly 4200px tall, which is what the detail
  * screen is at 390 with the section a reviewer most wants at the bottom.
  *
- * The current item is the last heading that has reached the visible top, which
- * sits `stickyStack()` below the viewport's own top. An `IntersectionObserver`
- * with that top root margin fires exactly when a heading crosses the line, so
- * scrolling the column costs nothing per frame.
+ * The current item is the last heading whose top has reached
+ * `currentItemLine()`. An `IntersectionObserver` with that top root margin fires
+ * exactly when a heading crosses the line, so scrolling the column costs nothing
+ * per frame.
  */
 export function SectionIndex({ sections, ready }: Props) {
   const [current, setCurrent] = useState(sections[0]?.id ?? '')
 
   useEffect(() => {
     if (!ready) return
-    const stack = stickyStack()
     const headings = sections
       .map((section) => document.getElementById(section.id))
       .filter((heading): heading is HTMLElement => heading !== null)
     if (headings.length === 0) return
+    const line = currentItemLine(headings[0])
 
     function pick() {
       let reached = headings[0].id
       for (const heading of headings) {
-        if (heading.getBoundingClientRect().top <= stack + 1) reached = heading.id
+        if (heading.getBoundingClientRect().top <= line) reached = heading.id
       }
       setCurrent(reached)
     }
 
     pick()
     const observer = new IntersectionObserver(pick, {
-      rootMargin: `-${stack}px 0px 0px 0px`,
+      rootMargin: `-${line}px 0px 0px 0px`,
       threshold: [0, 1],
     })
     headings.forEach((heading) => observer.observe(heading))
