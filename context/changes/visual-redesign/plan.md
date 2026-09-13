@@ -1651,21 +1651,21 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 6.1 Typecheck passes across all three projects — 1253b6d
-- [x] 6.2 The whole suite passes with no test file changed — 1253b6d
-- [x] 6.3 The production build succeeds — 1253b6d
-- [x] 6.4 package.json dependencies differ from the baseline by the font package and nothing else — 1253b6d
-- [x] 6.5 Every Stability guards row is re-checked in one pass and recorded — 1253b6d
-- [x] 6.6 The bundle and font byte counts are recorded, with four woff2 files and no other font format — 1253b6d
-- [x] 6.7 Nothing under src/server, src/domain, migrations or tests has changed across the whole change — 1253b6d
+- [x] 6.1 Typecheck passes across all three projects — fac48ee
+- [x] 6.2 The whole suite passes with no test file changed — fac48ee
+- [x] 6.3 The production build succeeds — fac48ee
+- [x] 6.4 package.json dependencies differ from the baseline by the font package and nothing else — fac48ee
+- [x] 6.5 Every Stability guards row is re-checked in one pass and recorded — fac48ee
+- [x] 6.6 The bundle and font byte counts are recorded, with four woff2 files and no other font format — fac48ee
+- [x] 6.7 Nothing under src/server, src/domain, migrations or tests has changed across the whole change — fac48ee
 
 #### Manual
 
-- [x] 6.8 All sixty-two captures exist under the naming rule, show their state, and carry no credential — 1253b6d
-- [x] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded — 1253b6d
-- [x] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions — 1253b6d
-- [x] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes — 1253b6d
-- [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border — 1253b6d
-- [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5 — 1253b6d
+- [x] 6.8 All sixty-two captures exist under the naming rule, show their state, and carry no credential — fac48ee
+- [x] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded — fac48ee
+- [x] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions — fac48ee
+- [x] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes — fac48ee
+- [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border — fac48ee
+- [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5 — fac48ee
 - [ ] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings
