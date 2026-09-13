@@ -2,7 +2,7 @@ import { APICallError } from "@ai-sdk/provider";
 import { MockLanguageModelV4 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import { CRITERIA } from "../src/criteria.js";
-import { reviewDiff } from "../src/review.js";
+import { MAX_OUTPUT_TOKENS, reviewDiff } from "../src/review.js";
 
 function usage() {
   return {
@@ -45,6 +45,29 @@ function mockModelRejecting(error: unknown) {
 const baseInput = { title: "Fix rounding bug", body: "Fixes the residual allocation.", diff: "diff --git a/x b/x\n+fix" };
 
 describe("reviewDiff", () => {
+  it("asks for an output budget a reasoning model cannot exhaust before the object starts", async () => {
+    let seen: number | undefined;
+    const model = new MockLanguageModelV4({
+      doGenerate: async (options) => {
+        seen = options.maxOutputTokens;
+        return {
+          content: [{ type: "text", text: validReviewJson([9, 9, 9, 9, 9]) }],
+          finishReason: { unified: "stop", raw: undefined },
+          usage: usage(),
+          warnings: [],
+        };
+      },
+    });
+
+    await reviewDiff(baseInput, { model });
+
+    expect(seen).toBe(MAX_OUTPUT_TOKENS);
+    // Both Phase 5 candidates spent a full 2000 token budget on reasoning alone and returned no
+    // object, and one review was observed spending 5167 reasoning tokens before the object started.
+    // The budget must stay well clear of that.
+    expect(MAX_OUTPUT_TOKENS).toBeGreaterThanOrEqual(16000);
+  });
+
   it("returns pass when the mock model returns high scores", async () => {
     const model = mockModelReturningText(validReviewJson([9, 9, 9, 9, 9]));
     const outcome = await reviewDiff(baseInput, { model });

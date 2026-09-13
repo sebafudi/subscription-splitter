@@ -17,7 +17,13 @@ export interface ReviewOptions {
   readonly model?: LanguageModel;
 }
 
-const MAX_OUTPUT_TOKENS = 2000;
+// Reasoning models bill their thinking against this same budget. At 2000 a reasoning model spends
+// the whole allowance before emitting a single token of the object, which surfaces as a
+// finishReason of "length" and a no_object_generated outcome. 8000 was still too tight: a single
+// review was observed spending 5167 tokens on reasoning before 1347 tokens of object, and runs that
+// reasoned harder truncated the JSON mid-object. 16000 leaves the object real headroom. Unused
+// budget is not charged, so the ceiling costs nothing when a review is short.
+export const MAX_OUTPUT_TOKENS = 16000;
 const MAX_RETRIES = 1;
 
 function isAuthFailure(error: unknown): boolean {
