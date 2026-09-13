@@ -128,6 +128,14 @@ who pays.", is already the invitation; no onboarding hint, banner or name greeti
   2.4 ring. Escape does nothing on the login screen, as today.
 - Responsive rule is the stacking described in 4.1 above. Nothing else in section 8 changes.
 
+## 3.3 Buttons (amended)
+
+Every button variant reserves a 1px border in every state. Where the 3.3 table says "no border"
+(the primary at rest, hover and active), the border is present and transparent, so the box is the
+same size in rest, hover, active, busy and disabled. A state change never moves a neighbouring
+control by a pixel; the action row on the login screen is where this first becomes visible, and it
+applies everywhere.
+
 ## 2.5 Motion
 
 No motion is added. The busy and disabled states change immediately, as every button state does.
