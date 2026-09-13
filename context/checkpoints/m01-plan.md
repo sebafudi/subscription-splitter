@@ -1,89 +1,117 @@
 # Checkpoint: m01-plan
 
-- **Task id:** m01-plan (S-08 frame and plan)
+- **Task id:** m01-plan (S-08 frame, plan, and plan-review resolution)
 - **Model:** Opus
 - **Change:** `subscription-management-and-date-inputs`, roadmap S-08, parent goal M01
-- **Status:** complete
+- **Status:** complete, pending reviewer re-verification
 
 ## Actions
+
+### First pass: frame and plan
 
 1. Committed the designer's `design-delta.md`, which was untracked on arrival.
 2. Read `AGENTS.md`, the change folder in full, the `10x-frame` and `10x-plan` skills with the
    `progress-format` reference, and the `google-sign-in` and `visual-redesign` precedents.
-3. Ran two read-only investigations to test the frame's load-bearing hypotheses against the tree:
-   one on batch atomicity, ownership scoping, cascade interaction and the owner opening range; one on
-   the client navigation, field wrapper, form validation attributes, control CSS and confirmation
-   component. Verified the two decisive results directly afterwards.
-4. Wrote `frame.md`: dimension map, six hypotheses with verdicts, narrowing signals, a confirmed
-   problem statement sharpened at two seams, an explicit agreement section, and two designer questions.
-5. Wrote `plan.md` with six phases and a canonical `## Progress` section, and `plan-brief.md`.
-6. Moved `change.md` status to `planned` and the roadmap S-08 item to `planning`.
+3. Ran two read-only investigations to test the frame's load-bearing hypotheses against the tree, and
+   verified the two decisive results directly afterwards.
+4. Wrote `frame.md`, `plan.md` with six phases and a canonical `## Progress` section, and
+   `plan-brief.md`. Moved `change.md` to `planned` and roadmap S-08 to `planning`.
+
+### Second pass: resolving the independent plan review
+
+5. Committed the designer's second amendment to `design-delta.md`, which carries the rulings on the
+   review's five design findings.
+6. Read `reviews/plan-review.md` in full (verdict REVISE: F1 to F3 critical, F4 to F9 warnings, F10
+   and F11 observations) and verified its load-bearing claims against the tree before applying them.
+7. Resolved all eleven findings in `plan.md` and `plan-brief.md`, recorded a `Decision:` line on each
+   finding in `plan-review.md`, and replaced that file's Resolution paragraph with a resolution table
+   in the shape of `context/archive/google-sign-in/reviews/impl-review.md:318`.
+8. Left `change.md` at `plan_reviewed` for the reviewer to flip after re-verification.
 
 ## Changed paths
 
-- `context/changes/subscription-management-and-date-inputs/design-delta.md` (committed, not authored here)
-- `context/changes/subscription-management-and-date-inputs/frame.md` (new)
-- `context/changes/subscription-management-and-date-inputs/plan.md` (new)
-- `context/changes/subscription-management-and-date-inputs/plan-brief.md` (new)
-- `context/changes/subscription-management-and-date-inputs/change.md` (status)
-- `context/foundation/roadmap.md` (S-08 status only)
+- `context/changes/subscription-management-and-date-inputs/design-delta.md` (committed twice, not authored here)
+- `context/changes/subscription-management-and-date-inputs/frame.md`
+- `context/changes/subscription-management-and-date-inputs/plan.md`
+- `context/changes/subscription-management-and-date-inputs/plan-brief.md`
+- `context/changes/subscription-management-and-date-inputs/reviews/plan-review.md` (decision lines and resolution table only)
+- `context/changes/subscription-management-and-date-inputs/change.md` (status, first pass only)
+- `context/foundation/roadmap.md` (S-08 status only, first pass only)
 - `context/checkpoints/m01-plan.md` (this file)
 
 ## Commits
 
 - `41dba96` docs(s-08): add design delta for subscription management
-- the frame, plan, brief, change status, roadmap status and this checkpoint in one further commit
+- `3152954` docs(s-08): frame and plan subscription management
+- `d146993` docs(s-08): designer rulings on plan review design findings
+- the resolution of findings F1 to F11 in one further commit
 
 ## Verification
 
-No code was written and no gate was run, which is correct for a framing and planning task. Every
-factual claim in `frame.md` and in the plan's Key findings carries a file reference read in this tree
-during this task. Four claims were checked directly rather than taken from research:
+No code was written and no gate was run, which is correct for a planning task. Every claim the review
+turns on was checked in the tree rather than accepted from the report:
 
-- All seven forms in `src/client/` carry `noValidate`, so `min` can never raise a browser bubble. This
-  closes the item the delta left open in its amended 3.4.
-- `SectionHeader` already sets `tabIndex={-1}` on every heading including Home's `h1`
-  (`src/client/components/ui/SectionHeader.tsx:49`), so the delta's requirement is already met.
-- `Home` refetches on mount through `useEffect(() => load(), [load])` and already holds a heading-row
-  status line through `useSectionStatus()`, so the deletion return needs only a one-shot signal from
-  `App`.
-- `ConfirmStrip` renders exactly one sentence and four props, so the delta's amended 3.10 second
-  sentence is one optional prop with no existing call site touched.
+- **F1 holds.** `vitest.unit.config.ts` is `environment: 'node'` with an include of `src/**/*.test.ts`
+  and no DOM dependency in `package.json`, so `document` is undefined in the unit suite and a `.tsx`
+  test would not be collected at all. This grounds both F1 and F9.
+- **F3 holds.** `validateActiveRanges` treats `next.joinedMonth <= current.leftMonth` as an overlap
+  (`src/domain/members.ts:51`) and refuses `left_month < joined_month` first (`:35-37`), so a stored
+  set always satisfies `range1.left < range2.joined` and the withdrawn kind has no reachable state.
+- **F4 holds.** `update` returns `Subscription | null` (`src/server/db/subscriptions.ts:99-124`) and
+  the route maps null to 404 (`src/server/routes/subscriptions.ts:42-44`), so a refusal travelling as
+  `null` would be a silent 404. `MemberRemoval` (`src/server/db/members.ts:223`) is the house shape.
+- **F7 holds.** `SubscriptionDetail` has four states (`:49-55`) and renders one shared header in all
+  of them, with the `no-owner` state reached from a 409 at `:78-79`.
+- **F11 holds.** `subscriptionFieldLabels` already maps `start_month` to "Start month"
+  (`src/client/components/ui/fieldLabels.ts:9-16`) and the create form's label matches
+  (`src/client/screens/SubscriptionForm.tsx:138`).
 
-## Unresolved designer questions
+## Where I went beyond the review, and why
 
-1. **The owner's opening range may not be where the shift rule expects, and shifting it can break the
-   range set.** `PATCH /members/:memberId` accepts `active_ranges` for the owner too
-   (`src/server/routes/members.ts:79-104`, applied at `src/server/db/members.ts:201-208`); only
-   `is_owner` is unpatchable, and `validateActiveRanges` rejects only `joined_month < startMonth`
-   (`src/domain/members.ts:38-40`). So the owner may already hold several ranges and the first may
-   carry a `left_month`. Moving the first month later and shifting the owner's first range with it can
-   push that range past the owner's *second* range, producing an out-of-order or overlapping set that
-   `validateActiveRanges` rejects on the participant route but that no database constraint catches
-   inside `db.batch()`. **Recommended and planned on:** revalidate the prospective owner range set
-   before the batch and refuse with a sixth kind, ordered last,
-   `start_month cannot be later than YYYY-MM because your own next active range starts then`. The
-   delta's existing `left_month` refusal stays exactly as written.
-2. **The month select's option range on an unbounded field is 144 options.** First month takes no
-   `min` and no `max` on both the create and the edit form, so the fallback select spans January ten
-   years back through December of next year. **Recommended and planned on:** keep it as the delta
-   specifies. It is a native select with the browser's own type-ahead, and narrowing it would hide the
-   "move the first month earlier" case the delta deliberately allows.
+Two additions to F5, both consequences of the same reasoning the review applied:
 
-Both are answered in the plan by the recommendation above and are marked `[frame Q1]` and `[frame Q2]`
-where they land. A different designer ruling changes a sentence and its test and moves no phase
-boundary.
+1. The read-then-write window it names on the first-month path exists identically on the **currency
+   lock**, which the review did not mention. The same `not exists` construction closes it, applied
+   only when the currency changes.
+2. Inside one `db.batch` the owner opening-range update would otherwise apply even when the
+   subscription update lost the race. A later statement in a batch sees an earlier statement's write,
+   so the second statement is gated on the subscription already carrying the new first month.
+
+The review left "whether the lost-race answer should be a 400 or a 409" as an open design question.
+It does not arise: the update's `where` carries only the ownership terms and the `not exists` clauses,
+so a `meta.changes === 0` on a row `get` proved exists resolves by re-read into either 404 (the row is
+gone) or the ordinary 400 (a minimum now binds). No third answer exists and no new copy is needed.
+
+F9 was applied in both of its offered forms rather than either, because the pure branch function and
+the plain statement of what stays uncovered answer different halves of the finding.
+
+## Things I disagreed with
+
+None. Every finding was verified before being applied, and none turned out to be wrong.
+
+## Progress contract note
+
+Step indices were preserved. Two titles were reworded to match the criteria they now check (1.2, 1.8)
+and four rows were added at the next free index in their phase (3.9, 3.10, 4.16, 4.17), which the
+contract allows and which the `google-sign-in` plan already precedents at row 3.16. No row has been
+executed, so no state was lost. The phase bodies now head their criteria
+`#### Automated verification:` and `#### Manual verification:` as the precedent does; the `## Progress`
+headings stay `#### Automated` and `#### Manual` as the contract requires.
+
+## Unresolved questions
+
+None. Every planning question and every design finding is ruled in `design-delta.md` under "Rulings on
+planning questions" and "Rulings on plan review design findings", and the plan and the brief now point
+at those rulings rather than presenting anything as open.
 
 ## One risk the plan carries rather than resolves
 
-The detection probes test the month value sanitisation algorithm, not picker rendering. The two are
-correlated by browser rather than by specification, and the browser that decides it is Safari, which is
-installed on the verification machine. Row 5.4 is the gate. If Safari passes both probes and still
-renders no picker, the fix is a third condition in the injectable detection function plus one unit
-case, and the plan names that as the only source edit phase 5 may produce.
+The detection probes test the month value sanitisation algorithm, not picker rendering. Safari decides
+it, and row 5.4 is the gate. If Safari passes both probes and still renders no picker, the fix is a
+third condition in the detection function plus one unit case, and the plan names that as the only
+source edit phase 5 may produce.
 
 ## Next action
 
-Independent plan review of `context/changes/subscription-management-and-date-inputs/plan.md` against
-`design-delta.md`, `research.md` and `frame.md`, with the two designer questions above put to the
-designer in the same pass.
+Reviewer re-verification of `plan.md`, `plan-brief.md` and the filled-in
+`reviews/plan-review.md`, then flipping `change.md` out of `plan_reviewed`.

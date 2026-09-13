@@ -114,7 +114,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   false. The unit test then passes stubs whose `type` and `value` accessors reproduce each branch: both
   probes passing, type reflection failing, and value sanitisation failing. State this in the phase 2
   contract so the seam is built for the test rather than discovered by it.
-- **Decision**: PENDING
+- **Decision**: APPLIED. Phase 2 change 1 now gives the detection function an injectable element factory defaulting to `() => document.createElement('input')` plus a `typeof document === 'undefined'` guard returning false, and change 5 covers both probes with stubs in the `node` environment. The control keeps a separate override seam, used by phase 5 to force a branch for a capture. Confirmed against `vitest.unit.config.ts`, which is `environment: 'node'` with no DOM dependency in `package.json`.
 
 ### F2 - The atomicity test's failing statement cannot fail where the plan appends it
 
@@ -135,7 +135,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   binding that second subscription and a month it already holds. An equivalent alternative is to append
   the same new `(subscription_id, month)` pair twice. Either way the contract should say which row is
   duplicated and why it survives the batch.
-- **Decision**: PENDING
+- **Decision**: APPLIED, with the reviewer's first option. Phase 1 change 8 now duplicates a `break_months` row belonging to the same account's **second** subscription, which the preservation fixture already creates and which statement seven of the batch never touches, so the appended insert conflicts with the live composite primary key at `migrations/0004_prices_and_breaks.sql:23`. The contract names the row, says why it survives the batch, and Progress row 1.8 checks that the file says so.
 
 ### F3 - The sixth refusal kind is unreachable, so a required integration case cannot be written
 
@@ -159,7 +159,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   range is already bound by the participant minimum. Return it to the designer as design finding D1,
   since the delta now carries the sentence too. If it is kept instead, the plan must name the concrete
   stored state that reaches it, which this review could not construct.
-- **Decision**: PENDING
+- **Decision**: APPLIED. The designer withdrew the kind as design finding 1, so the sentence, the kind and its integration case are gone from the plan, from `plan-brief.md` and from `design-delta.md`. The plan's Key findings now records why it is unreachable, citing `src/domain/members.ts:51` for the overlap rule and `:35-37` for the refusal that always fires first, and states that the owner's later ranges sit inside the participant minimum.
 
 ### F4 - The repository-to-route contract for a refusal is unnamed, and `null` already means 404
 
@@ -178,7 +178,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   `{ ok: true; subscription } | { ok: false; kind: 'not-found' } | { ok: false; kind: 'refused'; field; message }`,
   with the route mapping stated: `not-found` to 404, `refused` to 400 `{ error, field }`, matching the
   existing shape at `src/server/routes/subscriptions.ts:40`.
-- **Decision**: PENDING
+- **Decision**: APPLIED. Critical implementation details now names the union `{ ok: true; subscription } | { ok: false; kind: 'not-found' } | { ok: false; kind: 'refused'; field; message }`, modelled on `MemberRemoval` at `src/server/db/members.ts:223`, and phase 1 change 4 states the route mapping. Verified that `update` returns `Subscription | null` today and the route maps null to 404 at `src/server/routes/subscriptions.ts:42-44`, so the finding is exact.
 
 ### F5 - The window between reading the minimums and writing is unstated
 
@@ -209,7 +209,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   - Trade-off: the ledger can still end up holding a record the rule forbids.
   - Confidence: HIGH.
   - Blind spot: single-user-per-subscription usage makes this rare, which is not the same as safe.
-- **Decision**: PENDING
+- **Decision**: APPLIED, Fix A, and extended. The bound now travels in the update's own `where` as one `not exists` clause per minimum, in the `insert ... select ... where exists (...)` shape proved at `src/server/db/members.ts:143-146`, with the prior read supplying only the refusal sentence. Two additions the review did not name: the same construction is applied to the currency lock, which has the identical window; and the owner opening-range update, being the second statement of the same batch, is gated on the subscription already carrying the new first month, so it cannot apply when the first statement did not. The reviewer's open design question about a 400 or a 409 does not arise: the update's `where` has only the ownership terms and the `not exists` clauses, so a `meta.changes === 0` on a row `get` proved exists is resolved by a re-read into either 404 (the row is gone) or the ordinary 400 (a minimum now binds), and no new copy string is needed.
 
 ### F6 - The empty-value contract of the month control contradicts itself between phase 2 and phase 3
 
@@ -226,7 +226,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
 - **Fix**: Have the handler always emit a string, `''` when empty, which is also exactly what the
   fallback select's empty option yields through `.value`, and leave both call sites normalising to
   `null` at submit as they do today. Amend the phase 2 contract to say `string`, not `string | null`.
-- **Decision**: PENDING
+- **Decision**: APPLIED. Phase 2 change 2 now specifies a handler that always receives a string, `''` when cleared, and states why: `ScheduleForm` holds a plain string, the fallback select's empty option yields `''` through `.value`, and both call sites already normalise to `null` at submit. Phase 3 change 1 agrees with it.
 
 ### F7 - Nothing says what the header action row does in the detail screen's error and no-owner states
 
@@ -245,7 +245,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   recommendation, offered as a starting point rather than a ruling: both buttons disabled in `error`,
   since nothing is known; Delete enabled and Edit disabled in `no-owner`, since the currency lock needs
   lists that state does not have while the deletion needs only the id.
-- **Decision**: PENDING
+- **Decision**: APPLIED as the designer ruled it in design finding 2, which matches the reviewer's recommendation. Phase 4 change 6 now carries a per-state table for all four states of `src/client/screens/SubscriptionDetail.tsx:49-55`: both buttons disabled in `error`, Delete enabled and Edit disabled in `no-owner`, with the strip, the Home return and the status line behaving as in the ready state. Progress row 4.17 checks it.
 
 ### F8 - Phase 4 never names the prop that carries the PATCH response up to where the subscription is held
 
@@ -262,7 +262,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
 - **Fix**: Add an `onUpdated(subscription)` prop to change 6 and `setSelected(updated)` to change 7's
   `App` contract. The Home list needs nothing further: `Home` refetches on remount at `Home.tsx:54`, so
   returning to it after an edit already shows the new values.
-- **Decision**: PENDING
+- **Decision**: APPLIED. Phase 4 change 6 now hands the PATCH response up through a named `onUpdated(subscription)` prop and change 7 implements it as `setSelected(updated)` in `App`, with `Home` left to its existing remount refetch at `Home.tsx:54`. Verified that `SubscriptionDetail` receives the subscription as a read-only prop at `:32-38`.
 
 ### F9 - Nothing tests that the fallback branch renders a select; one manual Safari row is the whole proof
 
@@ -280,7 +280,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   `monthControl.ts` as a pure function returning `'input' | 'select'` from the detection result and the
   props, so the decision is unit-tested and only the JSX is left to the browser. Neither option adds a
   dependency.
-- **Decision**: PENDING
+- **Decision**: APPLIED, both halves rather than either. The branch decision moved into `monthControl.ts` as a pure function returning `'input' | 'select'`, unit-tested in phase 2 change 5, **and** the Testing strategy gained a section stating plainly that the JSX those decisions select is covered by no automated test here, that manual row 5.4 is its only proof, and that a DOM environment is not worth a dependency in a project that pins every version by hand. Confirmed that the unit include is `src/**/*.test.ts`, so a `.tsx` test would not be collected.
 
 ### F10 - Moving the first month earlier is unbounded, and the summary enumerates every month from it
 
@@ -298,7 +298,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
 - **Fix**: Record the decision in the plan, or bound the earlier move by one cheap rule, for example
   refusing a first month more than a fixed number of years before the current month in the
   subscription's time zone. Either is fine; silence is what makes it a finding.
-- **Decision**: PENDING
+- **Decision**: APPLIED as the designer ruled it in the delta's amended first-month paragraph: a floor of January ten years before the current year in the subscription's time zone, on create and on edit alike, with the sentence `start_month cannot be earlier than YYYY-MM`. The plan enforces it in the repository rather than the schema, because it depends on the stored time zone, and the first-month control on both forms carries the matching `min`. Integration cases cover create and patch.
 
 ### F11 - One wire name gets two labels, and the create form keeps the old one
 
@@ -314,7 +314,7 @@ the currency out-of-scope line; `test-plan.md:52,53,66,67,195`; `roadmap.md:284-
   existing maps as six registered "at `:9-48`", which is right, so this is only the naming question.
 - **Fix**: One sentence in phase 4 change 4 saying the create form's label is deliberately unchanged,
   or a decision to align it. Raised with the designer as D3.
-- **Decision**: PENDING
+- **Decision**: APPLIED as the designer ruled it in design finding 3: one label per wire name. Phase 3 change 2 changes the create form's label at `src/client/screens/SubscriptionForm.tsx:138` from "Start month" to "First month", and phase 4 change 4 changes the single `start_month` entry in the existing `subscriptionFieldLabels` (`src/client/components/ui/fieldLabels.ts:9-16`) rather than adding a second map. Progress rows 3.9 and 4.16 check that no "Start month" string and no second map survive.
 
 ## Design findings
 
@@ -370,11 +370,32 @@ implementer cannot settle alone.
 
 ## Resolution
 
-Not this reviewer's to make. All eleven findings carry `Decision: PENDING` so the review skill's triage
-mode can resume from this file. F1 through F9 are marked as required before phase 1 or phase 2 begins,
-by the phase each names: F1, F6 and F9 gate phase 2; F2, F3, F4 and F5 gate phase 1; F7 and F8 gate
-phase 4. F10 and F11 can be taken at any point. The five design findings belong to the designer and
-none of them moves a phase boundary.
+The verdict was REVISE. All eleven findings are now resolved in `plan.md` and `plan-brief.md`, and the
+five design findings were ruled by the designer in `design-delta.md` under "Rulings on plan review
+design findings". Nothing was skipped and nothing was deferred; no phase boundary moved.
+
+| Finding | Severity | Decision | Where it landed |
+| --- | --- | --- | --- |
+| F1 | CRITICAL | Applied | plan Critical implementation details, phase 2 changes 1 and 5, criterion 2.2 |
+| F2 | CRITICAL | Applied, reviewer's first option | plan phase 1 change 8, Testing strategy, Progress row 1.8 |
+| F3 | CRITICAL | Applied, kind withdrawn by the designer | plan Key findings, What we are NOT doing, phase 1 change 7 |
+| F4 | WARNING | Applied | plan Critical implementation details, phase 1 changes 2 and 4 |
+| F5 | WARNING | Applied, Fix A, extended to the currency lock and the batch's second statement | plan Critical implementation details, phase 1 change 2, Risks |
+| F6 | WARNING | Applied | plan phase 2 change 2, phase 3 change 1 |
+| F7 | WARNING | Applied as ruled by the designer | plan phase 4 change 6, Progress row 4.17 |
+| F8 | WARNING | Applied | plan phase 4 changes 6 and 7 |
+| F9 | WARNING | Applied, both halves | plan Critical implementation details, phase 2 changes 1 and 5, Testing strategy |
+| F10 | OBSERVATION | Applied as ruled by the designer | plan Critical implementation details, phase 1 changes 1, 2, 5 and 7, phase 3 change 1 |
+| F11 | OBSERVATION | Applied as ruled by the designer | plan phase 3 change 2, phase 4 change 4 |
+
+The five notes for the implementer were taken as well: the two `new Date(` greps now cover
+`src/client/` with the two known-safe sites in `format.ts` named as the permitted matches and phase 4
+gained the same gate; the phase bodies now head their criteria `#### Automated verification:` and
+`#### Manual verification:` as the precedent does, leaving the `## Progress` headings untouched; the
+locked-currency hint is stated to interpolate the subscription's own currency code; the two frame
+questions are re-pointed at the delta's rulings, which settled both; and the single-batch claim moved
+out of the integration file into a unit test against a `D1Database` stub, which is where a repository
+function taking `db` as a parameter can actually be observed. The `10.9.0.x` prefix stands.
 
 `change.md` moves to `status: plan_reviewed` with this pass. Per this repository's convention no date
 field is written; the review is dated by the commit that carries it.
