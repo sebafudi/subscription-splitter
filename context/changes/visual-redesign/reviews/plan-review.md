@@ -6,7 +6,8 @@
 - **Repository state**: commit `8418a54` on `main`. Nothing of this change is on disk yet; the working
   tree carries only another agent's edits under `tools/reviewer/` and
   `context/changes/ai-review-pipeline/`, which this review does not touch.
-- **Verdict**: REVISE (approve with required changes)
+- **Verdict**: REVISE (approve with required changes). Re-verified at `15468e6`: all eleven findings
+  and all nine design findings resolved, three new required items in `## Re-verification`
 - **Findings**: 4 critical, 6 warnings, 1 observation, plus 9 design findings returned to the designer
 - **Reviewer**: independent; did not write the plan or the design specification
 
@@ -537,3 +538,101 @@ Progress rows: 87 before this review, 100 after.
 `change.md` is left at `status: planned`. The toolkit assigns the move to `plan_reviewed` to the
 review skill, not to the plan's author, so it belongs to the re-verification pass rather than to this
 resolution.
+
+## Re-verification
+
+Second pass by the same independent reviewer, against `plan.md`, `plan-brief.md`, `design-spec.md` and
+`reference/mockup-detail.html` as they stand at `15468e6`, not against the author's resolution table.
+Design findings were checked against `design-spec.md` at `d80aa25`. Claims that could be measured were
+measured again.
+
+**Outcome: all eleven engineering findings and all nine design findings are resolved.** Four items
+remain, three of them required and all four small. They are new, not carryovers: R1 and R3 were
+introduced by the resolution round itself.
+
+- **Verdict: REVISE.** One required item is a mechanical break in the Progress contract that
+  `/10x-implement` parses, so it has to close before implementation starts.
+- **`change.md` stays at `status: planned`.** It moves to `plan_reviewed` when R1, R2 and R3 close;
+  nothing else is holding it.
+
+### Findings, re-verified
+
+| Finding | Outcome | Evidence checked |
+| --- | --- | --- |
+| F1 focus lost to the document body | RESOLVED | Seven-row destination table in Critical implementation details; `ConfirmStrip` contract now names the Delete button on Keep and the section `h2` after a delete; design-spec 3.7, 3.10 and 7 carry the same four destinations with no disagreement between them; new manual rows 3.9 and 4.23 check it by tabbing once afterwards. The native-select case is removed in both documents with the correct reason |
+| F2 the font import ships eight files | RESOLVED, with R3 attached | Phase 1 change 2 is now four hand-written `@font-face` blocks against `@fontsource/ibm-plex-sans/files/*.woff2`. That subpath is a real entry in the package's `exports` map, verified in the 5.3.0 tarball, so it resolves without reaching into `node_modules`. Criterion 1.5 now asserts four woff2 at 79,268 bytes and no `.woff`, `.ttf`, `.eot` or `.otf`, which is falsifiable and self-checking: if the bare specifier failed to resolve the build would emit no woff2 and the row would fail |
+| F3 the arithmetic boundary is false of shipped code | RESOLVED | The scope bullet and the guard row are both restated as "no new client-side derivation" with the six locations named; design-spec's opening constraint paragraph now says the same, so a phase 6 re-check of the guard can be recorded honestly. See R5 for a numeric nit |
+| F4 the Participants count includes the organizer | RESOLVED | Design-spec 5.1 now reads "Heading Participants, no count"; 4.4 returns "Active participants" as the fourth ledger cell with the API value, organizer included, which is what makes it agree with "Per person this month" beside it; 4.4 adds a general rule that a heading count is the number of rows its list renders. Plan phase 4 changes 1 and 3 match. Section 9's copy table was updated to match rather than left stale |
+| F5 the app bar's props and `App.tsx` | RESOLVED | `App.tsx` is in phase 1 change 6's file list, `handleSignOut` lifts from `Home.tsx:34-37` into `App`, and the false sentence about the detail screen losing an affordance is replaced by one saying it gains a control it does not have |
+| F6 the scroll offset ignores the app bar | RESOLVED | 116px `scroll-margin-top` and a -100px top `rootMargin`, both in design-spec 4.4 and in the plan, both derived from the same 56px and 44px and required to be expressed as one custom property. Manual row 4.10 now checks the clearance and the tracking separately |
+| F7 the wire-name gate cannot fail | RESOLVED | The phase 5 gate is `grep -rn 'error\.field' src/client/`, which returns four interpolations on the current tree and can therefore fail; phase 2 scopes to the files it touches and says why. All four leaking forms are named. `owner_share` is gone and the guard now requires per-name match counts captured from `main` and held constant, which is a real check rather than a reading. The exclusion-phrase instruction is corrected: the prefix is at `RecurringSection.tsx:142`, the map is not edited, and criterion 5.19 requires the seven values to stay byte-identical |
+| F8 the submit button stays live | RESOLVED | Design-spec 3.3 now carries the guard ("the submit handler ignores further submits until the request settles"), the plan names the five existing call sites it preserves, and manual row 2.9 tests a second Enter during an in-flight request |
+| F9 the capture set is inconsistent | RESOLVED | Twenty-three states at 1280 in both themes is forty-six, eight mobile states in both themes is sixteen, total sixty-two. The arithmetic is right and the number appears identically in phase 6 change 4, change 5, the manual row, Progress row 6.8 and `plan-brief.md`. The eight section states of design-spec 11.4 are eight rows, not a composite. Phase 4 and phase 6 now agree on the no-owner state: phase 4 builds against the prior capture's content, phase 6 captures the new design by forcing the state |
+| F10 the contrast record measures text only | RESOLVED | Design-spec 2.1 adds `--border` (`#7C877F` light, `#6F7B73` dark) for control and tile boundaries with its own non-text check list, and exempts `--rule` as decorative on a stated condition. Measured again: `--border` reaches 3.29:1 on `--ground` and 3.52:1 on `--paper` in light, 4.19:1 and 3.86:1 in dark, so every non-text pair clears 3:1. The disabled primary is restyled to `--ink-soft` on a transparent ground, which is 6.69:1 light and 8.52:1 dark, so the 3.52:1 pair that prompted the finding is gone entirely. Every contract that previously bordered a control in `--rule` now says `--border`, in the specification, the plan and the mockup's stylesheet. See R2 for the one place `--rule` still carries a control |
+| F11 the entry highlight has no owner | RESOLVED | Phase 2 change 2 gives one shared hook per section the sentence, the highlighted row id and the 4 second timer, and `LedgerEntry` takes a `highlighted` prop from it, with the reduced-motion coupling stated explicitly |
+
+### Design findings, re-verified
+
+All nine are answered in `design-spec.md` and recorded in its section 12 table. Spot-checked against
+the sections themselves rather than the table: 1 in 4.4 and 5.1, 2 in 4.4 and the section 9 copy table,
+3 in 5.4 with "the kind is never dropped", 4 in 5.3, 5 in 2.1 and 3.3, 6 in 4.4, 7 in 3.10, 8 in 5.4,
+9 in 3.7, 3.10 and 7. The resolutions are internally consistent with each other: the four-cell ledger
+line, the absent Participants heading count and the general heading-count rule agree across 4.4, 5.1
+and 9; the focus destinations agree across 3.7, 3.10 and 7; `--border` is applied uniformly across
+2.1, 3.3, 3.4, 3.7 and 5.5.
+
+### Remaining items
+
+**R1, required, Plan Completeness.** Phase 4's automated block has eight criteria but seven Progress
+rows, so one criterion has no row. Splitting the old combined bullet into two left the `grep -n
+"activeRanges" src/client/components/MemberList.tsx` criterion uncovered: Progress row 4.4 now reads
+only the first half. Counted per phase, criteria against rows: phase 1 9/9, phase 2 6/6, phase 3 5/5,
+phase 4 8/7, phase 5 9/9, phase 6 7/7, and every manual block matches. This is the one mechanical
+contract `/10x-implement` parses, so it is a blocker rather than a tidiness point. Everything else in
+the Progress section is clean: 100 rows, all indices unique, no checkbox outside the section, one
+`## Progress` heading after `## References`, and the only em dash in the change is still the mandated
+commit-sha token.
+Fix: add `- [ ] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns
+nothing` to phase 4's Automated block.
+
+**R2, required, design artifact.** `reference/mockup-detail.html` was updated for the `--border` token
+but not for the two visible decisions the designer made in the same round. Line 106 to 110 still show a
+three-cell `dl` with no "Active participants", and line 118 still reads
+`<h2>Participants <span class="count">(2 active)</span></h2>`. Both now contradict design-spec 4.4 and
+5.1 directly, and the three PNGs beside the file are stale for the same two points. Design-spec 10
+calls the mockups references for appearance that the designer reviewed, and design-spec 11 is the
+checklist the acceptance review runs against them, so a mockup that shows the removed count is the
+artifact most likely to put it back.
+Fix: add the fourth cell, drop the heading count, re-export the three PNGs, or mark the file as
+superseded on those two points in section 10.
+
+**R3, required, Plan Completeness, one sentence.** Phase 1 change 2 says to copy the four
+`unicode-range` declarations "from the package's aggregate `index.css`, which is the only file that
+carries them", and `plan-brief.md` repeats it. Verified in the 5.3.0 tarball: `index.css` is weight 400
+only and carries two of the four, and it is not the only file with them, because `400.css` and
+`600.css` both carry per-subset ranges. The ranges are identical per subset at both weights, so an
+implementer who copies the two and reuses them for 600 lands correctly, but the instruction as written
+points at a file holding half of what it promises. The two values, which the plan can simply carry:
+`latin` is
+`U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD`
+and `latin-ext` is
+`U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF`.
+`ł` is U+0142 and sits in the latin-ext range, so `zł` renders as intended.
+
+**R4, optional, design question on 3.3.** `--rule` still carries one control: the link variant's
+underline, "underline 1px `--rule` offset 3px" at `design-spec.md:176`, unchanged through the round
+that added `--border` everywhere else. Measured, `--rule` is 1.41:1 on `--ground` and 1.51:1 on
+`--paper` in light, so that underline is close to invisible, and the link variant is the most used
+control in the design: every row action, every section index item, "Add another range", "Remove",
+"Dismiss", "All subscriptions" and "Show N settled archived participants". This is not a clear WCAG
+1.4.11 failure, because the variant is also weight 600 in `--ink` against secondary text at weight 400
+in `--ink-soft`, so weight and colour already identify it. It is raised because design-spec 2.1's new
+exemption is conditional ("it must never be the sole boundary of a control") and phase 6's new check
+looks for a `border`, so an underline passes that check by wording rather than by intent. If the
+underline is meant to be the affordance it should be `--border`, which measures 3.29:1 and 3.52:1; if
+weight and colour are meant to carry it, 2.1 is worth one sentence saying so.
+
+**R5, optional, two numeric nits.** The "No new client-side derivation" bullet says "five pieces of
+shipped client code do compute" and then lists six locations, which the guard row below it correctly
+calls "six shipped exceptions". And the Resolution section above records "Progress rows: 87 before this
+review, 100 after"; the count at `d2f71d8` was 94, and 100 is right.
