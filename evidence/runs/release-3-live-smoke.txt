@@ -1,0 +1,284 @@
+Live verification transcript, release version ad3aaa60-b2b6-458a-92c4-ff57d43f423c
+Release commit SHA: 6da64850c8f962a76bb8b18f99290ea9d086c271
+Supersedes version a0d38cda-4e0d-4767-a78e-fcb347c4eec4 (a secret change on top of the release 2
+code version 84a95549-cd34-4065-a202-cf5f1385e9f9).
+Target: https://subscription-splitter.sebastianfudalej.workers.dev
+Remote D1 subscription-splitter-db (03067638-dc95-4b5c-9a8a-86f2921e0414), migrations 0001 to 0006
+applied, 'No migrations to apply!' confirmed immediately before the deploy. This release ships the
+S-07 Google sign-in slice and no migration.
+
+Session tokens, passwords, the client secret and the seed token are redacted, and response
+timestamps are elided as '...', following evidence/runs/release-2-live-smoke.txt. Every name and
+amount is synthetic. Amounts are integer minor units. The Google client id is printed in full
+because D-012 records it as a public value; the client secret is never printed.
+
+No Google account was signed in during this pass. The walkthrough stops at Google's own page.
+
+=============== 1. Configuration read and access without a session ===============
+GET /api/auth-config
+status=200
+body: {"google":true}
+byte-exact equality with {"google":true}: YES
+
+GET /  (root)
+status=200
+  assets/index-CLEnPkyw.css
+  assets/index-CQZzLfmQ.js
+
+GET /api/health
+status=200
+body: {"ok":true}
+
+GET /api/me  (no cookie)
+status=401
+body: {"error":"unauthorized"}
+
+GET /api/subscriptions  (no cookie)
+status=401
+body: {"error":"unauthorized"}
+
+The two asset names above are byte-identical to the ones 'npm run build' produced in the clean
+clone at the release SHA (index-CLEnPkyw.css, index-CQZzLfmQ.js), which is what proves this
+release's bundle is the one that is live rather than a cached predecessor.
+
+=============== 2. The social sign-in endpoint and the deployed origin ===============
+POST /api/auth/sign-in/social  (Origin: https://subscription-splitter.sebastianfudalej.workers.dev, provider=google)
+status=200
+authorize url host and path:
+  accounts.google.com/o/oauth2/v2/auth
+  client_id = 665118823252-3se5sfle7htesllnikqqg49b1143vc7i.apps.googleusercontent.com
+  redirect_uri = https://subscription-splitter.sebastianfudalej.workers.dev/api/auth/callback/google
+  response_type = code
+  scope = email profile openid
+  code_challenge_method = S256
+  state present: True, length 32
+  code_challenge present: True
+
+POST /api/auth/sign-in/social  (Origin: https://evil.example)
+status=200
+body: {"url":"https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=665118823252-3se5sfle7htesllnikqqg49b1143vc7i.apps.googleusercontent.com&state=Ey7v_09d75-Cgf6TrbiZQbAHSb1usFJQ&scope=email+profile+openid&redirect_uri=https%3A%2F%2Fsubscription-splitter.sebastianfudalej.workers.dev%2Fapi%2Fauth%2Fcallback%2Fgoogle&code_challenge_method=S256&code_challenge=Bcnn4tWPa9z07pMlSq1B-QBQZoX6yQE-2GpmUGcJYXM","redirect":true}
+
+=============== 3. The fabricated-state callback ===============
+GET /api/auth/callback/google?state=bogus&code=bogus  (redirects not followed)
+status=302
+  location: /?error=state_mismatch
+  following the redirect chain:
+  final url = https://subscription-splitter.sebastianfudalej.workers.dev/?error=state_mismatch
+  final status = 200
+
+GET /api/me immediately after that callback (no session may have been created)
+status=401
+body: {"error":"unauthorized"}
+
+Follow-up probes on the cross-origin reading above.
+
+a) Cross-origin password sign-in, the release 2 baseline
+POST /api/auth/sign-in/email  (Origin: https://evil.example)
+status=403
+body: {"message":"Invalid origin","code":"INVALID_ORIGIN"}
+
+b) Cross-origin social call that also asks to be returned to the attacker
+POST /api/auth/sign-in/social  (Origin: https://evil.example, callbackURL on evil.example)
+status=403
+body: {"message":"Invalid callbackURL","code":"INVALID_CALLBACK_URL"}
+
+c) Same-origin social call, error callback on the attacker
+POST /api/auth/sign-in/social  (Origin: the deployed origin, callbackURL on evil.example)
+status=403
+body: {"message":"Invalid callbackURL","code":"INVALID_CALLBACK_URL"}
+
+d) CORS response headers on the cross-origin social call
+  HTTP/2 200 
+  (a browser only hands the body to evil.example if access-control-allow-origin names it)
+
+=============== 4. Password sign-in, session and sign-out still work ===============
+POST /api/auth/sign-up/email  (must stay disabled)
+status=400
+body: {"message":"Email and password sign up is not enabled","code":"EMAIL_PASSWORD_SIGN_UP_DISABLED"}
+
+POST /api/auth/sign-in/email  (owner)
+status=200
+  set-cookie: __Secure-better-auth.session_token=<redacted>; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+
+GET /api/me  (owner cookie)
+status=200
+  email = owner@example.com, id present = True
+
+GET /api/subscriptions  (owner cookie)
+status=200
+  2 subscriptions: ['First deployment artefact (not the demo plan)', 'Family music plan']
+
+GET /api/subscriptions/<demo>/summary  (owner cookie; must equal the release 2 baseline)
+status=200
+  currentMonth = 2026-09
+  currency = PLN
+  currentMonthly = 12000
+  currentActiveCount = 2
+  currentPerPersonShare = 6000
+  ownerShareThisMonth = 6000
+  owedToYouNow = 3999
+  creditOutstanding = 2001
+  expectedThisMonth = 6000
+  collectedThisMonth = 21000
+  totalPlanCost = 66000
+  totalCollected = 36000
+  ownerNetCost = 30000
+  member Blake: owed=27999 paid=24000 balance=-3999
+  member Casey R.: owed=9999 paid=12000 balance=2001
+
+POST /api/auth/sign-out  (owner cookie)
+status=200
+body: {"success":true}
+
+GET /api/me  (replaying the same, now signed-out, cookie)
+status=401
+body: {"error":"unauthorized"}
+
+=============== 5. The second account still reaches nothing of the first ===============
+POST /api/auth/sign-in/email  (reviewer)
+status=200
+  body: session token redacted; the response carries the user record only
+
+GET /api/subscriptions  (reviewer cookie): empty is the isolation demonstration
+status=200
+body: []
+
+GET /api/subscriptions/<owner demo plan>  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions/<owner demo plan>/summary  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions/<owner demo plan>/members  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions/<owner demo plan>/prices  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions/<owner demo plan>/payments  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+GET /api/subscriptions/<owner demo plan>/schedules  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+
+POST /api/auth/sign-out  (reviewer cookie)
+status=200
+
+=============== 6. The login screen in a real Chrome ===============
+A throwaway Chrome (Chrome/152.0.7977.84) driven over the DevTools protocol against the live URL,
+with its own empty profile. Readings are computed values from the live page, not from a local build.
+
+Device emulation 1280x900 at dpr 2, light
+  .login-actions  display=flex  flex-direction=row  gap=12px  (the delta's --s-3)
+  button 1  "Sign in"               class=btn-primary login-submit  x=475.00 y=424.58 w=80.78  h=40.00
+  button 2  "Continue with Google"  class=btn-quiet login-google    x=567.78 y=424.58 w=209.09 h=40.00
+  mark 18.00x18.00, aria-hidden=true, fills #4285F4 #34A853 #FBBC05 #EA4335 (the four official values)
+  divider present: no      new copy: none      horizontal overflow: no
+  tab order: email, password, Sign in, Continue with Google
+  accessible name of the Google button: "Continue with Google" (the label alone; the mark is hidden)
+
+Device emulation 1280x900 at dpr 2, dark
+  flex-direction=row  gap=12px   body background rgb(15, 21, 18)
+  "Sign in"              x=475.00 y=424.58 w=80.78  h=40.00
+  "Continue with Google" x=567.78 y=424.58 w=209.09 h=40.00
+  Google button: color rgb(232, 237, 230), border 1px solid rgb(111, 123, 115), background transparent
+  horizontal overflow: no
+
+Device emulation 390x844 at dpr 3, mobile, touch, dark
+  flex-direction=column  gap=12px
+  "Sign in"              x=31.00 y=421.38 w=343.00 h=44.00   (first, full width, 44px)
+  "Continue with Google" x=31.00 y=477.38 w=343.00 h=44.00
+  document scrollWidth 390, horizontal overflow: no
+
+Device emulation 390x844 at dpr 3, mobile, touch, light
+  flex-direction=column  gap=12px   body background rgb(238, 242, 234)
+  "Sign in"              x=31.00 y=421.38 w=343.00 h=44.00
+  "Continue with Google" x=31.00 y=477.38 w=343.00 h=44.00
+  Google button: color rgb(23, 33, 27), border 1px solid rgb(124, 135, 127), background transparent
+  horizontal overflow: no
+
+All four readings match design-delta.md: one action row at 1280 with the filled primary first and the
+quiet Google button carrying the unmodified mark, stacked full width at 390 with Sign in first at
+44px, no divider and no new copy in any of them.
+
+=============== 7. The live button leaves for Google ===============
+Clicked "Continue with Google" on the live login screen at the real window size (948 CSS px, the
+machine's dark appearance). The browser left for Google. Nothing was typed and no account was chosen.
+
+Landing host: accounts.google.com
+Landing path: /v3/signin/identifier
+  client_id     = 665118823252-3se5sfle7htesllnikqqg49b1143vc7i.apps.googleusercontent.com
+  redirect_uri  = https://subscription-splitter.sebastianfudalej.workers.dev/api/auth/callback/google
+  response_type = code
+  scope         = email profile openid
+  code_challenge_method = S256, code_challenge present
+  state present, 32 characters
+  app_domain    = https://subscription-splitter.sebastianfudalej.workers.dev
+
+client_id compared with the value D-012 records as public: identical, full string.
+redirect_uri compared with the deployed callback URL: identical.
+Google's page reads "to continue to sebastianfudalej.workers.dev".
+Captured as evidence/screenshots/release-3-google-consent-redirect.png.
+
+=============== 8. FAILURE: the callback never reaches the Worker in a browser ===============
+This is the one live check that failed. It is recorded and not patched, per the task's rule.
+
+Driving the fabricated-state callback as a real top-level browser navigation rather than with curl:
+
+  navigate to /api/auth/callback/google?state=bogus2&code=bogus2
+  URL the document actually loaded at: .../api/auth/callback/google?state=bogus2&code=bogus2
+  no redirect occurred; the client shell was served at the callback path with the query intact
+  rendered alert text: empty      rendered status text: empty
+  expected: a 302 to /?error=state_mismatch and the expired-link alert on the login screen
+
+The same request by curl does redirect, so the difference is the request shape, not the code. A
+single-variable matrix isolates the trigger exactly. Status, content-type and Location as returned:
+
+  callback, no special headers                 302  application/json  location: /?error=state_mismatch
+  callback, Accept: text/html only             302  application/json  location: /?error=state_mismatch
+  callback, Sec-Fetch-Dest: document only      302  application/json  location: /?error=state_mismatch
+  callback, Accept: */* + Sec-Fetch-Dest: doc  302  application/json  location: /?error=state_mismatch
+  callback, Sec-Fetch-Mode: navigate only      200  text/html         (index.html, no Location)
+
+  /api/me,          Accept: text/html          401  application/json
+  /api/health,      Accept: text/html          200  application/json
+  /api/auth-config, Accept: text/html          200  application/json
+
+The single deciding header is Sec-Fetch-Mode: navigate. Any top-level document navigation to a path
+that is not a static asset is answered by Cloudflare's asset layer with index.html at 200 and never
+reaches the Worker. wrangler.jsonc sets:
+
+  "assets": { "not_found_handling": "single-page-application" }
+
+and nothing that asks the Worker to run first. That block has been in wrangler.jsonc since the
+scaffold (c85b946, then 909dd6a); `git diff --stat c842f64..HEAD -- wrangler.jsonc` is empty, so the
+google-sign-in change neither introduced nor altered it.
+
+Why it did not surface before: every earlier API call the client makes is fetch/XHR, which carries
+Sec-Fetch-Mode: cors or same-origin and passes through to the Worker untouched. That is why password
+sign-in, sign-out, the subscription reads and /api/auth-config all still work in the browser and all
+pass above. The OAuth return leg is the first thing this application does that requires a top-level
+document navigation to an /api path, and it is exactly the shape the asset layer intercepts.
+
+Consequence: on this deployment a real Google sign-in cannot complete. Google would 302 the browser
+to /api/auth/callback/google?code=...&state=..., that navigation would be answered with index.html,
+the authorization code would never be exchanged and no session would be created. The user would land
+on a bare login screen with no message. The same interception is why the expired-link alert could not
+be produced in the browser here.
+
+Not a regression, and no rollback is indicated: nothing that worked before this release works less
+well now, and every pre-existing behaviour is verified passing above. It is a deployment
+configuration gap that this feature is the first to depend on.
+
+=============== 9. What this pass did not do ===============
+- No Google account was signed in. Consent, token exchange, account creation, the empty Home for a
+  new Google account, sign-out and a second sign-in returning to the same account are all untested.
+  They need the owner's own Google account, and they cannot pass until section 8 is resolved.
+- No code was changed and nothing was patched in response to section 8.
+- No capture shows a password, a token, a session cookie or the client secret.
