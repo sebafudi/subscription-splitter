@@ -79,6 +79,17 @@ The accepted capture `redesign-22-index-current-item-light.png` and its mobile p
 superseded behaviour when they were first taken. They were retaken against the end-of-document rule
 below, at the widths and themes of the originals, so the acceptance set now shows what ships.
 
+The four `impl-review-f1-index-current-*` files themselves were retaken for re-verification finding
+R1 (`impl-review.md`, `## Re-verification`), whose first pass mismatched three of the four against
+this table: the mobile-dark file showed the Home list at desktop width, the desktop-dark file was off
+the set's dimensions, and the light and dark desktop pair both rendered dark. Retaken against the same
+populated subscription with Chrome over the DevTools protocol against `npm run dev`, signed in as the
+seeded owner: desktop at 2560 by 1800 (1280 by 900 at 2x), mobile at 750 by 1624 (375 by 812 at 2x),
+each pair light via `prefers-color-scheme: light` and dark via `prefers-color-scheme: dark`. Verified
+after saving with `sips -g pixelWidth -g pixelHeight` and by reading each file: the desktop pair shows
+Payments received clicked and current, the mobile pair shows Standing orders clicked and current, and
+all four now match this table's descriptions above.
+
 ## Follow-up: the end-of-document rule
 
 Design-spec 4.4 gained the end-of-document rule after this record was first written: when the
