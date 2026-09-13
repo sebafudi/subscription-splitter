@@ -1416,6 +1416,45 @@ Verified in a browser: in the payment panel From and Date received now share a t
 and Kind, and in the participant panel a refused From keeps its input level with To while the error
 runs on under it alone.
 
+**D11, raised in phase 6. Design-spec 5.4 and 8: how tall the Payments received filter select is
+below 640px.** Design-spec 5.4 fixes the filter as "a labelled `select` 'Show' (Everyone, then each
+participant) at the right end of the subtitle line, `--t-small` label, 32px high control", and its
+next sentence says only that below 640px the control sits under the subtitle, without restating a
+height. Design-spec 8 fixes the other end: at or below 640px the page has "44px controls (primary,
+quiet, destructive buttons, inputs and selects; link-variant buttons stay 24px per 3.3)", which names
+selects and carves out only the link variant. The filter is a select, so at 390 the two sentences ask
+for different heights and only one can be painted. Measured at 390: every other control clears its
+rule, the primary, quiet and destructive buttons and every input computing at least 44px and the
+link-variant buttons 24px, while this one select computes 32px because
+`.filter-label select { height: 32px }` is more specific than the breakpoint's
+`input, select { height: 44px }` and comes later in the stylesheet. This blocks Progress row 6.13,
+whose title asserts that every control at that width is at least 44px high; the rest of that row, that
+no screen or state scrolls horizontally at 390, is measured and holds. Left in place for it: the 32px
+the specification's own section 5.4 states, so the appearance is the one that shipped from phase 5 and
+nothing was improvised. Deciding between 32px everywhere and 44px below the breakpoint is a target-size
+decision for the designer, not a mechanical code choice.
+
+### Designer hand-off, phase 6
+
+Phase 6 change 5 asks the implementer to state that the acceptance material exists and is readable,
+and then to request the designer's review against design-spec 11. It exists and is readable:
+
+| What | Where | State |
+| --- | --- | --- |
+| The captures | `evidence/screenshots/redesign-*.png` | 62 files. Twenty-three states at 1280 in light and dark, forty-six files, named `redesign-NN-<slug>-<theme>.png`. The eight states design-spec 8 relayouts again at 390 in light and dark, sixteen files, named `redesign-NN-<slug>-mobile-<theme>.png`. All at a 2x device pixel ratio. None carries a credential, a token or a session cookie; the only identifier visible is the synthetic seeded address `owner@example.test`, or `reviewer@example.test` on row 04, and the password field renders masked in rows 02 and 03 |
+| The contrast record | `evidence/runs/visual-redesign-contrast.md` | Both tables, both themes, every row carrying its measured ratio, its threshold and the result, with the tool and method named and the `--rule` exemption's condition checked against the stylesheet |
+| The bundle record | `evidence/runs/visual-redesign-bundle.txt` | Phase 6 section against the `research.md` baseline and the design-spec 2.2 budget, with the four woff2 files listed and the exact font package version |
+| The keyboard record | `evidence/runs/visual-redesign-keyboard.md` | The design-spec 11.6 pass as prose, the 11.7 index walk, the reduced-motion comparison and its method, every forced state, and the data created and reverted |
+| The guards record | `evidence/runs/visual-redesign-guards.txt` | All eleven Stability guards rows re-checked in one pass, each with its result |
+| The phase record | `evidence/runs/visual-redesign-phase-gates.md` | The phase 6 section, in the same form as phases 1 to 5 |
+
+**The designer's review against design-spec 11 is requested.** One checkpoint is open and is the
+implementer's only finding: D11 above, the height of the Payments received filter select below 640px,
+where design-spec 5.4 and design-spec 8 ask for different numbers. Nothing else in the pass diverged
+from the specification, no token value was changed, and no appearance was altered in response to
+anything found. Progress row 6.13 is left unticked for D11 and row 6.14 is left unticked until the
+designer answers, which is what phase 6's implementation note requires.
+
 ## Testing strategy
 
 There is no test to write. This change adds no DOM testing dependency, edits no existing test and
@@ -1612,21 +1651,21 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [ ] 6.1 Typecheck passes across all three projects
-- [ ] 6.2 The whole suite passes with no test file changed
-- [ ] 6.3 The production build succeeds
-- [ ] 6.4 package.json dependencies differ from the baseline by the font package and nothing else
-- [ ] 6.5 Every Stability guards row is re-checked in one pass and recorded
-- [ ] 6.6 The bundle and font byte counts are recorded, with four woff2 files and no other font format
-- [ ] 6.7 Nothing under src/server, src/domain, migrations or tests has changed across the whole change
+- [x] 6.1 Typecheck passes across all three projects
+- [x] 6.2 The whole suite passes with no test file changed
+- [x] 6.3 The production build succeeds
+- [x] 6.4 package.json dependencies differ from the baseline by the font package and nothing else
+- [x] 6.5 Every Stability guards row is re-checked in one pass and recorded
+- [x] 6.6 The bundle and font byte counts are recorded, with four woff2 files and no other font format
+- [x] 6.7 Nothing under src/server, src/domain, migrations or tests has changed across the whole change
 
 #### Manual
 
-- [ ] 6.8 All sixty-two captures exist under the naming rule, show their state, and carry no credential
-- [ ] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded
-- [ ] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions
-- [ ] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes
-- [ ] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border
-- [ ] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5
+- [x] 6.8 All sixty-two captures exist under the naming rule, show their state, and carry no credential
+- [x] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded
+- [x] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions
+- [x] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes
+- [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border
+- [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5
 - [ ] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings

@@ -117,3 +117,59 @@ owner_name       1
 currency         2
 locale           2
 name             7
+
+## Phase 6 end
+
+member_id        2
+date             1
+amount           3
+note             1
+kind             1
+effective_from   1
+start_month      2
+end_month        1
+joined_month     1
+left_month       1
+active_ranges    2
+time_zone        1
+owner_name       1
+currency         2
+locale           2
+name             7
+
+Every one of the eleven Stability guards rows in plan.md, re-checked in one pass at the end of
+phase 6 against the pre-change baseline d4e755f:
+
+Wire field names unchanged            pass. The sixteen counts above are identical to the baseline.
+Routes unchanged                      pass. git diff --stat d4e755f..HEAD -- src/server/ src/domain/
+                                      migrations/ is empty. tests/ is empty too. The only test file
+                                      that differs anywhere in the repository is
+                                      tools/reviewer/test/review.test.ts, which belongs to the
+                                      ai-review-pipeline change and is outside this change's scope.
+Money formatting stays in the domain  pass. grep -rn "NumberFormat" src/client/ returns nothing, so
+                                      formatMoney is the only producer of a money string.
+Month status stays in the domain      pass. scheduleMonthStatuses is imported once and called once,
+                                      both in RecurringSection.tsx, and decides every tile state.
+MemberMonthInputs assembly unchanged  pass. The monthInputs object in SubscriptionDetail.tsx still
+                                      carries settings (startMonth, currency, locale, timeZone) and
+                                      breakMonths, built from the subscription and the break-month
+                                      list.
+No new client-side derivation         pass. The six shipped exceptions are all still present and
+                                      unchanged: the assumed total and the elapsed-month counts in
+                                      RecurringSection.tsx, and the major-to-minor conversions and
+                                      their inverses in PriceHistory.tsx, PaymentForm.tsx and
+                                      ScheduleForm.tsx. No component derives a share, a balance, an
+                                      owed amount or an active count that it did not derive before.
+Native elements kept                  pass. grep -rn 'role="button"|role="checkbox"|role="listbox"'
+                                      src/client/ returns nothing.
+No router                             pass. grep -n "router" package.json returns nothing. App.tsx
+                                      holds the selection in one useState; its useState count is
+                                      unchanged from the baseline.
+Seven exclusion phrases               pass. The Record<MonthExclusion, string> block in
+                                      RecurringSection.tsx is byte-identical to the baseline, so it
+                                      is still total, still has no two entries sharing a string, and
+                                      every value matches main.
+Suite unchanged and green             pass. npm run typecheck clean across all three projects,
+                                      185 unit tests in 15 files and 112 integration tests in 11
+                                      files, all passing, with no test file under src/ or tests/
+                                      added, removed or edited.

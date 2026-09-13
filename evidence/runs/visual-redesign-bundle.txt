@@ -73,3 +73,27 @@ Fonts         79,268 bytes, the same four woff2 files and no other font format
 
 Delta against the baseline: JavaScript 21,491 bytes, CSS 13,536 bytes,
 fonts 79,268 bytes.
+
+## Phase 6
+
+JavaScript   273,424 bytes   dist/client/assets/index-*.js
+CSS           16,548 bytes   dist/client/assets/index-*.css
+Fonts         79,268 bytes   four woff2 files
+
+Against the research.md baseline of 251,933 bytes of JavaScript and 3,012 bytes of CSS:
+JavaScript +21,491 bytes, CSS +13,536 bytes.
+
+Against the design-spec 2.2 font budget of 160 KB (163,840 bytes): 79,268 bytes, 48 percent of it.
+The exact package version is @fontsource/ibm-plex-sans 5.3.0, pinned with no range prefix.
+
+The four files the build ships, measured from dist/client/assets/:
+
+ibm-plex-sans-latin-400-normal      22,588
+ibm-plex-sans-latin-600-normal      24,252
+ibm-plex-sans-latin-ext-400-normal  15,980
+ibm-plex-sans-latin-ext-600-normal  16,448
+total                               79,268
+
+No .woff, .ttf, .eot or .otf file exists anywhere under dist/client; the count of non-woff2 font
+files is zero. package.json dependencies differ from the baseline by @fontsource/ibm-plex-sans and
+nothing else.

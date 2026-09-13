@@ -249,3 +249,65 @@ rather than the questioned one.
 One note back to the designer, not a question: design-spec 3.4 still reads "Optional hint under the
 label", which the new 3.7 stack supersedes. The implementation follows 3.7, because 3.7 is the text
 that was written to answer D10 and its stated reason depends on the hint sitting under the control.
+
+## Phase 6: the responsive, accessibility and acceptance pass
+
+Phase 6 designs nothing. Its own captures are the acceptance set the designer reviews, so they live
+under `evidence/screenshots/` as `redesign-NN-<slug>-<theme>.png` and
+`redesign-NN-<slug>-mobile-<theme>.png` rather than beside the plan with the earlier phases' working
+evidence. Sixty-two files: twenty-three states at 1280 in both themes, and the eight states of
+design-spec 8 again at 390 in both themes. Every file is at a 2x device pixel ratio, so the desktop
+captures are 2560 by 1800 and the mobile ones 780 by 1688, except the two full-column captures of
+row 09, which run the height of the page.
+
+The three records the phase owes are `evidence/runs/visual-redesign-contrast.md` (new, both tables,
+both themes, the tool named), `evidence/runs/visual-redesign-keyboard.md` (new, the design-spec 11.6
+pass as prose plus every forced state and every piece of data created and reverted) and the phase 6
+sections appended to `visual-redesign-bundle.txt` and `visual-redesign-guards.txt`.
+
+Measured during the pass rather than captured:
+
+- The sticky stack is exact at both widths. A heading reached through the section index lands at
+  116px, measured at 1280 and again at 390, which is the bar's 56px plus the index's 44px plus
+  `--s-4`. `aria-current` tracks the last heading to cross the visible top at 100px, in both
+  scroll directions.
+- Focus never reached `document.body` on any path walked with real keys: Enter on a heading-row
+  button focuses the panel's first field, Escape returns to that button as it remounts and leaves the
+  closed panel `inert`, Enter on a Delete opens the strip with focus on Keep, Enter on Keep returns
+  to that entry's own Delete, and completing a delete moves focus to the section's `h2`. All five
+  section headings carry `tabindex="-1"` and no element in the document carries a positive
+  `tabindex`.
+- Every focus stop computes `2px solid rgb(31, 111, 74)` at `2px` offset, which is `--green` and the
+  one focus style of design-spec 2.4.
+- No text or non-text contrast pair failed, in either theme. The lowest text value is `--ink-faint`
+  on `--ground` in light at 3.29:1 against its 3:1 threshold, and the lowest non-text value is
+  `--border` on `--ground` in light at 3.29:1 against 3:1. No token value was changed by this phase.
+- No control takes `--rule` as its visible boundary. All five `var(--rule)` usages in the stylesheet
+  are separators: the app bar's bottom line, the index's bottom line, the hairline between ledger
+  entries, and the summary band's two lines. Every input, select, quiet button, panel and tile
+  computes a `--border` box in both themes, and the link variant's underline computes `--border` too.
+- Reduced motion was emulated for real, by relaunching headless Chrome with
+  `--force-prefers-reduced-motion` rather than by injecting a stylesheet, and the pass was repeated
+  with a normally launched Chrome. All five motion custom properties read `0ms` under reduced motion.
+  With motion on, the disclosure transitions `grid-template-rows` over 180ms and not `max-height`,
+  the entry highlight runs `entry-highlight` for 1200ms after a 200ms delay, and the status line runs
+  120ms in and 200ms out. Under reduced motion the disclosure jumps to its full height within 20ms,
+  the highlight has zero running animations and holds a static `--green-tint` cleared by the same
+  timer as the status line, and the status line appears and dismisses instantly. Nothing animated on
+  load in either mode.
+- At 390 nothing scrolls horizontally. Measured `scrollWidth - clientWidth` is 0 on Home populated,
+  Home with its panel open, the detail screen populated, and the detail screen with all five add
+  panels open at once. The section index scrolls sideways inside itself, which is what design-spec 8
+  asks for, and the page does not.
+- At 390 every primary, quiet and destructive button and every input computes at least 44px, and the
+  link-variant buttons compute 24px, which design-spec 8 exempts by name. One control does not meet
+  44px and is not exempt: the Payments received filter `select` computes 32px, because
+  `.filter-label select { height: 32px }` outranks the breakpoint's `input, select { height: 44px }`.
+  That is design question D11 below rather than a fix, because design-spec 5.4 states 32px and
+  design-spec 8 states 44px and the two cannot both be satisfied. The appearance is left as built.
+- No console error or warning was logged during the whole phase 6 session.
+
+The captures were taken against the two seeded subscriptions with three throwaway participants and
+one moved standing order, all of them reverted; `visual-redesign-keyboard.md` records exactly what
+was created, what was forced in the client because no product route can fail on demand, and the
+verification that the local database ended the session in the state it started in.
