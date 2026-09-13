@@ -1,7 +1,7 @@
 <!-- PLAN-REVIEW-REPORT -->
 # Plan review: Implementation plan, subscription management and native calendar inputs
 
-- **Plan**: `context/changes/subscription-management-and-date-inputs/plan.md`
+- **Plan**: `context/archive/subscription-management-and-date-inputs/plan.md`
 - **Mode**: Deep
 - **Repository state**: commit `b482f25` on `main`, which is this reviewer's own mechanical commit of
   the designer's amendment to `design-delta.md`. Nothing of this change is on disk. The review was

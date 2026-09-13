@@ -153,8 +153,8 @@ proceeds on, marked in `plan.md` where it lands.
 
 ## References
 
-- Design authority: `context/changes/subscription-management-and-date-inputs/design-delta.md`
-- Research: `context/changes/subscription-management-and-date-inputs/research.md`
+- Design authority: `context/archive/subscription-management-and-date-inputs/design-delta.md`
+- Research: `context/archive/subscription-management-and-date-inputs/research.md`
 - Brief: `context/foundation/subscription-management-brief.md`
 - Server: `src/server/routes/subscriptions.ts`, `src/server/validation/subscriptions.ts:43-55`,
   `src/server/db/subscriptions.ts:56-97`, `src/server/db/recurring.ts:211-247`

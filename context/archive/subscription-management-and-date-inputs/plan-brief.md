@@ -1,10 +1,10 @@
 # Subscription management and native calendar inputs - plan brief
 
-> Full plan: `context/changes/subscription-management-and-date-inputs/plan.md`
-> Design authority: `context/changes/subscription-management-and-date-inputs/design-delta.md`
-> Independent review: `context/changes/subscription-management-and-date-inputs/reviews/plan-review.md`
-> Frame: `context/changes/subscription-management-and-date-inputs/frame.md`
-> Research: `context/changes/subscription-management-and-date-inputs/research.md`
+> Full plan: `context/archive/subscription-management-and-date-inputs/plan.md`
+> Design authority: `context/archive/subscription-management-and-date-inputs/design-delta.md`
+> Independent review: `context/archive/subscription-management-and-date-inputs/reviews/plan-review.md`
+> Frame: `context/archive/subscription-management-and-date-inputs/frame.md`
+> Research: `context/archive/subscription-management-and-date-inputs/research.md`
 
 ## What and why
 

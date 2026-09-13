@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Implementation Review: Edit and delete the subscription itself, and use native browser calendar controls
 
-- **Plan**: `context/changes/subscription-management-and-date-inputs/plan.md`
+- **Plan**: `context/archive/subscription-management-and-date-inputs/plan.md`
 - **Scope**: Phases 1 to 6 of 6 (Progress shows 54 of 57 boxes checked; 2.8, the `no-owner` half of
   4.17 and 6.1 are open)
 - **Commits reviewed**: `4978603` through `89fabe5`, against the pre-change baseline `8c187fc`. The
@@ -231,7 +231,7 @@ artefact and nothing else of the kind survives at head. Nothing is duplicated an
 - **Severity**: 📝 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Success Criteria
-- **Location**: `context/changes/subscription-management-and-date-inputs/plan.md`, phase 6 Automated
+- **Location**: `context/archive/subscription-management-and-date-inputs/plan.md`, phase 6 Automated
 - **Detail**: 6.1 ("typecheck, the whole suite and the production build all still pass") is the only
   unticked automated row in the plan. The phase 6 checkpoint explains the omission honestly: the
   working tree carried another agent's uncommitted client work, so only typecheck was run, and the
@@ -260,7 +260,7 @@ artefact and nothing else of the kind survives at head. Nothing is duplicated an
 - **Severity**: 📝 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Scope Discipline
-- **Location**: `context/changes/subscription-management-and-date-inputs/change.md`
+- **Location**: `context/archive/subscription-management-and-date-inputs/change.md`
 - **Detail**: Every phase has landed, the designer has accepted and this review is complete, but the
   front matter still reads `plan_reviewed`. The reviewer was instructed not to change it, and the
   archive step owns the transition, so this is recorded for whoever runs that step rather than

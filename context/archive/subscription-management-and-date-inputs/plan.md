@@ -6,7 +6,7 @@ Give the owner two things the shipped ledger never gave them - editing the subsc
 deleting it with its whole ledger - and replace every plain-text calendar field in the client with a
 real browser control. This is roadmap item S-08.
 
-`context/changes/subscription-management-and-date-inputs/design-delta.md` is the design authority for
+`context/archive/subscription-management-and-date-inputs/design-delta.md` is the design authority for
 everything a person sees and for the product rules the server enforces: the currency lock, the
 first-month bounds in both directions, the owner opening-range shift and the deletion scope. Its
 "Rulings on planning questions" and "Rulings on plan review design findings" sections settle every
@@ -1099,11 +1099,11 @@ exercised on data that matters.
 
 ## References
 
-- Design authority: `context/changes/subscription-management-and-date-inputs/design-delta.md`,
+- Design authority: `context/archive/subscription-management-and-date-inputs/design-delta.md`,
   including its "Rulings on planning questions" and "Rulings on plan review design findings"
-- Independent review: `context/changes/subscription-management-and-date-inputs/reviews/plan-review.md`
-- Frame: `context/changes/subscription-management-and-date-inputs/frame.md`
-- Research: `context/changes/subscription-management-and-date-inputs/research.md`
+- Independent review: `context/archive/subscription-management-and-date-inputs/reviews/plan-review.md`
+- Frame: `context/archive/subscription-management-and-date-inputs/frame.md`
+- Research: `context/archive/subscription-management-and-date-inputs/research.md`
 - Brief: `context/foundation/subscription-management-brief.md`
 - Accepted specification: `context/archive/visual-redesign/design-spec.md`, amended by the delta
 - Atomicity precedent: `src/server/db/recurring.ts:211-247`
