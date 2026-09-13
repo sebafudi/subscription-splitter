@@ -14,6 +14,11 @@ This is roadmap item S-07. It changes `src/server/auth.ts`, `src/server/routes/a
 adds no migration, changes no accounting rule, no route other than one unauthenticated read, no
 ownership check and no stored subscription value.
 
+`context/changes/visual-redesign/design-spec.md` is deliberately not edited. The accepted
+specification keeps its original wording and `design-delta.md` is the standing amendment for
+sections 4.1, 9 and 11, so the amendment lives in one file that a reader of either can follow rather
+than in two files that can drift apart.
+
 The change is small in code and concentrated in risk. Research says it plainly: the schema was
 already written from the library's own table definitions, the handler is a catch-all so the callback
 route is already mounted, and `createAuth` is already built per request so a conditional provider
@@ -93,9 +98,21 @@ no repository secret of any kind.
 - **Registering the provider unconditionally is not an option.** The Google provider throws
   `CLIENT_ID_AND_SECRET_REQUIRED` when either value is absent, so empty strings would turn every click
   into a server error rather than into an absent button.
-- **Errors on the redirect leg arrive as a browser redirect, not as JSON.** Without an
-  `errorCallbackURL` on the original call, a denied consent lands on `/api/auth/error`, a
-  library-rendered page with none of this app's styling. The client must send it on every call.
+- **Errors on the redirect leg arrive as a browser redirect, not as JSON, and two settings are needed
+  to catch them all.** `errorCallbackURL` is stored inside the OAuth state and recovered from it
+  (`node_modules/better-auth/dist/oauth2/state.mjs:27` and `parseState` at `:46-63`), so it governs
+  every failure that happens once the state has parsed: a denied consent, a failed exchange, a
+  refused link. It cannot govern a failure of the state itself. A callback carrying no `state` at all
+  redirects with `error=state_not_found` (`callback.mjs:74-77`), and under the database state
+  strategy this app runs, a fabricated, replayed or expired state finds no verification row and
+  throws `state_mismatch` with no stored URL to recover
+  (`node_modules/better-auth/dist/state.mjs:119-123`). All of those fall back to `defaultErrorURL`,
+  which is `onAPIError?.errorURL` or `${baseURL}/error` (`callback.mjs:37`), and in this app that
+  resolves to `/api/auth/error`, the library-rendered page with none of this app's styling. So the
+  client sends `errorCallbackURL` on every call **and** the server sets `onAPIError: { errorURL: '/' }`
+  unconditionally. Neither alone covers every outcome the delta specifies. A root-relative value is
+  supported: the library's URL helper appends the query to a `/` path without resolving it against an
+  origin (`@better-auth/core/dist/utils/url.mjs:40-49`), so one value is correct on all three origins.
 - **The test boundary is real.** Everything up to Google's authorization endpoint is testable in the
   Workers pool. Google's consent screen and token exchange are not. No mock may be reported as having
   proved the roundtrip.
@@ -176,10 +193,29 @@ excluded. The audience stays External in Testing with the authorized account on 
 D-012's own "not yet created" line is superseded by that checkpoint and should be completed in place
 when G02 closes; this plan does not edit D-012.
 
-What is still missing is the remote half. The same checkpoint records that Cloudflare secret
-provisioning did **not** complete, because wrangler had no non-interactive Cloudflare authentication.
-So the deployed Worker carries neither value, and until it does, the deployed app renders no Google
-button and its server registers no provider. That is a correct, supported state, not a fault.
+The remote half is now half done, and the half matters less than it looks. The same checkpoint, under
+"Cloudflare secret", records that `GOOGLE_CLIENT_SECRET` was piped from the ignored `.dev.vars` into
+`wrangler secret put` in an authorized environment and appears in `wrangler secret list` beside
+`APP_ORIGINS` and `BETTER_AUTH_SECRET`, and that `GOOGLE_CLIENT_ID` was deliberately left unset
+pending this plan's choice of binding. So the deployed Worker holds one value of the pair.
+
+That half-state is safe by construction rather than by luck, which is worth stating rather than
+leaving to inference. `/api/auth-config` computes `Boolean(c.env.GOOGLE_CLIENT_ID &&
+c.env.GOOGLE_CLIENT_SECRET)` and the provider block is conditional on the same Boolean AND, so a
+deployment holding one value is indistinguishable from one holding neither: no provider, no button,
+no click to answer, no partial state for anyone to reason about. Until the client id lands, the
+deployed app is exactly today's product, which is also the state continuous integration runs in.
+
+**The client id's binding, decided here.** It goes through `wrangler secret put`, like the secret, and
+not into a `vars` block in `wrangler.jsonc`. The id is public and D-012 records it in full, so a var
+would leak nothing, and that is the honest argument on the other side. Three reasons decide it the
+other way. `vitest.integration.config.ts` loads `wrangler.jsonc` through `configPath`, so a var would
+bind the id into every integration run and make the provider-absent cases depend on the absence of the
+secret alone rather than on the absence of both. The stability guard that no `GOOGLE_CLIENT_ID` value
+appears in the diff stays mechanical, so nobody has to judge which credential values are harmless.
+And a matched pair set by one mechanism is one fewer thing to get wrong when either is rotated. The
+step itself is `wrangler secret put GOOGLE_CLIENT_ID` followed by a deploy, and it belongs to G05, not
+to this plan.
 
 How this plan stands against that:
 
@@ -189,7 +225,7 @@ How this plan stands against that:
 | Phase 2, every client change, in both the configured and the not-configured state | yes, in full, using the local `.dev.vars` pair |
 | Phase 3, every case | yes: provider-present bindings are fabricated literals inside the test file and are never the real credentials |
 | Phase 4, the whole local browser pass | yes, in full |
-| The live Google roundtrip on the deployed origin | **no.** It needs `wrangler secret put` for both names with authorized Cloudflare credentials, then a deploy |
+| The live Google roundtrip on the deployed origin | **no.** It needs `wrangler secret put GOOGLE_CLIENT_ID` with authorized Cloudflare credentials, then a deploy. The secret is already set |
 
 So every Progress row in this plan is executable today, with no step waiting on anything outside the
 repository and the local `.dev.vars`. The live roundtrip is goal G05, is named below as a manual gate
@@ -226,9 +262,15 @@ environment values inside the handler, which is the only place Workers bindings 
 Boolean(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET)
 ```
 
-The response shape is identical whether or not the provider is configured, and the client id is never
-part of it. The route takes no session and no origin check, deliberately: it is read before there is a
-session to have.
+The response body is exactly `{ "google": true }` or `{ "google": false }`: one key, one boolean, no
+client id, no provider list, no message, and the same shape either way. The route takes no session and
+no origin check, deliberately: it is read before there is a session to have.
+
+It is also deliberately unthrottled. It sits beside `/api/me` rather than under the `/api/auth/*`
+catch-all, so the library's database-backed limiter does not cover it, and this is the first
+unauthenticated unthrottled read in the application. The exposure is nil: the boolean reveals nothing
+that the rendered login screen does not already reveal, since the button is present in exactly the
+deployments where the answer is true.
 
 ### The provider block
 
@@ -243,6 +285,14 @@ In `src/server/auth.ts`, built inside the existing factory from the same `env` i
 - `account: { accountLinking: { disableImplicitLinking: true } }`, set unconditionally rather than
   inside the provider branch, so the rule does not depend on whether a deployment happens to carry
   credentials. `google` is deliberately absent from `trustedProviders`, which stays unset.
+- `onAPIError: { errorURL: '/' }`, also unconditional and in the same edit as the `account` block. It
+  is the fallback the callback takes whenever the per-flow `errorCallbackURL` cannot be recovered,
+  which is every state failure. With it, a callback whose state is missing, unparseable or unknown
+  redirects to `/?error=state_not_found` or `/?error=state_mismatch` on the app's own origin, which is
+  the login screen and the delta's expired-link sentence. Without it, those three land on
+  `/api/auth/error`, a page this change never styles, and the delta's sentence for them is
+  unreachable. The value is root-relative on purpose so that it is correct on all three origins, and
+  the library supports that form.
 
 ### The environment names
 
@@ -297,7 +347,18 @@ a unit test under the existing `src/**/*.test.ts` glob:
 | `account_not_linked` | alert | This Google account cannot be used here. Sign in with your email and password instead. |
 | anything else | alert | Google sign-in did not finish. Try again, or sign in with your email. |
 
-`error_description` is read from the URL by nothing and rendered by nothing. The status tone is
+The three state codes are all reachable, and only because of the `onAPIError` setting above:
+`state_not_found` for a callback with no `state` at all, and `state_mismatch` for a fabricated,
+replayed or expired one under the database strategy this app runs. `state_invalid` belongs to the
+cookie strategy and is mapped for completeness rather than because this configuration produces it.
+
+`error_description` is read from the URL by nothing and rendered by nothing, but the library does
+write it: the callback appends both `error` and `error_description` to the redirect
+(`node_modules/better-auth/dist/oauth2/errors.mjs:34-38`), so Google's own description text reaches
+the address bar, the history entry and any outbound referrer until the replace runs. So the replace
+drops the **whole query** rather than the `error` key, and it runs on mount whenever either `error` or
+`error_description` is present, including for codes the mapping does not recognise and for a returned
+`error_description` with no `error` beside it. The status tone is
 `role="status"`, `--t-body`, colour `--ink-soft`, with no red rule; the alert tone is the existing 3.8
 treatment. `FormAlert` hardcodes `role="alert"`, so the status tone needs either a `role` prop on that
 component or a sibling with the same position and typography. Either is acceptable; the position, the
@@ -330,10 +391,35 @@ DOM and tab order is email, password, Sign in, Continue with Google. The Google 
 
 On click, the Google button takes `aria-busy="true"` with its label unchanged, the form takes
 `aria-busy="true"`, and both fields and both buttons are disabled per design-spec 3.3 until the browser
-leaves. No spinner and no copy change. If the call fails before any navigation, the form re-enables and
-the generic alert shows "Could not reach Google. Check your connection and try again.", with focus on
-the alert line. While the password submit is busy, the Google button is disabled with the rest of the
-form.
+leaves. No spinner and no copy change. While the password submit is busy, the Google button is disabled
+with the rest of the form.
+
+If the call fails before any navigation the form re-enables and focus moves to the message line, and
+which sentence shows is decided by what `request()` threw. The designer has ruled on this, so it is no
+longer an open question:
+
+| What the social call did | Sentence, as an alert per 3.8 |
+| --- | --- |
+| answered with an HTTP error of any status, which includes the 404 of a deployment whose credentials were removed between the configuration read and the click, and the 401 the helper turns into `SignedOutError` | "Google sign-in did not finish. Try again, or sign in with your email." |
+| never produced a response at all, so the `fetch` itself rejected | "Could not reach Google. Check your connection and try again." |
+
+`ApiError` and `SignedOutError` are the only two classes `src/client/api.ts` throws for a response that
+arrived, so the test is whether the rejection is one of those. Both sentences take the alert treatment;
+the difference is which one is true.
+
+**The connection sentence is a new constant and does not reuse `CONNECTION_FAILURE`.** That constant is
+exported from `src/client/components/ui/FormAlert.tsx:31`, it will already be in scope in the file being
+edited, and its text is different:
+
+| Constant | Text |
+| --- | --- |
+| `CONNECTION_FAILURE`, existing, for the save paths | "Could not save. Check your connection and try again." |
+| `GOOGLE_CONNECTION_FAILURE`, new, in `googleErrors.ts` | "Could not reach Google. Check your connection and try again." |
+
+Reusing the existing one would ship copy the delta does not specify, and no automated row in this
+repository reads client markup, so nothing else would catch it. The choice between the two sentences is
+a pure function beside the code mapping, `startFailureMessage(error: unknown)` in the same module, which
+is what lets the `googleErrors` unit test pin both sentences exactly as it pins the other four.
 
 ### The integration bindings question, and its fallback
 
@@ -381,11 +467,12 @@ credential.
 
 #### 3. `src/server/auth.ts`
 
-Add the `account.accountLinking.disableImplicitLinking` setting unconditionally, and the
-`socialProviders.google` block conditionally on both values being present, exactly as
-"Critical implementation details" describes. Carry a short comment recording that the rule is decision
-D-013 and that `trustedProviders` is deliberately left unset, because that absence is otherwise
-invisible.
+Add the `account.accountLinking.disableImplicitLinking` setting and `onAPIError: { errorURL: '/' }`
+unconditionally, and the `socialProviders.google` block conditionally on both values being present,
+exactly as "Critical implementation details" describes. Carry a short comment recording that the rule
+is decision D-013 and that `trustedProviders` is deliberately left unset, because that absence is
+otherwise invisible, and a second recording that the error URL is what keeps a state failure on the
+login screen rather than on the library's own error page.
 
 #### 4. `src/server/routes/auth.ts`
 
@@ -401,18 +488,21 @@ Three cases, all pure options assertions with no bindings, in the file's existin
 - `createAuth` registers `google` when both are present.
 - The resolved options disable implicit linking and list no trusted provider, whether or not Google is
   configured.
+- The resolved options carry `onAPIError.errorURL` set to `/`, whether or not Google is configured, so
+  the setting cannot be dropped later without failing a test.
 
 ### Success criteria
 
 #### Automated verification
 
 - `npm run typecheck` passes across all three projects.
-- `npm run test:unit` passes, including the three new cases.
+- `npm run test:unit` passes, including the four new cases.
 - `npm run test:integration` passes with no Google value bound anywhere.
 - `npm run build` succeeds.
 - `curl -s localhost:8787/api/auth-config` answers `{"google":false}` with no Google value in
   `.dev.vars`, and `{"google":true}` with both set.
 - `grep -n "scope" src/server/auth.ts` returns nothing.
+- The resolved options carry `onAPIError.errorURL` as `/`, configured and unconfigured alike.
 - `git diff --stat src/domain/ migrations/ src/client/` is empty for this phase.
 - `git diff` carries no credential value and `.dev.vars.example` carries two empty names.
 
@@ -450,13 +540,17 @@ New. The four-colour mark at 18px square, `aria-hidden`, unmodified in both them
 
 #### 4. `src/client/components/ui/googleErrors.ts`
 
-New. The pure code-to-outcome map of the four sentences, with its tone.
+New. The pure code-to-outcome map of the four sentences, with its tone, plus
+`GOOGLE_CONNECTION_FAILURE` and the pure `startFailureMessage(error: unknown)` that chooses between it
+and the did-not-finish sentence, per "Busy states". The module does not import `CONNECTION_FAILURE`.
 
 #### 5. `src/client/screens/Login.tsx`
 
-The action row, the Google button with its busy and disabled behaviour, the error read on mount with
-focus to the message line and `history.replaceState` afterwards, and the rule that nothing Google
-renders at all when `googleEnabled` is false.
+The action row, the Google button with its busy and disabled behaviour, the failure of the social call
+routed through `startFailureMessage` so an HTTP error takes the did-not-finish sentence and only a
+rejection with no response takes the connection sentence, the error read on mount with focus to the
+message line and the `history.replaceState` that drops the whole query afterwards, and the rule that
+nothing Google renders at all when `googleEnabled` is false.
 
 #### 6. `src/client/index.css`
 
@@ -488,6 +582,10 @@ Run the app locally with both Google values set, in a browser, unless a row says
   the form with the label unchanged, and leaves for Google's consent screen.
 - With the network blocked, the same press re-enables the form and shows the connection sentence with
   focus on the alert line.
+- With the social call answering an HTTP error instead, which is what a deployment answers when its
+  credentials are removed after the configuration read, the same press re-enables the form and shows
+  "Google sign-in did not finish. Try again, or sign in with your email." as an alert rather than the
+  connection sentence. Produce it by unsetting the credentials between the load and the click.
 - Each of the four return outcomes renders its own sentence, with `access_denied` as a status line in
   `--ink-soft` with no red rule and the other three as alerts with the 3.8 red rule. Produce them by
   visiting the app root with the `error` query set by hand.
@@ -525,20 +623,53 @@ recorded if it is needed.
   `http://example.com/api/auth/callback/google`, whose `scope` is the three identity scopes and nothing
   else, and which carries `state`, `code_challenge` and `code_challenge_method=S256`. A `verification`
   row exists afterwards, read from `env.DB`.
-- **Invalid state.** `GET /api/auth/callback/google` with a fabricated `state` redirects to the
-  configured error URL with an `error` parameter, and creates no session: a following `/api/me` with
-  whatever cookies came back is 401.
-- **`account_not_linked` for a seeded email.** Seed a password account, then drive the linking path for
-  the same email and assert the refusal. Assert against the error code, not against a message string.
+- **Invalid state.** `GET /api/auth/callback/google` with a fabricated `state` answers a redirect whose
+  `Location` is the app root carrying `error=state_mismatch`, which is what the database state strategy
+  produces when no verification row matches, and not `${baseURL}/error`. Assert the path as well as the
+  code, because asserting only that some error came back would pass against the library's own error
+  page and prove nothing about the login screen. No session is created either: a following `/api/me`
+  with whatever cookies came back is 401.
+- **`account_not_linked` for a seeded email.** Seed a password account through the existing `seedUser`
+  helper, then call `handleOAuthUserInfo`, which `better-auth/oauth2` exports
+  (`node_modules/better-auth/dist/oauth2/index.mjs:5`), with a fabricated `google` account and a
+  `userInfo` carrying that same email and `emailVerified: true`, and assert it answers
+  `{ error: 'account not linked', data: null }`
+  (`node_modules/better-auth/dist/oauth2/link-account.mjs:79-85`). The context argument is
+  `{ context: await auth.$context }` built from the same `createAuth` the Worker uses: the refusal
+  branch returns before any cookie, transaction or redirect work, and reads only `internalAdapter`,
+  `options`, `trustedProviders` and `logger` from that context. This runs inside the Workers pool
+  against the real D1 with no network and no mock of Google, which is why it is preferred over the
+  alternative below. Assert the error string, not a message shown to anyone.
+
+  Two things to record in the test file rather than leave to a reader. The underscored
+  `account_not_linked` that the delta and D-013 name is the callback's own transform of that string,
+  `result.error.split(' ').join('_')` (`callback.mjs:243-245`), so the client mapping and this
+  assertion are two spellings of one fact. And this case asserts the library's function rather than
+  this application's route, so it would not catch a later change that stopped the callback consulting
+  it; the phase 1 options assertion is what pins the configuration, and the G05 roundtrip is what
+  exercises the route.
+
+  **If the context cannot be built.** If `auth.$context` turns out not to satisfy the call inside the
+  pool, do not invent a fuller fake and do not mock the adapter. Drop this case and Progress row 3.11,
+  record in the phase 3 commit and in the checkpoint that `account_not_linked` is proven by the phase 1
+  options assertion and by the G05 live roundtrip only, and correct the credential dependency table's
+  phase 3 row to say so. The honesty rule outranks the coverage.
 - **Isolation for an OAuth-shaped account.** Insert a `user` row with a `google` `account` row, sign
   that user in through a session the test creates, and assert an empty subscription list and a 404 for
   the seeded owner's subscription. This is the existing cross-account assertion extended to an account
   that no password created.
 
+Progress row 3.10 keeps its title, because titles are immutable once a plan is reviewed. What it asserts
+is now the sharper thing stated above: the redirect lands on the app root with `error=state_mismatch`,
+not merely that some error came back.
+
 #### 3. `src/client/components/ui/googleErrors.test.ts`
 
 New. One case per row of the mapping table, plus an unknown code and a missing code. Assert the exact
-sentences, because the delta fixes them as copy.
+sentences, because the delta fixes them as copy. Two more for `startFailureMessage`: an `ApiError` of
+any status and a `SignedOutError` each return the did-not-finish sentence, and a rejection that carries
+no response returns `GOOGLE_CONNECTION_FAILURE`, whose text is asserted in full so it cannot drift into
+`CONNECTION_FAILURE`.
 
 ### Success criteria
 
@@ -601,6 +732,8 @@ changes in this phase unless a row fails, in which case the fix lands here with 
   the button and the form.
 - Each of the four return outcomes renders its sentence in the right tone and position, takes focus, and
   leaves a clean URL.
+- An HTTP error from the social call shows the did-not-finish alert and never the connection sentence,
+  and a request that never reaches the server shows the connection sentence.
 - Reduced motion on and off: nothing animates in any of the above.
 - The action row holds one line at 1280 and stacks at 390, with no horizontal scroll at either.
 
@@ -609,9 +742,16 @@ changes in this phase unless a row fails, in which case the fix lands here with 
 After this phase and after deployment, goal G05 completes a real Google consent roundtrip on the
 deployed origin with an authorized account, then signs out and signs in again, and confirms the new
 account's empty ledger and its isolation from the demo and reviewer records. **It depends on one step
-this plan cannot take**: both names reaching the deployed Worker through `wrangler secret put` with
-authorized Cloudflare credentials, which `context/checkpoints/g02-oauth-provision.md` records as not
-completed, followed by a deploy. The consent audience stays External in Testing with the authorized
+this plan cannot take**: `GOOGLE_CLIENT_ID` reaching the deployed Worker through `wrangler secret put`
+with authorized Cloudflare credentials, followed by a deploy. `GOOGLE_CLIENT_SECRET` is already set,
+per `context/checkpoints/g02-oauth-provision.md`.
+
+One check comes before the consent screen, because it is cheaper than a human and it fails in a way
+nothing local can reproduce. On the deployed origin, with the button rendered, confirm that
+`POST /api/auth/sign-in/social` answers 200 with an `accounts.google.com` url and not 403 with
+`INVALID_CALLBACK_URL`. That one request exercises the deployed `APP_ORIGINS`, the trusted-origin
+validation of `callbackURL` and `errorCallbackURL`, and the fact that the button's own origin is on the
+list, all of which this repository cannot see. Only then is anyone asked to consent to anything. The consent audience stays External in Testing with the authorized
 account on the test-user list, so no artifact from G05 may claim that public Google login works. It is
 not a row below, because nothing in this plan can make it pass.
 
@@ -638,7 +778,7 @@ the database, so no migration is rolled back and no stored value is affected.
 | --- | --- | --- |
 | A mismatched redirect URI | `baseURL` is the request's own origin, so the app serves whichever origin it is reached on, and a missing registration fails at Google with a page this app never sees | All three origins are fixed in D-012 and listed in the G02 checkpoint; the phase 3 authorize-URL assertion pins the shape, and the live gate pins the registration |
 | The callback loses its session cookie | `SameSite=Lax` permits a cookie on a top-level `GET` navigation, which is exactly the callback's shape, but a future tightening to `Strict` would break Google sign-in without breaking password sign-in | Nothing changes the attribute in this change, and the phase 3 cases pin the behaviour rather than the attribute, so a later tightening fails a test |
-| `trustedOrigins` refuses the social call | the social sign-in is a `POST` from the client and carries an `Origin`, so the existing check applies to it exactly as it applies to password sign-in | The deployed origin is already in `APP_ORIGINS`; `callbackURL` and `errorCallbackURL` are the app's own origin, which is what the library validates against the same list |
+| `trustedOrigins` refuses the social call | the social sign-in is a `POST` from the client and carries an `Origin`, so the existing check applies to it exactly as it applies to password sign-in; `callbackURL` and `errorCallbackURL` are validated against the same list before the redirect starts | **Unverified from here.** `APP_ORIGINS` is a Cloudflare secret, `wrangler secret list` shows names and never values, and nothing in this repository can confirm the deployed origin is in it or that it carries no trailing slash. A mismatch answers the click with 403 and `INVALID_CALLBACK_URL` while every local run and the whole suite stays green, so the G05 live gate checks it with one request before any human is asked to consent |
 | The Workers runtime rejects the new code paths | an OAuth flow reaches for crypto, and this runtime has no Node crypto | Research read them: `generateRandomString`, `jose` for `decodeJwt` and `betterFetch`, none Node-only, and the shipped password path already exercises the library's crypto here |
 | Continuous integration turns red for want of a secret | the job holds none, and the natural way to test an OAuth provider is to configure one | The provider is conditional, the configuration read answers false, the provider-present bindings are fabricated literals inside the test file, and `npm test` is asserted green with nothing set |
 | The rate limiter reads as a flaky test | the limiter is database backed, keyed on `cf-connecting-ip`, and the test database is never reset between files | The new file takes its own `10.8.0.x` prefix and adds it to the allocation comment |
@@ -670,12 +810,12 @@ the database, so no migration is rolled back and no stored value is affected.
 Anything implementation turns up that would change a specified appearance is recorded here, stopped for
 that item only, and returned to the designer. Nothing is improvised.
 
-1. **A 404 from `/api/auth/sign-in/social` after the configuration read said true.** The delta fixes a
-   sentence for a failure "before any navigation" in terms of reaching Google, and four sentences for
-   failures on the return leg. A deployment whose credentials were removed between the configuration
-   read and the click produces neither: the request succeeds and answers 404. This plan uses the
-   connection sentence for it, as the nearest specified outcome, and flags it rather than inventing a
-   fifth sentence. The designer may prefer one of the four return sentences instead.
+None open. The one question this plan raised, what to show when the configuration read said true and
+the social call then answers an HTTP error, has been ruled on by the designer in `design-delta.md`: the
+fourth sentence, "Google sign-in did not finish. Try again, or sign in with your email.", as an alert
+per 3.8, with the connection sentence reserved for a request that never reached the server. That ruling
+is built into "Busy states" above, into phase 2, and into the Progress rows for both the mapping
+function and the browser pass.
 
 ## Progress
 
@@ -696,6 +836,7 @@ that item only, and returned to the designer. Nothing is improvised.
 - [ ] 1.8 No credential value appears in the diff and `.dev.vars.example` carries two empty names
 - [ ] 1.9 `createAuth` registers no `google` provider when either value is absent and registers it when both are present
 - [ ] 1.10 The resolved options disable implicit linking and list no trusted provider, configured or not
+- [ ] 1.12 The resolved options carry the app-root error URL, configured or not, so a state failure lands on the login screen
 
 #### Manual
 
@@ -722,6 +863,7 @@ that item only, and returned to the designer. Nothing is improvised.
 - [ ] 2.12 Each of the four return outcomes renders its own sentence in the right tone and takes focus
 - [ ] 2.13 After any outcome renders, the query is gone from the URL and a reload shows a clean login
 - [ ] 2.14 With no Google value set the login screen is exactly today's, with nothing marking the absence and no shift after loading
+- [ ] 2.15 An HTTP error from the social call re-enables the form and shows the did-not-finish alert rather than the connection sentence
 
 ### Phase 3: The tests
 
@@ -741,6 +883,7 @@ that item only, and returned to the designer. Nothing is improvised.
 - [ ] 3.12 An OAuth-shaped account sees an empty subscription list and is answered 404 for the seeded owner's subscription
 - [ ] 3.13 `10.8.0.x` is recorded in the prefix allocation comment and the new file uses it
 - [ ] 3.14 CI is unchanged, or gains exactly one secretless step if the second-project fallback landed
+- [ ] 3.16 The start-failure mapping returns the did-not-finish sentence for an HTTP error and the Google connection sentence for a rejection with no response, both asserted in full
 
 #### Manual
 
@@ -765,3 +908,4 @@ that item only, and returned to the designer. Nothing is improvised.
 - [ ] 4.10 Nothing animates with reduced motion on or off
 - [ ] 4.11 The action row holds one line at 1280 and stacks at 390 with no horizontal scroll
 - [ ] 4.12 The captures the delta's amended checklist names are written under `evidence/screenshots/`
+- [ ] 4.13 An HTTP error from the social call shows the did-not-finish alert and a request that never reaches the server shows the connection sentence
