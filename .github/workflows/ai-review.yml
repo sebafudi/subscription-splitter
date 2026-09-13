@@ -74,6 +74,7 @@ jobs:
         working-directory: tools/reviewer
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          REVIEWER_MODEL: ${{ vars.REVIEWER_MODEL || 'z-ai/glm-5.3-flash' }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |

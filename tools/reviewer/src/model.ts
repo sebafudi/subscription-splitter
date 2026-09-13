@@ -1,7 +1,12 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { LanguageModel } from "ai";
 
-export const DEFAULT_MODEL_ID = "deepseek/deepseek-v3.2";
+/**
+ * Selected from the live two-model comparison recorded in
+ * `evidence/champion/eval-results.md`: the only one of the two candidates that returned `pass` on
+ * the clean control instead of a false failure, and the only one that caught the injection probe.
+ */
+export const DEFAULT_MODEL_ID = "z-ai/glm-5.3-flash";
 
 export class MissingCredentialError extends Error {
   constructor() {
