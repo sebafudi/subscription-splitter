@@ -106,7 +106,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
   a phase 1 Progress row asserting the resolved options carry the error URL, so the setting cannot be
   dropped later without failing a test. Progress row 3.10 should assert the redirect lands on the app
   root rather than on `/api/auth/error`, which is what makes it a real test instead of a tautology.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F2 - The `account_not_linked` integration case has no executable mechanism
 
@@ -155,7 +155,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
     gate outside the plan.
   - Confidence: HIGH - the phase 1 assertion does pin the option.
   - Blind spot: none significant.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F3 - The designer's ruling on an HTTP error from the social call is unabsorbed
 
@@ -177,7 +177,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
   an alert; only a rejection that never produced a response takes the connection sentence. Delete
   Design question 1. Add one phase 2 manual row and one phase 4 manual row for the HTTP-error case,
   beside the existing network-blocked rows 2.11 and 4.9.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F4 - The deployed origin's presence in `APP_ORIGINS` is asserted, not verified
 
@@ -197,7 +197,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
   roundtrip: on the deployed origin, confirm the social call answers 200 with an
   `accounts.google.com` url rather than 403, which exercises the trusted-origin list and the redirect
   registration in one request before a human is asked to consent to anything.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F5 - The credential statement is stale in the opposite direction
 
@@ -222,7 +222,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
 - **Fix**: Rewrite the paragraph to the current state, name the half-provisioned case and why the
   Boolean-AND makes it safe, and reduce the G05 prerequisite from two secrets to
   `wrangler secret put GOOGLE_CLIENT_ID` plus a deploy.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F6 - Reusing `CONNECTION_FAILURE` would ship copy the delta does not specify
 
@@ -242,7 +242,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
   `CONNECTION_FAILURE`, and quote both sentences side by side so the difference is visible at the point
   of the edit. The `googleErrors` unit test is the natural place to pin it, since it already asserts
   exact sentences for the other four.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F7 - `error_description` reaches the address bar even though nothing renders it
 
@@ -261,7 +261,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
 - **Fix**: Say in the plan that the replace drops the whole query rather than the `error` key, and that
   it runs on mount whenever either `error` or `error_description` is present, including for codes the
   mapping does not recognise. Extend Progress row 2.13 to name both keys.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F8 - `design-spec.md` 4.1 still carries the sentence the delta replaces
 
@@ -278,7 +278,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
 - **Fix**: One sentence in the Overview recording that `design-spec.md` is deliberately not edited and
   that the delta is the standing amendment for sections 4.1, 9 and 11, so the omission reads as a
   choice rather than an oversight.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F9 - The configuration endpoint's exposure and its absence of throttling are left to inference
 
@@ -296,7 +296,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
 - **Fix**: Two sentences in that section: the route is deliberately unthrottled and unauthenticated
   because it is read before a session exists, and the boolean reveals nothing the rendered login
   screen does not already reveal.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ### F10 - `state_mismatch` conflates an expired link with a tampered one - for the designer
 
@@ -318,7 +318,7 @@ redirect by construction. Wrong: where a failure lands when the state itself fai
 - **Fix**: If the designer is content, add one line to the delta's table noting that the expired-link
   sentence deliberately also covers a mismatched or unpersisted state, so the copy is not read later
   as a bug. No code change.
-- **Decision**: PENDING
+- **Decision**: RESOLVED (see `## Resolution`)
 
 ## What the plan gets right
 
@@ -344,3 +344,139 @@ one Progress row has no executable method and the plan's own honesty table says 
 design ruling that has since been made is not reflected (F3). The remaining three required findings
 are single-paragraph corrections. Resolve F1 through F6 before phase 1 begins; F1's fix is one option
 in `createAuth` and belongs in the same edit as the `account` block.
+
+## Resolution
+
+Applied after the review by a task that did not write the plan. Every finding is resolved: F1 through
+F6 as required, F7, F9 and F10 as well, and F8 by stating the omission as a choice. None is deferred or
+declined. Section references point at the state after the edits. The commits are listed with each
+finding; all are single-artifact commits made by explicit path.
+
+| Finding | Resolution | Commit |
+| --- | --- | --- |
+| F1 | `onAPIError: { errorURL: '/' }` added to the server phase, with a Progress row and a sharper callback assertion | `2fe573c`, `d73ad99` |
+| F2 | Fix A taken: `handleOAuthUserInfo` named, with Fix B as the recorded fallback | `2fe573c` |
+| F3 | The designer's ruling committed, absorbed into the plan, and carried by three new rows | `91fcbce`, `2fe573c` |
+| F4 | The risk row restated as unverified; a 200-not-403 check added to the G05 live gate | `2fe573c` |
+| F5 | The credential paragraph rewritten; the client id's binding decided | `2fe573c`, `69f326d` |
+| F6 | `GOOGLE_CONNECTION_FAILURE` named, `CONNECTION_FAILURE` forbidden, both sentences quoted | `2fe573c` |
+| F7 | The replace drops the whole query, on either key | `2fe573c` |
+| F8 | The Overview records that the specification is deliberately not edited | `2fe573c` |
+| F9 | Two sentences on the endpoint's exposure and its lack of throttling | `2fe573c` |
+| F10 | One sentence added to the delta, by the designer's ruling | `91fcbce` |
+
+### F1 - The expired-link outcome cannot reach the login screen (CRITICAL)
+
+Fixed as recommended, and the correction landed in the research as well as in the plan, since both
+carried the same claim. `src/server/auth.ts` gains `onAPIError: { errorURL: '/' }` unconditionally, in
+the same edit as the `account` block, and phase 1 asserts it whether or not Google is configured as new
+Progress row 1.12. The key finding now separates the two settings and says which failures each governs:
+`errorCallbackURL` covers everything that happens once the state has parsed, and the error URL covers
+every state failure, which has nothing to recover the per-flow URL from. The root-relative form was
+verified rather than assumed: `appendQueryParams` appends the query to a `/` path without resolving it
+against an origin (`@better-auth/core/dist/utils/url.mjs:40-49`), so one value is correct on all three
+origins.
+
+Progress row 3.10 keeps its title, because titles are immutable once a plan is reviewed, and the phase 3
+body now states what it asserts: the fabricated-state callback lands on the app root carrying
+`error=state_mismatch`, which is what the database state strategy produces when no verification row
+matches, and not `${baseURL}/error`. The phase body says explicitly why the path must be asserted
+alongside the code: an assertion that some error came back would pass against the library's own error
+page. `research.md` section 4 carries the same correction, attributed to this finding.
+
+### F2 - The `account_not_linked` integration case has no executable mechanism (CRITICAL)
+
+**Fix A taken**, with Fix B recorded as a named fallback rather than dropped. The export was confirmed
+in the installed package (`better-auth/dist/oauth2/index.mjs:5`), as was the returned string
+(`link-account.mjs:79-85`). The plan now names the whole mechanism: seed through `seedUser`, call
+`handleOAuthUserInfo` with `{ context: await auth.$context }`, a fabricated `google` account and a
+`userInfo` carrying the seeded email with `emailVerified: true`, and assert
+`{ error: 'account not linked', data: null }`. The review's blind spot, whether that context argument
+can be built in a test, was narrowed rather than left open: the refusal branch returns before any
+cookie, transaction or redirect work and reads only `internalAdapter`, `options`, `trustedProviders`
+and `logger`, all of which `auth.$context` carries. It was not executed, because this task touches no
+file under `tests/`.
+
+So the fallback is written into the plan as an instruction rather than as a hope: if the context does
+not satisfy the call inside the pool, drop the case and row 3.11, do not invent a fuller fake and do not
+mock the adapter, and correct the credential dependency table to say the outcome is proven by the phase 1
+options assertion and the G05 roundtrip alone. The underscore transform the review found
+(`callback.mjs:243-245`) is recorded in the plan, as is the trade-off that this case asserts the
+library's function rather than this application's route.
+
+### F3 - The designer's ruling on an HTTP error from the social call is unabsorbed (CRITICAL)
+
+The delta's paragraph is committed as the designer wrote it, unmodified, in `91fcbce`. The plan's
+"Busy states" now splits the failure by what `request()` threw, in a two-row table: an `ApiError` of any
+status and the `SignedOutError` of a 401 take the did-not-finish sentence, and only a rejection that
+never produced a response takes the connection sentence. Design question 1 is deleted and that section
+now records that nothing is open. Three rows carry the ruled behaviour: 2.15 in the browser pass, 3.16
+on the pure mapping function, and 4.13 in the verification phase, each beside the existing
+network-blocked row rather than replacing it.
+
+### F4 - The deployed origin's presence in `APP_ORIGINS` is asserted, not verified (WARNING)
+
+The risk row now reads as unverified and says why: `APP_ORIGINS` is a Cloudflare secret,
+`wrangler secret list` shows names and never values, and a mismatch answers the click with 403 and
+`INVALID_CALLBACK_URL` while every local run stays green. The G05 live gate gains the check the review
+proposed, ahead of the consent roundtrip: on the deployed origin, confirm the social call answers 200
+with an `accounts.google.com` url rather than 403. One request exercises the deployed origin list, the
+validation of both callback URLs and the button's own origin, before a human is asked to consent to
+anything.
+
+### F5 - The credential statement is stale in the opposite direction (WARNING)
+
+Rewritten to the current state in both the plan and the brief. `GOOGLE_CLIENT_SECRET` is set on
+Cloudflare and appears in `wrangler secret list`; `GOOGLE_CLIENT_ID` is not. The half-state is named
+and so is the reason it is safe: both the provider block and `/api/auth-config` are a Boolean AND of the
+two names, so a deployment holding one value is indistinguishable from one holding neither. The G05
+prerequisite drops from two secrets to `wrangler secret put GOOGLE_CLIENT_ID` plus a deploy.
+
+**The binding question is decided here rather than deferred: the client id goes through
+`wrangler secret put`, not into a `wrangler.jsonc` var.** The id is public and D-012 records it in full,
+so a var would leak nothing, and that argument is stated in the plan rather than hidden. Three reasons
+decide it the other way. `vitest.integration.config.ts` loads `wrangler.jsonc` through `configPath`, so
+a var would bind the id into every integration run and make the provider-absent cases depend on the
+absence of the secret alone. The stability guard that no `GOOGLE_CLIENT_ID` value appears in the diff
+stays mechanical, so nobody has to judge which credential values are harmless. And one mechanism for a
+matched pair is one fewer thing to get wrong when either is rotated.
+
+### F6 - Reusing `CONNECTION_FAILURE` would ship copy the delta does not specify (WARNING)
+
+The Google path introduces `GOOGLE_CONNECTION_FAILURE` in
+`src/client/components/ui/googleErrors.ts`, and the plan states that the module does not import
+`CONNECTION_FAILURE`. Both sentences are quoted side by side in a table at the point of the edit, so the
+difference is visible rather than remembered: "Could not save. Check your connection and try again."
+against "Could not reach Google. Check your connection and try again." The choice between the Google
+connection sentence and the did-not-finish sentence is a pure function in the same module,
+`startFailureMessage(error)`, which is what lets the `googleErrors` unit test pin both in full, as
+Progress row 3.16.
+
+### F7 - `error_description` reaches the address bar even though nothing renders it (OBSERVATION)
+
+Resolved, since it cost one paragraph. The plan now records that the library writes the key even though
+the client never reads it (`oauth2/errors.mjs:34-38`), that the replace therefore drops the whole query
+rather than the `error` key, and that it runs on mount whenever either key is present, including for
+codes the mapping does not recognise and for an `error_description` arriving with no `error` beside it.
+Progress row 2.13 keeps its title, which already covers the query rather than one key.
+
+### F8 - `design-spec.md` 4.1 still carries the sentence the delta replaces (OBSERVATION)
+
+Resolved as a statement of intent rather than an edit, which is the ruling recorded for this change: the
+accepted S-06 specification is not edited, `design-delta.md` is the standing amendment for sections 4.1,
+9 and 11, and the archive of S-06 carries the original wording. The Overview says so in one paragraph,
+so the omission reads as a choice.
+
+### F9 - The configuration endpoint's exposure and its absence of throttling are left to inference (OBSERVATION)
+
+Resolved. "The configuration endpoint" now states that the response is exactly `{ "google": boolean }`
+and nothing else, that the route is deliberately unauthenticated and unthrottled because it is read
+before a session exists and sits outside the `/api/auth/*` catch-all the library's limiter covers, and
+that the boolean reveals nothing the rendered login screen does not already reveal.
+
+### F10 - `state_mismatch` conflates an expired link with a tampered one (OBSERVATION)
+
+The designer is content and ruled that the grouping stands. One sentence is added to `design-delta.md`
+under the outcomes table, in the designer's own words: the three state codes share one sentence
+deliberately, staleness, replay and tampering all end the same way for the person at the keyboard, start
+again from this page, and the interface does not accuse. No code change and no copy change.
