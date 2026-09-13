@@ -1119,17 +1119,17 @@ exercised on data that matters.
 
 #### Automated
 
-- [ ] 1.1 Typecheck passes across all three projects
-- [ ] 1.2 The unit suite passes, including the schema cases and the single-batch repository cases
-- [ ] 1.3 The integration suite passes, including the floor cases and the new deletion file
-- [ ] 1.4 The production build succeeds
-- [ ] 1.5 Nothing under `src/client/`, `src/domain/` or `migrations/` has changed
-- [ ] 1.6 Neither falsified comment survives anywhere under `src/server/`
+- [x] 1.1 Typecheck passes across all three projects — 4978603
+- [x] 1.2 The unit suite passes, including the schema cases and the single-batch repository cases — 62783e8
+- [x] 1.3 The integration suite passes, including the floor cases and the new deletion file — 62783e8
+- [x] 1.4 The production build succeeds — 4978603
+- [x] 1.5 Nothing under `src/client/`, `src/domain/` or `migrations/` has changed — 62783e8
+- [x] 1.6 Neither falsified comment survives anywhere under `src/server/` — 4978603
 
 #### Manual
 
-- [ ] 1.7 Both rewritten comments describe how the code works now, with no narration of the change
-- [ ] 1.8 The deletion test names the duplicated row, why it survives, and that it is a platform probe
+- [x] 1.7 Both rewritten comments describe how the code works now, with no narration of the change — 4978603
+- [x] 1.8 The deletion test names the duplicated row, why it survives, and that it is a platform probe — 62783e8
 
 ### Phase 2: Shared client calendar controls
 
