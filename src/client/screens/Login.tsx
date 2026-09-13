@@ -1,64 +1,106 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ApiError, signIn } from '../api'
+import { Wordmark } from '../components/Wordmark'
+import { Field } from '../components/ui/Field'
+import { CONNECTION_FAILURE, FormAlert } from '../components/ui/FormAlert'
 
 type Props = {
   onSignedIn: () => void
 }
 
+type Failure = {
+  message: string
+  /** Distinguishes one refusal from the next, so a repeated failure still moves focus. */
+  attempt: number
+}
+
 export function Login({ onSignedIn }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [failure, setFailure] = useState<Failure | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const emailField = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (failure) emailField.current?.focus()
+  }, [failure])
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError(null)
+    if (submitting) return
+    setFailure(null)
     setSubmitting(true)
     try {
       await signIn(email, password)
       onSignedIn()
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Sign in failed. Try again.')
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.status === 401
+            ? 'Email or password is not right. Try again.'
+            : error.message
+          : CONNECTION_FAILURE
+      setFailure((previous) => ({ message, attempt: (previous?.attempt ?? 0) + 1 }))
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <main className="screen screen-narrow">
-      <h1>Subscription Splitter</h1>
-      <form onSubmit={handleSubmit} noValidate>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
+    <main className="login">
+      <div className={failure ? 'login-block panel-invalid' : 'login-block'}>
+        <span className="login-wordmark t-title">
+          <Wordmark size={28} />
+        </span>
+        <p className="t-body soft">Sign in to your ledger.</p>
 
-        <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+        <form onSubmit={handleSubmit} noValidate aria-busy={submitting || undefined}>
+          <FormAlert message={failure?.message ?? null} />
 
-        {error && (
-          <p role="alert" className="field-error">
-            {error}
-          </p>
-        )}
+          <Field id="email" label="Email">
+            {(control) => (
+              <input
+                {...control}
+                type="email"
+                autoComplete="username"
+                required
+                disabled={submitting}
+                ref={emailField}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            )}
+          </Field>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
+          <Field id="password" label="Password">
+            {(control) => (
+              <input
+                {...control}
+                type="password"
+                autoComplete="current-password"
+                required
+                disabled={submitting}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            )}
+          </Field>
+
+          {/*
+            The label never changes and the button stays focusable. What stops a
+            second submit is the guard at the top of the handler, which the
+            button announces with aria-disabled.
+          */}
+          <button
+            type="submit"
+            className="btn-primary login-submit"
+            aria-busy={submitting || undefined}
+            aria-disabled={submitting || undefined}
+          >
+            Sign in
+          </button>
+        </form>
+      </div>
     </main>
   )
 }

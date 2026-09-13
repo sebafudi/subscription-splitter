@@ -491,6 +491,369 @@ label {
   }
 }
 
+/* The page column under the app bar. */
+.page {
+  padding-block: var(--s-5) var(--s-8);
+  display: flex;
+  flex-direction: column;
+}
+
+/* A live region stays in the tree and empty when idle, because one inserted at
+   the moment it gains text is announced unreliably. Only its contents change. */
+.alert-region {
+  display: contents;
+}
+
+/* Section opening */
+.section-open {
+  border-top: 2px solid var(--rule-strong);
+  padding-top: var(--s-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.section-heading-end {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+}
+
+.heading-count {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.section-subtitle {
+  margin: 0;
+}
+
+/* Status line */
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--green);
+  white-space: nowrap;
+  animation: status-line-in var(--motion-status-in) ease-out both;
+}
+
+.status-line-leaving {
+  animation: status-line-out var(--motion-status-out) ease-out both;
+}
+
+@keyframes status-line-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes status-line-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* The two error surfaces. One lives under a section's heading row, the other at
+   the top of a panel, and neither ever carries the other's error. */
+.section-alert,
+.form-alert {
+  color: var(--red);
+  border-left: 3px solid var(--red);
+  border-radius: 4px;
+  padding: var(--s-3);
+  margin: 0;
+}
+
+.section-alert {
+  background: var(--red-tint);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.form-alert {
+  border-left: 0;
+  padding: 0 0 var(--s-4);
+}
+
+/* Ledger entry */
+.entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-1) var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-primary {
+  grid-column: 1;
+}
+
+.entry-figure {
+  grid-column: 2;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-entry-size);
+  line-height: var(--t-entry-leading);
+}
+
+.entry-figure-secondary {
+  font-size: var(--t-small-size);
+  line-height: var(--t-small-leading);
+}
+
+.entry-secondary {
+  grid-column: 1;
+}
+
+.entry-actions,
+.entry-confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-1);
+}
+
+.entry-button {
+  width: 100%;
+  min-height: 0;
+  padding: var(--s-3) 0;
+  border-radius: 0;
+  text-align: left;
+  font-weight: 400;
+}
+
+.entry-button:hover {
+  background: var(--paper);
+}
+
+/* The highlight on a just-created or just-edited row. Under reduced motion the
+   row holds the tint for as long as its status line stands, and clears with it. */
+.entry-highlight {
+  animation: entry-highlight var(--motion-highlight) linear 200ms both;
+}
+
+@keyframes entry-highlight {
+  from {
+    background-color: var(--green-tint);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+/* Disclosure panel */
+.disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-disclosure-close) var(--motion-disclosure-ease);
+}
+
+.disclosure[data-open='true'] {
+  grid-template-rows: 1fr;
+  transition-duration: var(--motion-disclosure-open);
+}
+
+.disclosure-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: var(--s-5);
+  margin-top: var(--s-4);
+}
+
+.panel-invalid {
+  border-left: 3px solid var(--red);
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+}
+
+.panel-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+/* Field, hint and error */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.field-span {
+  grid-column: 1 / -1;
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+}
+
+.field-error {
+  color: var(--red);
+}
+
+/* Destructive confirmation */
+.confirm-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+  background: var(--red-tint);
+  border-left: 3px solid var(--red);
+  border-radius: 4px;
+  padding: var(--s-3);
+  margin-top: var(--s-1);
+}
+
+/* Money */
+.money-recorded {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.money-assumed {
+  font-weight: 400;
+  text-decoration: underline dotted var(--ink-soft);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.balance-owes {
+  color: var(--red);
+}
+
+.balance-ahead {
+  color: var(--green);
+}
+
+.balance-settled {
+  color: var(--ink-faint);
+}
+
+/* Skeletons. Static bars, never a shimmer, and never announced. */
+.skeleton {
+  background: var(--paper);
+  border-radius: 4px;
+}
+
+.skeleton-session {
+  width: 240px;
+  max-width: 100%;
+  height: 27px;
+}
+
+/* Login */
+.login {
+  display: flex;
+  justify-content: center;
+  padding: 20vh var(--s-5) var(--s-8);
+}
+
+.login-block {
+  width: 360px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  border-left: 3px solid transparent;
+  padding-left: var(--s-3);
+}
+
+.login-block.panel-invalid {
+  border-left-color: var(--red);
+}
+
+.login-wordmark {
+  display: inline-flex;
+}
+
+.login form {
+  gap: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+.login-submit {
+  align-self: flex-start;
+}
+
+@media (max-width: 640px) {
+  .section-heading-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-2);
+  }
+
+  .section-heading-end {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-2);
+  }
+
+  .entry {
+    grid-template-columns: 1fr;
+  }
+
+  .entry-figure {
+    grid-column: 1;
+    text-align: left;
+  }
+
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .login {
+    padding-inline: var(--s-4);
+  }
+
+  .login-block {
+    width: 100%;
+  }
+
+  .login-submit {
+    align-self: stretch;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-highlight {
+    animation: none;
+    background-color: var(--green-tint);
+  }
+}
+
 /* Transitional rules. These carry the screens phases 3 to 5 have not redesigned yet
    and are deleted with the markup that needs them. */
 .screen {

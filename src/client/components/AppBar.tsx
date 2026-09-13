@@ -1,10 +1,11 @@
 import { Wordmark } from './Wordmark'
 
 type Props = {
-  email: string
+  /** Absent while the session is still loading, when the bar carries the wordmark alone. */
+  email?: string
   /** Absent on Home, where the wordmark marks the current page and does nothing. */
   onHome?: () => void
-  onSignOut: () => void
+  onSignOut?: () => void
 }
 
 export function AppBar({ email, onHome, onSignOut }: Props) {
@@ -19,12 +20,14 @@ export function AppBar({ email, onHome, onSignOut }: Props) {
         >
           <Wordmark />
         </button>
-        <div className="appbar-right">
-          <span className="appbar-email t-small soft">{email}</span>
-          <button type="button" className="btn-quiet" onClick={onSignOut}>
-            Sign out
-          </button>
-        </div>
+        {email && onSignOut && (
+          <div className="appbar-right">
+            <span className="appbar-email t-small soft">{email}</span>
+            <button type="button" className="btn-quiet" onClick={onSignOut}>
+              Sign out
+            </button>
+          </div>
+        )}
       </div>
     </header>
   )

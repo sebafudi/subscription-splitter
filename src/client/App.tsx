@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMe, signOut, type SessionUser, type Subscription } from './api'
+import { AppBar } from './components/AppBar'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { SubscriptionDetail } from './screens/SubscriptionDetail'
@@ -17,9 +18,15 @@ export function App() {
 
   if (user === 'loading') {
     return (
-      <main className="screen screen-narrow">
-        <p>Loading…</p>
-      </main>
+      <>
+        <AppBar />
+        <main className="column page">
+          <div className="skeleton skeleton-session" aria-hidden="true" />
+          <p role="status" className="sr-only">
+            Loading your session
+          </p>
+        </main>
+      </>
     )
   }
 

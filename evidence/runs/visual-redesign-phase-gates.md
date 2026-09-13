@@ -34,3 +34,31 @@ Measured during the same session rather than captured:
   durations.
 - The bar computes `position: sticky`, `top: 0`, 56px high, on `--ground` with a 1px `--rule`
   bottom line, its column 720px wide.
+
+## Phase 2: the shared presentation layer, on Login and session loading
+
+| Capture | What it shows |
+| --- | --- |
+| `phase-2-login-light-desktop.png` | Login at 1280 in light: a 360px block at 20vh, centred on the page and left aligned inside, with the 28px glyph wordmark, the subtitle, two labelled fields in one column and the primary button |
+| `phase-2-login-dark-desktop.png` | the same in dark |
+| `phase-2-login-error-light-desktop.png` | a refused sign-in: the generic error line above the fields, the block carrying the 3px red left rule, focus on the email field |
+| `phase-2-login-submitting-light-desktop.png` | the submitting state: the label unchanged, both fields disabled, the primary in its disabled treatment, no spinner |
+| `phase-2-login-light-mobile.png` | Login at 390: the block filling the width, the button full width, every control 44px |
+| `phase-2-session-loading-light-desktop.png` | the session loading screen: the bar with the wordmark alone and one static 240x27 skeleton bar |
+
+Measured during the same session rather than captured:
+
+- The login block is 360px wide, its top edge 180px into a 900px viewport, and its horizontal
+  centre is the page's centre. The wordmark computes 27px/1.2 at weight 600 over a 28px glyph.
+- A refused sign-in puts "Email or password is not right. Try again." in the always-mounted
+  `role="alert"` region and leaves focus on the email field.
+- While the request is in flight the button reads "Sign in", carries `aria-busy` and
+  `aria-disabled` but not the `disabled` attribute, the form carries `aria-busy`, both fields are
+  disabled and no spinner exists. Three further clicks during one in-flight request produced one
+  sign-in call, not four.
+- The session loading screen exposes only `status` "Loading your session"; its 240x27 `--paper`
+  skeleton is `aria-hidden` and no animation runs.
+- Tab order is email, password, Sign in, each computing the 2px `--green` outline at 2px offset.
+  No positive `tabindex` exists and focus leaves the page after the last control, so nothing traps.
+- At 390 the block is 358px inside the 16px page padding, the button fills it, every control is
+  44px and the page does not scroll horizontally.
