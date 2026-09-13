@@ -2,10 +2,11 @@
 
 Subscription Splitter records one shared monthly subscription, its participants and their payments,
 and reports what each owes. TypeScript throughout: a Hono API and a React client in one Cloudflare
-Worker over D1. Four slices have shipped: sessions over two seeded accounts, subscriptions,
-participants with inclusive active ranges, effective-dated prices, break months, payments, standing
-orders with per-month exceptions, and the summary that derives every balance from them. What remains
-is the release itself, tracked as roadmap S-04.
+Worker over D1. Four ledger slices shipped the product behaviour: sessions over two seeded accounts,
+subscriptions, participants with inclusive active ranges, effective-dated prices, break months,
+payments, standing orders with per-month exceptions, and the summary that derives every balance from
+them. The roadmap ledger `F-01` to `S-06` is archived under `context/archive/`, and `S-07`
+`google-sign-in` is the active change.
 
 ## Hard rules
 
