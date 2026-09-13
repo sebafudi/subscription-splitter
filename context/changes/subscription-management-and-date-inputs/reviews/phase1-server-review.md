@@ -209,9 +209,10 @@ on a locked subscription is not refused.
 - **Location**: `src/server/db/subscriptions.ts:383`
 - **Detail**: The doubly-lost-race fallback emits `start_month cannot be later than <stored month>`
   with no because-clause. The ruling that authorises it, "Ruling on an implementation question from
-  phase 1", exists only as an uncommitted edit to `design-delta.md` in the working tree at review
-  time. The code is correct against the ruling; the ruling simply is not yet in the history the code
-  is. Whoever holds that file should commit it so the contract and the code land together.
+  phase 1", was an uncommitted edit to `design-delta.md` while this review was being written and
+  landed as `7d5b588` before the review was committed. The code is correct against the ruling and the
+  contract is now in the history beside it. Recorded only because the code shipped ahead of the
+  ruling that authorises its sentence.
 
 ## Regressions
 

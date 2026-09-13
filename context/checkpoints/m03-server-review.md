@@ -56,6 +56,6 @@ No source file, no STATUS, no GOALS and no evidence entry was touched.
 
 ## Next
 
-The warning does not block phase 2. Whoever owns `design-delta.md` should commit the phase 1
-implementation ruling already in the working tree, since the fallback sentence in the shipped code
-rests on it.
+The warning does not block phase 2. The phase 1 implementation ruling the shipped fallback sentence
+rests on landed as `7d5b588` while this review was being written, so the contract and the code are now
+in the history together.
