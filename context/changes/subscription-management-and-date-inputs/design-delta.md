@@ -291,6 +291,19 @@ doubly lost race that D1's sequential execution makes unreachable in practice), 
 `start_month cannot be later than <stored month>` with no because-clause. Accepted: the sentence is
 truthful and the branch has no fixture, so no extra copy is specified for it.
 
+## Rulings on implementation questions from phases 4 and 5
+
+1. The gap between the header action row and "Owed to you now" is `--s-5`, which replaces the
+   `--s-6` margin the summary label carried before; it applies in all four detail states. Accepted
+   as implemented.
+2. The action row's container stays mounted while the edit panel or the strip is open and carries
+   only the status line, so "action row absent" and "status line permanently mounted" both hold.
+   Accepted as implemented; it matches 3.5.
+3. A browser with a month picker renders the chosen month in the browser's own UI language
+   ("March 2026"), while the select fallback names months in the subscription locale ("mar 2026").
+   Accepted: the picker text is browser chrome, not application copy, and the two never appear in
+   the same browser.
+
 ## Rulings on plan review design findings
 
 1. The "next active range" refusal kind is withdrawn; see Rulings on product questions.
