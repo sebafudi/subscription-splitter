@@ -2,7 +2,7 @@
 
 ## Overview
 
-Give the shipped app the visual language it has never had. `context/changes/visual-redesign/design-spec.md`
+Give the shipped app the visual language it has never had. `context/archive/visual-redesign/design-spec.md`
 is the design authority: it fixes the palette in both themes, the type scale over a self-hosted IBM
 Plex Sans, the spacing scale, one focus style, three motions with their reduced alternatives, and
 the appearance and behaviour of every screen and every state the client can render. This plan turns
@@ -1241,7 +1241,7 @@ captures the new design; the two are not alternatives.
 
 #### 5. The designer handoff
 
-**File**: `context/changes/visual-redesign/plan.md` (this file, the Design questions section)
+**File**: `context/archive/visual-redesign/plan.md` (this file, the Design questions section)
 
 **Purpose**: Hand the designer a review that is complete against design-spec 11 and record the result.
 
@@ -1530,11 +1530,11 @@ certification screenshots are refreshed; both belong to that release step.
 
 ## References
 
-- Design authority: `context/changes/visual-redesign/design-spec.md`
-- Mockups: `context/changes/visual-redesign/reference/mockup-detail.html` and the three PNGs beside it
-- Frame: `context/changes/visual-redesign/frame.md`, in particular "What Must Stay Stable" and "Risks"
-- Research: `context/changes/visual-redesign/research.md`
-- Current interface captures: `context/changes/visual-redesign/reference/current-*.png`
+- Design authority: `context/archive/visual-redesign/design-spec.md`
+- Mockups: `context/archive/visual-redesign/reference/mockup-detail.html` and the three PNGs beside it
+- Frame: `context/archive/visual-redesign/frame.md`, in particular "What Must Stay Stable" and "Risks"
+- Research: `context/archive/visual-redesign/research.md`
+- Current interface captures: `context/archive/visual-redesign/reference/current-*.png`
 - Prior evidence for the two states that cannot be produced locally:
   `evidence/screenshots/detail-no-owner-state.png`, `evidence/screenshots/detail-error-state.png`
 - Format reference for this plan: `context/archive/payments-and-recurring/plan.md`

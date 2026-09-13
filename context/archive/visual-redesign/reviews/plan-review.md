@@ -1,7 +1,7 @@
 <!-- PLAN-REVIEW-REPORT -->
 # Plan review: Implementation plan, visual redesign
 
-- **Plan**: `context/changes/visual-redesign/plan.md`
+- **Plan**: `context/archive/visual-redesign/plan.md`
 - **Mode**: Deep
 - **Repository state**: commit `8418a54` on `main`. Nothing of this change is on disk yet; the working
   tree carries only another agent's edits under `tools/reviewer/` and

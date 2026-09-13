@@ -1,9 +1,9 @@
 # Visual redesign - plan brief
 
-> Full plan: `context/changes/visual-redesign/plan.md`
-> Design authority: `context/changes/visual-redesign/design-spec.md`
-> Frame: `context/changes/visual-redesign/frame.md`
-> Research: `context/changes/visual-redesign/research.md`
+> Full plan: `context/archive/visual-redesign/plan.md`
+> Design authority: `context/archive/visual-redesign/design-spec.md`
+> Frame: `context/archive/visual-redesign/frame.md`
+> Research: `context/archive/visual-redesign/research.md`
 
 ## What and why
 

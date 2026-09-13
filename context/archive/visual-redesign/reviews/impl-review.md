@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Implementation Review: Visual redesign across every shipped screen
 
-- **Plan**: `context/changes/visual-redesign/plan.md`
+- **Plan**: `context/archive/visual-redesign/plan.md`
 - **Scope**: Phases 1 to 6 of 6 (Progress shows 100 of 101 boxes checked; row 6.14 is open by
   design, awaiting the designer's re-check of the retaken captures)
 - **Commits reviewed**: `d0f9a05`, `b8db05f`, `00813fe`, `5ac541f`, `43e90e4`, `9c99bf4`, `fac48ee`,
@@ -149,7 +149,7 @@ rather than the record:
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Success Criteria
-- **Location**: `context/changes/visual-redesign/plan.md:1585`
+- **Location**: `context/archive/visual-redesign/plan.md:1585`
 - **Detail**: The row reads `3.11 A create closes the panel, shows "Subscription created",
   highlights the row and opens Detail` and is ticked. Design-spec 4.3, as amended by the designer in
   `02b213e`, says the screen stays on Home and nothing navigates automatically, and that is what
@@ -165,7 +165,7 @@ rather than the record:
 
 - **Severity**: 📝 OBSERVATION
 - **Dimension**: Success Criteria
-- **Location**: `context/changes/visual-redesign/plan.md:1528-1530`, `:1552-1554`, `:1572-1574`,
+- **Location**: `context/archive/visual-redesign/plan.md:1528-1530`, `:1552-1554`, `:1572-1574`,
   `:1595-1597`, `:1627-1629`
 - **Detail**: Fifteen ticked rows across phases 1 to 5 claim typecheck, the suite and the build
   passed, and no evidence file records any of those runs. Only the phase 6 re-run is captured, at
@@ -197,7 +197,7 @@ rather than the record:
 - **Severity**: 📝 OBSERVATION
 - **Dimension**: Success Criteria
 - **Location**: `evidence/runs/visual-redesign-guards.txt:140`,
-  `context/changes/visual-redesign/plan.md:1448`, `evidence/runs/visual-redesign-phase-gates.md:260`
+  `context/archive/visual-redesign/plan.md:1448`, `evidence/runs/visual-redesign-phase-gates.md:260`
 - **Detail**: Two places say "eleven Stability guards rows" where the table at `plan.md:159-168` has
   ten, and guards.txt itself records ten. Separately, phase-gates says the mobile captures are
   780 by 1688 "except the two full-column captures of row 09"; four files deviate, both desktop and
@@ -225,7 +225,7 @@ rather than the record:
 
 - **Severity**: 📝 OBSERVATION
 - **Dimension**: Plan Adherence
-- **Location**: `context/changes/visual-redesign/plan.md:1345`, `:1394`
+- **Location**: `context/archive/visual-redesign/plan.md:1345`, `:1394`
 - **Detail**: D7 and D9 were answered by confirming the behaviour the implementer had already built
   rather than by directing it; for D9 the dependent code landed in `5ac541f` thirteen minutes before
   the answer in `0870801`. The protocol at `plan.md:1305` explicitly permits an answer that leaves
@@ -243,7 +243,7 @@ rather than the record:
 ## Notes on what this review did not cover
 
 - **Visual acceptance is the designer's**, performed separately and recorded in
-  `context/changes/visual-redesign/reviews/design-acceptance.md`. This review did not judge taste,
+  `context/archive/visual-redesign/reviews/design-acceptance.md`. This review did not judge taste,
   hierarchy or copy, and takes no position on whether the result looks right.
 - **Progress row 6.14 is correctly open.** The designer accepted the work with three required
   corrections, all three landed in `f642b89` with the affected captures retaken, and the row stays

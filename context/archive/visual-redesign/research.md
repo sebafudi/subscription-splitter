@@ -219,7 +219,7 @@ read them from `evidence/` rather than from the fresh reference set.
 
 Eleven captures of the current interface, taken against `npm run dev` on a local D1 holding synthetic
 data only, at 1280 CSS pixels and at 390 CSS pixels with a 2x device pixel ratio. All paths are relative to
-`context/changes/visual-redesign/reference/`:
+`context/archive/visual-redesign/reference/`:
 
 | File | What it shows |
 | --- | --- |

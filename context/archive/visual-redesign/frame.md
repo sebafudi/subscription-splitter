@@ -212,8 +212,8 @@ design calls for addressable screens, plans the router as a functional change wi
   `src/client/screens/SubscriptionDetail.tsx:98-259`, `src/client/components/RecurringSection.tsx:42-160`,
   `src/client/components/PriceHistory.tsx:46-66`, `src/client/components/MemberList.tsx:94`,
   `src/client/api.ts:46-77`, `vitest.unit.config.ts:7`, `vitest.integration.config.ts:31`
-- Research: `context/changes/visual-redesign/research.md`
-- Reference captures: `context/changes/visual-redesign/reference/`
+- Research: `context/archive/visual-redesign/research.md`
+- Reference captures: `context/archive/visual-redesign/reference/`
 - Prior evidence: `evidence/screenshots/`, catalogued in `evidence/index.md`
 - Decisions: `context/decisions/D-006`, `D-007`, `D-008`, `D-009`, `D-010`
 - Investigation: carried out in this session without sub-agents; the surface was small enough to read
