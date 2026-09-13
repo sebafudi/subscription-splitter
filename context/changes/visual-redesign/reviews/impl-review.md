@@ -370,3 +370,67 @@ source), and the practice to carry forward.
 
 **Nothing was rejected or deferred.** The verdict's two required corrections are in, and all five
 observations are resolved rather than noted. Re-review is a separate pass and not this author's.
+
+## Re-verification
+
+Independent re-review of the `## Resolution` above, including the F1 follow-up. The re-reviewer did
+not write the plan, the specification, any implementation commit or any resolution commit. Every
+claim below was checked by running a command or by driving a browser, not by reading the record.
+
+Automated gates were re-run twice: once in a detached worktree created from `origin/main` at
+`1d5d80a`, the resolution revision, with `node_modules` linked from the primary checkout, and again
+in the same worktree at `4a7c6cc`, which carries the F1 follow-up. Both passes were clean.
+
+| Gate | At `1d5d80a` | At `4a7c6cc` | Recorded |
+|---|---|---|---|
+| `npm run typecheck` | exit 0 | exit 0 | exit 0 |
+| `npm run test:unit` | 16 files / 189 tests, exit 0 | 17 files / 194 tests, exit 0 | same at both revisions |
+| `npm run test:integration` | 11 files / 112 tests, exit 0 | 11 files / 112 tests, exit 0 | same at both revisions |
+| `npm run build` | exit 0 | exit 0 | exit 0 |
+
+The gate record in `evidence/runs/visual-redesign-gates.txt` matches both passes exactly, including
+the file and test counts in its own commentary.
+
+| Finding | Verified | Evidence run | Residual risk |
+|---|---|---|---|
+| F1 | yes | Read `da99573` and `b5208f3`, the amended design-spec 4.4 and `SectionIndex.tsx`. Drove headless Chrome over the DevTools protocol against `npm run dev` on the local D1, signed in as the seeded owner. At 1280 by 900 all five index items take `aria-current` when clicked, at heading tops 116.25, 115.81, 115.69, 116.47 and 280.03px, the last under the end-of-document rule with the gap at 0; scrolling to the bottom without clicking marks the same last item. A real Tab lands on the index with a `2px` ring at `2px` offset and a real Enter makes that item current at 116.25px with focus staying on the item. At 375 by 812 all five are current at tops 115.72 to 116.44px with zero horizontal overflow and the end rule never firing. Repeated in a second Chrome launched with `--force-prefers-reduced-motion`: identical five rows, `document.getAnimations().length` of 0 throughout, `scroll-behavior` computing `auto`. Opened the two new `impl-review-f1-index-last-item-desktop` captures and the retaken `redesign-22` pair; all four show what they claim, at the originals' dimensions | The `scroll` listener is unthrottled, so every scroll event reads `getBoundingClientRect()` for each heading. Cheap at five headings but no longer free per frame, which the component's older comment claimed. `currentItemLine()` reads only the first heading's `scroll-margin-top`, once per effect, so a later change to that offset or a heading with a different one would not be picked up |
+| F2 | yes | `git show 5c02639 -- plan.md`. Row 3.11 keeps its title verbatim and gains the parenthetical naming design-spec 4.3 as amended in `02b213e`. `02b213e` touches only `design-spec.md` and the amendment says the screen stays on Home | None |
+| F3 | yes | Ran all four gates myself at both revisions, above. `package.json` confirms there is no lint script and no end-to-end suite, so the four named gates are every automated gate. The file is explicit that it is a re-run rather than a reconstruction of the phase runs | The phase 1 to 5 runs themselves remain unrecoverable, which the file states |
+| F4 | yes | Read `evidence/runs/visual-redesign-manual-rows.md` in full. Every one of the eighteen rows it covers carries a computed value with the property it came from, not restated intent: rect tops and lefts, resource entries, animation counts, computed outline and offset, `aria-describedby` targets, tile counts and phrases. Row 4.10 is delegated by name to the index record, which covers it. Spot-checked two of its tokens against the stylesheet: `--green` is `#1f6f4a`, which is `rgb(31, 111, 74)`, and `--scroll-offset` derives 56 plus 44 plus 16, which is the 116px reported | Self-driven by the implementer in the same session, so the numbers are reproducible in method but not captured as tool output |
+| F5 | yes | Counted both myself. The Stability guards table in `plan.md` has exactly ten rows; a grep across `context/` and `evidence/` finds no remaining "eleven Stability guards" and two corrected "ten". Measured every `redesign-*` capture: 62 files, of which exactly four deviate from 2560 by 1800 and 780 by 1688, and all four are row 09, at 2560 by 3330 and 780 by 4198 | None |
+| F6 | yes | Read `src/client/components/ui/apiMessages.ts`, its four unit cases and the call site at `PriceHistory.tsx:177`. Ran the transform against eleven inputs beyond the committed cases. The fallback holds: an instruction-only unpunctuated refusal comes back whole rather than empty, so the strip can no longer read a bare " Delete anyway?". Trailing and leading whitespace, a newline separator, a reversed sentence order, an instruction sandwiched between two organizer sentences and a decimal amount inside a sentence all behave, the last because the split needs whitespace after the full stop | A whitespace-only or empty message still yields an empty string, so the strip would read " Delete anyway?" in that case. The server does not send one, and no code path produces it |
+| F7 | yes | Checked the plan's new paragraph against `git log`. D9's answer `0870801` does land after its code `5ac541f`, and D7's answer `02b213e` lands after the phase 3 commit `00813fe` that shipped the behaviour. `02b213e` and `0870801` touch only `design-spec.md`; `7485476` touches the spec and the acceptance record but no source; no phase commit touches `design-spec.md` | The paragraph says "every implementing commit touching only source", which is looser than the truth: the phase commits also touch `plan.md`, evidence and reference captures. The claim that holds is the one the finding made, that no implementing commit touches the spec. One later exception exists: the F1 resolution commit `da99573` amends `design-spec.md` and changes source together |
+
+### One new observation
+
+**R1, three of the four `impl-review-f1-index-current-*` captures do not match their table rows.**
+Severity observation, dimension Success Criteria, location
+`evidence/runs/visual-redesign-index-current-item.md`, the Captures table. Measured and opened all
+four. `impl-review-f1-index-current-mobile-dark.png` is 2484 by 1227 and shows the Home subscription
+list at desktop width with no section index on screen, where its row claims 375 dark with Standing
+orders current. `impl-review-f1-index-current-desktop-dark.png` is also 2484 by 1227 rather than the
+set's 2560 by 1800, and renders the dark theme.
+`impl-review-f1-index-current-desktop-light.png` is the right size and shows Payments received
+correctly marked, but renders the dark theme despite its name, so the pair is not a light and dark
+pair. `impl-review-f1-index-current-mobile-light.png` is genuinely 375 light at 750 by 1624, though
+its index strip is scrolled so the current item is off screen and the mark it claims is not visible.
+The behaviour these captures were meant to show is independently confirmed above by a browser run and
+by the two follow-up captures, which are correct, so this is an evidence-record defect and not a code
+defect. It is the same class as F5. **Required action**: retake those four at the set's widths and
+themes, or correct the four rows to say what each file actually holds, before the change is archived.
+No code change is required.
+
+### Updated verdicts
+
+| Dimension | Verdict |
+|-----------|---------|
+| Plan Adherence | PASS |
+| Scope Discipline | PASS |
+| Safety & Quality | PASS |
+| Architecture | PASS |
+| Pattern Consistency | PASS |
+| Success Criteria | PASS |
+
+**Overall: APPROVED.** All seven findings are verified resolved, both required corrections included,
+and the F1 follow-up is verified in a real browser at both widths, in both motion modes and by
+keyboard. One new observation, R1, carries a documentation-only required action before archive.

@@ -1,7 +1,7 @@
 ---
 change_id: visual-redesign
 title: Redesign the interface visually across every shipped screen
-status: implemented
+status: impl_reviewed
 ---
 
 ## Notes
@@ -24,5 +24,11 @@ section index now tracks the current item at the same line a click lands on and 
 that line at 117px, and F6, where a price-delete refusal falls back to the server's own words instead
 of to none. The rest gave the record what it lacked: the automated gates as output, nineteen manual
 rows as browser measurements, two corrected counts, and the design-question protocol's own lesson.
-Status stays `implemented`; the re-review is a separate pass.
+An independent re-review of that resolution followed and is recorded in the same file's
+`## Re-verification` section: all seven findings verified resolved, the four automated gates re-run
+at both the resolution revision and the F1 follow-up revision, and the F1 behaviour confirmed in a
+real browser at 1280 and at 375, by keyboard, and under forced reduced motion. Overall verdict
+APPROVED, every dimension PASS. One new observation, R1, asks for four mislabelled index captures
+to be retaken or their rows corrected before archive; it is documentation only and changes no code.
+Status moves to `impl_reviewed`.
 
