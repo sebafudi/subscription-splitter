@@ -43,7 +43,7 @@ not.
 which month counts as current and therefore every balance by one month's worth; the field's hint
 says so. No confirmation; no data changes.
 
-**First month.** Moving it earlier is always allowed. Moving it later is allowed only up to the
+**First month.** Moving it earlier is allowed down to the ten-year bound below. Moving it later is allowed only up to the
 earliest month any dependent record uses, checked on the server in one place: the earliest
 participant join month, the earliest price month, the earliest skipped month, the month of the
 earliest payment date and the earliest standing-order first month. The owner's opening range is the
@@ -51,13 +51,21 @@ one exception: when its join month equals the old first month it is moved to the
 the same atomic write, so it is excluded from the minimum check. The owner's ranges are editable through
 the participant route, so the shifted set is revalidated before writing with the same range rules
 the participant route applies (ordered, non-overlapping, open range last): if the shifted range would
-end before it starts, or would reach into the owner's next range, the change is refused naming the
-binding month. A refusal names the binding month and the kind of record that pins it, in this order
-when tied: "a participant is active from", "a price is recorded from", "a month is skipped in", "a
-payment is dated in", "a standing order starts in", and for the owner's own ranges "your own first
-active range ends then" or "your own next active range starts then". Wire sentence shape:
-`start_month cannot be later than 2026-03 because a price is recorded from that month`. The client transform of 3.8 renders it as "First month cannot be later
+end before it starts, the change is refused naming its leave month. The owner's later ranges take
+part in the participant minimum like any other range, and non-overlap guarantees the leave-month
+refusal fires before any of them could be reached, so no further owner-specific kind exists. A
+refusal names the binding month and the kind of record that pins it, in this order when tied: "a
+participant is active from", "a price is recorded from", "a month is skipped in", "a payment is dated
+in", "a standing order starts in", and for the owner's opening range "your own first active range
+ends then". Wire sentence shape: `start_month cannot be later than 2026-03 because a price is
+recorded from that month`. The client transform of 3.8 renders it as "First month cannot be later
 than 2026-03 because a price is recorded from that month".
+
+Moving it earlier is bounded by one rule, on create and on edit alike: the first month cannot be
+earlier than January ten years before the current year in the subscription's time zone. Wire
+sentence: `start_month cannot be earlier than YYYY-MM`. The bound exists because the summary
+enumerates every month from the first month on every read; it matches the span the month select
+fallback offers, so the picker path and the select path agree.
 
 **Deletion.** A confirmed deletion removes the subscription and everything reachable from it:
 participants, their active months, prices, skipped months, payments, standing orders and their
@@ -88,6 +96,12 @@ Owed to you now
 - During the first load of the detail (the skeleton state of 4.4) both buttons render disabled per
   3.3 (`aria-disabled="true"`, text `--ink-faint`). They enable when the first load settles. The
   currency lock below depends on the loaded lists, and deletion should not race the first load.
+- In the detail's error state (the load failed) both buttons stay disabled, because nothing about
+  the subscription's lists is known. In the no-owner state (the 409 case of 4.4) "Delete
+  subscription" is enabled and "Edit subscription" stays disabled: deletion needs only the id and is
+  the one useful action on a subscription the product cannot show, while the edit panel's currency
+  lock needs lists that state does not have. The strip, the Home return and the status line behave
+  as in the ready state.
 - Only one of the edit panel and the confirmation strip is open at a time; while either is open the
   action row is absent, exactly as a heading-row button is absent while its panel is open (3.7).
 - A permanent `role="alert"` element sits under the action row position for header actions that fail
@@ -111,7 +125,7 @@ subscription". Focus moves to the Name field on open. Fields, in this order:
 | Currency | pair, left | same control as the New subscription form | when locked: "Locked while prices, payments or standing orders are recorded. Every amount is stored in PLN." (the current currency code in place of PLN) |
 | Locale | pair, right | same control as the New subscription form | same hint as the New subscription form, if it has one |
 | Time zone | span | same control as the New subscription form | "Decides which month counts as the current one. Balances follow it." |
-| First month | span | month control per 3.4 below, no `min`, no `max` | "Can move earlier freely, or later up to the earliest recorded month." |
+| First month | span | month control per 3.4 below, `min` at the ten-year lower bound above, no `max` | "Can move back up to ten years, or later up to the earliest recorded month." |
 
 - Currency is `disabled` when the loaded detail has at least one price, payment or standing order.
   The disabled treatment of 3.4 applies and the hint above is its `aria-describedby` text. The
@@ -193,7 +207,10 @@ as today. The select is labelled by the field label through `htmlFor`, so no fie
 
 **Bounds.** `min` is set where a server lower-bound rule exists: the subscription first month on
 participant From, price Effective from, skipped month and standing order First month; the first day
-of the first month (`YYYY-MM-01`) on the payment date. No `max`, no `step`. Bounds are a convenience
+of the first month (`YYYY-MM-01`) on the payment date; the paired From value on participant To and
+the paired First month value on standing order Last month, whenever that paired value is a complete
+month, otherwise no `min`; and the ten-year lower bound on the subscription first month itself, on
+create and edit. No `max`, no `step`. Bounds are a convenience
 only; the server rules remain the enforcement, and a browser that ignores the attributes (iOS
 Safari) is not a defect. Each form keeps its current form-level validation attribute; whether the
 form is `noValidate` today is recorded in the plan and not changed by this delta.
@@ -242,7 +259,8 @@ confirmation strip spans the 16px-padded column. Native controls are 44px tall l
 | panel buttons | Save changes, Cancel |
 | currency hint when locked | Locked while prices, payments or standing orders are recorded. Every amount is stored in PLN. |
 | time zone hint | Decides which month counts as the current one. Balances follow it. |
-| first month hint | Can move earlier freely, or later up to the earliest recorded month. |
+| first month hint | Can move back up to ten years, or later up to the earliest recorded month. |
+| first month label | First month, on both the New subscription form and the edit panel |
 | strip question | Delete <name>? |
 | strip consequence | Its participants and their active months, prices, skipped months, payments, standing orders and their month marks will be removed. This can't be undone. |
 | strip buttons | Delete subscription, Keep |
@@ -255,15 +273,27 @@ Server refusal sentences begin with the wire name so 3.8's transform applies: `c
 change while prices, payments or standing orders are recorded`; `start_month cannot be later than
 YYYY-MM because <kind> that month`, with the five kinds listed under Rulings; and, for the owner's
 opening range, `start_month cannot be later than YYYY-MM because your own first active range ends
-then` or `start_month cannot be later than YYYY-MM because your own next active range starts then`.
+then`; and for the lower bound, `start_month cannot be earlier than YYYY-MM`.
 
 ## Rulings on planning questions
 
 1. Owner range shift: the shifted owner range set is revalidated before writing and refused with the
-   two owner-specific kinds above. Accepted as the planner recommended.
+   owner-specific kind above when it would end before it starts. The "next active range" kind first
+   proposed here was withdrawn after the plan review showed it unreachable (design finding 1).
 2. First month has no bounds, so the select fallback lists the full default range (about 144
    options) on both the create and edit forms. Accepted; narrowing would hide the move-earlier case
    the rulings allow. A native select handles that count, and typing a month name jumps to it.
+
+## Rulings on plan review design findings
+
+1. The "next active range" refusal kind is withdrawn; see Rulings on product questions.
+2. Error and no-owner states of the action row are specified in 4.4 above.
+3. One label. `start_month` is "First month" on every screen; the New subscription form's label
+   changes from "Start month" to "First month" and the shared label map carries the single entry.
+   Section 4.3's field list reads "First month (span, month control)".
+4. `min` on participant To and standing order Last month follows the paired field; see Bounds.
+5. Accepted as a deliberate ruling: a time-zone change reports "Changes saved" and the figures
+   update in place; the field hint carries the warning before the change, which is where it helps.
 
 ## 11. Acceptance checklist (additions)
 
