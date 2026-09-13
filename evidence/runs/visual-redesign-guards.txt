@@ -1,0 +1,43 @@
+# visual-redesign stability guards
+
+Per-name match counts for every wire field name the plan's Stability guards table lists,
+counted with word boundaries in src/client/api.ts. Captured from main at commit d4e755f before phase 1.
+A changed count at any phase end is a finding, not a pass.
+
+## Baseline (main)
+
+member_id        2
+date             1
+amount           3
+note             1
+kind             1
+effective_from   1
+start_month      2
+end_month        1
+joined_month     1
+left_month       1
+active_ranges    2
+time_zone        1
+owner_name       1
+currency         2
+locale           2
+name             7
+
+## Phase 1 end
+
+member_id        2
+date             1
+amount           3
+note             1
+kind             1
+effective_from   1
+start_month      2
+end_month        1
+joined_month     1
+left_month       1
+active_ranges    2
+time_zone        1
+owner_name       1
+currency         2
+locale           2
+name             7

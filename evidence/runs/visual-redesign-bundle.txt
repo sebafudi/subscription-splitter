@@ -1,0 +1,29 @@
+# visual-redesign bundle and font bytes
+
+Measured from `npm run build` output in `dist/client/`. The baseline is main before
+phase 1, recorded in research.md. There is no CI size check and no recorded budget for
+the bundle, so these numbers are recorded rather than enforced. The font budget is
+design-spec 2.2's 160 KB for the four woff2 files together.
+
+## Baseline (main, before phase 1)
+
+JavaScript   251,933 bytes
+CSS            3,012 bytes
+Fonts              0 bytes
+
+## Phase 1
+
+JavaScript   253,126 bytes
+CSS           10,768 bytes
+
+Fonts, four woff2 files and no .woff, .ttf, .eot or .otf anywhere in the build:
+
+  22,588  ibm-plex-sans-latin-400-normal.woff2
+  24,252  ibm-plex-sans-latin-600-normal.woff2
+  15,980  ibm-plex-sans-latin-ext-400-normal.woff2
+  16,448  ibm-plex-sans-latin-ext-600-normal.woff2
+  ------
+  79,268  total, against the 160 KB budget in design-spec 2.2
+
+Delta against the baseline: JavaScript 1,193 bytes, CSS 7,756 bytes,
+fonts 79,268 bytes.

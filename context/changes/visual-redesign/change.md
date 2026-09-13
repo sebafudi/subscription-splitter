@@ -1,7 +1,7 @@
 ---
 change_id: visual-redesign
 title: Redesign the interface visually across every shipped screen
-status: plan_reviewed
+status: implementing
 ---
 
 ## Notes

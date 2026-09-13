@@ -16,6 +16,7 @@ import {
   type Subscription,
   type Summary,
 } from '../api'
+import { AppBar } from '../components/AppBar'
 import { BreakMonths } from '../components/BreakMonths'
 import { MemberForm } from '../components/MemberForm'
 import { MemberList } from '../components/MemberList'
@@ -25,7 +26,9 @@ import { RecurringSection } from '../components/RecurringSection'
 
 type Props = {
   subscription: Subscription
+  email: string
   onBack: () => void
+  onSignOut: () => void
   onSignedOut: () => void
 }
 
@@ -45,7 +48,7 @@ type State =
   /** Only reachable for a subscription created before the owner became part of every create. */
   | { status: 'no-owner'; message: string }
 
-export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props) {
+export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onSignedOut }: Props) {
   const [state, setState] = useState<State>({ status: 'loading' })
   const [editing, setEditing] = useState<Member | null>(null)
 
@@ -83,6 +86,8 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
     void load()
   }, [load])
 
+  const bar = <AppBar email={email} onHome={onBack} onSignOut={onSignOut} />
+
   const header = (
     <header className="detail-header">
       <button type="button" onClick={onBack}>
@@ -97,45 +102,54 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
 
   if (state.status === 'loading') {
     return (
-      <main className="screen">
-        {header}
-        <div className="card-row">
-          {['Owed to you now', 'Per person this month', 'Your share this month', 'Collected this month', 'Active participants'].map(
-            (label) => (
-              <div className="card" key={label}>
-                <span className="card-label">{label}</span>
-                <span className="card-value">-</span>
-              </div>
-            ),
-          )}
-        </div>
-        <p role="status">Loading this month's figures…</p>
-      </main>
+      <>
+        {bar}
+        <main className="screen">
+          {header}
+          <div className="card-row">
+            {['Owed to you now', 'Per person this month', 'Your share this month', 'Collected this month', 'Active participants'].map(
+              (label) => (
+                <div className="card" key={label}>
+                  <span className="card-label">{label}</span>
+                  <span className="card-value">-</span>
+                </div>
+              ),
+            )}
+          </div>
+          <p role="status">Loading this month's figures…</p>
+        </main>
+      </>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <main className="screen">
-        {header}
-        <p role="alert" className="field-error">
-          {state.message}
-        </p>
-        <button type="button" onClick={() => void load()}>
-          Try again
-        </button>
-      </main>
+      <>
+        {bar}
+        <main className="screen">
+          {header}
+          <p role="alert" className="field-error">
+            {state.message}
+          </p>
+          <button type="button" onClick={() => void load()}>
+            Try again
+          </button>
+        </main>
+      </>
     )
   }
 
   if (state.status === 'no-owner') {
     return (
-      <main className="screen">
-        {header}
-        <p role="alert" className="field-error">
-          {state.message}
-        </p>
-      </main>
+      <>
+        {bar}
+        <main className="screen">
+          {header}
+          <p role="alert" className="field-error">
+            {state.message}
+          </p>
+        </main>
+      </>
     )
   }
 
@@ -160,102 +174,105 @@ export function SubscriptionDetail({ subscription, onBack, onSignedOut }: Props)
   }
 
   return (
-    <main className="screen">
-      {header}
+    <>
+      {bar}
+      <main className="screen">
+        {header}
 
-      <div className="card-row">
-        <div className="card">
-          <span className="card-label">Owed to you now</span>
-          <span className="card-value">{money(summary.owedToYouNow)}</span>
+        <div className="card-row">
+          <div className="card">
+            <span className="card-label">Owed to you now</span>
+            <span className="card-value">{money(summary.owedToYouNow)}</span>
+          </div>
+          <div className="card">
+            <span className="card-label">Per person this month</span>
+            <span className="card-value">{money(summary.currentPerPersonShare)}</span>
+          </div>
+          <div className="card">
+            <span className="card-label">Your share this month</span>
+            <span className="card-value">{money(summary.ownerShareThisMonth)}</span>
+          </div>
+          <div className="card">
+            <span className="card-label">Collected this month</span>
+            <span className="card-value">
+              {money(summary.collectedThisMonth)} of {money(summary.expectedThisMonth)}
+            </span>
+          </div>
+          <div className="card">
+            <span className="card-label">Active participants</span>
+            <span className="card-value">{summary.currentActiveCount}</span>
+          </div>
         </div>
-        <div className="card">
-          <span className="card-label">Per person this month</span>
-          <span className="card-value">{money(summary.currentPerPersonShare)}</span>
-        </div>
-        <div className="card">
-          <span className="card-label">Your share this month</span>
-          <span className="card-value">{money(summary.ownerShareThisMonth)}</span>
-        </div>
-        <div className="card">
-          <span className="card-label">Collected this month</span>
-          <span className="card-value">
-            {money(summary.collectedThisMonth)} of {money(summary.expectedThisMonth)}
-          </span>
-        </div>
-        <div className="card">
-          <span className="card-label">Active participants</span>
-          <span className="card-value">{summary.currentActiveCount}</span>
-        </div>
-      </div>
 
-      <p className="row-detail">
-        {summary.currentMonth} costs {money(summary.currentMonthly)}. Your net cost since the plan started is{' '}
-        <strong>{money(summary.ownerNetCost)}</strong>, against a plan total of {money(summary.totalPlanCost)}.
-        {owner && ` You are on this plan as ${owner.name}.`}
-      </p>
+        <p className="row-detail">
+          {summary.currentMonth} costs {money(summary.currentMonthly)}. Your net cost since the plan started is{' '}
+          <strong>{money(summary.ownerNetCost)}</strong>, against a plan total of {money(summary.totalPlanCost)}.
+          {owner && ` You are on this plan as ${owner.name}.`}
+        </p>
 
-      <MemberList
-        subscriptionId={subscription.id}
-        members={members}
-        summary={summary}
-        onEdit={setEditing}
-        onChanged={() => {
-          setEditing(null)
-          void load()
-        }}
-        onSignedOut={onSignedOut}
-      />
+        <MemberList
+          subscriptionId={subscription.id}
+          members={members}
+          summary={summary}
+          onEdit={setEditing}
+          onChanged={() => {
+            setEditing(null)
+            void load()
+          }}
+          onSignedOut={onSignedOut}
+        />
 
-      <MemberForm
-        key={editing?.id ?? 'new'}
-        subscriptionId={subscription.id}
-        startMonth={subscription.startMonth}
-        editing={editing}
-        onSaved={() => {
-          setEditing(null)
-          void load()
-        }}
-        onCancelEdit={() => setEditing(null)}
-        onSignedOut={onSignedOut}
-      />
+        <MemberForm
+          key={editing?.id ?? 'new'}
+          subscriptionId={subscription.id}
+          startMonth={subscription.startMonth}
+          editing={editing}
+          onSaved={() => {
+            setEditing(null)
+            void load()
+          }}
+          onCancelEdit={() => setEditing(null)}
+          onSignedOut={onSignedOut}
+        />
 
-      <PriceHistory
-        subscriptionId={subscription.id}
-        prices={prices}
-        currency={summary.currency}
-        locale={summary.locale}
-        onChanged={() => void load()}
-        onSignedOut={onSignedOut}
-      />
+        <PriceHistory
+          subscriptionId={subscription.id}
+          prices={prices}
+          currency={summary.currency}
+          locale={summary.locale}
+          onChanged={() => void load()}
+          onSignedOut={onSignedOut}
+        />
 
-      <BreakMonths
-        subscriptionId={subscription.id}
-        breakMonths={breakMonths}
-        onChanged={() => void load()}
-        onSignedOut={onSignedOut}
-      />
+        <BreakMonths
+          subscriptionId={subscription.id}
+          breakMonths={breakMonths}
+          onChanged={() => void load()}
+          onSignedOut={onSignedOut}
+        />
 
-      <PaymentList
-        subscriptionId={subscription.id}
-        payments={payments}
-        members={members}
-        currency={summary.currency}
-        locale={summary.locale}
-        onChanged={() => void load()}
-        onSignedOut={onSignedOut}
-      />
+        <PaymentList
+          subscriptionId={subscription.id}
+          payments={payments}
+          members={members}
+          currency={summary.currency}
+          locale={summary.locale}
+          onChanged={() => void load()}
+          onSignedOut={onSignedOut}
+        />
 
-      <RecurringSection
-        subscriptionId={subscription.id}
-        schedules={schedules}
-        members={members}
-        monthInputs={monthInputs}
-        currentMonth={summary.currentMonth}
-        currency={summary.currency}
-        locale={summary.locale}
-        onChanged={() => void load()}
-        onSignedOut={onSignedOut}
-      />
-    </main>
+        <RecurringSection
+          subscriptionId={subscription.id}
+          schedules={schedules}
+          members={members}
+          monthInputs={monthInputs}
+          currentMonth={summary.currentMonth}
+          currency={summary.currency}
+          locale={summary.locale}
+          onChanged={() => void load()}
+          onSignedOut={onSignedOut}
+          />
+      </main>
+    </>
   )
 }

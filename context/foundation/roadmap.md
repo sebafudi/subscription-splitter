@@ -62,12 +62,12 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-04 | verification-and-release | use the certified flow on a deployed instance | S-03 | US-01, US-02, US-03, US-04, US-05, MS-02 | done |
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | in-progress |
 
-| S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | planning |
+| S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | in-progress |
 
 ## S-06: Visual redesign
 
 - **Change ID:** `visual-redesign`
-- **Status:** planning
+- **Status:** in-progress
 - **Prerequisites:** S-04
 - **Source:** explicit user request; `context/foundation/visual-redesign-brief.md`.
 - **Outcome:** a cohesive, polished responsive app with fully specified interactions and motion, preserving the verified product flow.

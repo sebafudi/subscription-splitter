@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMe, type SessionUser, type Subscription } from './api'
+import { getMe, signOut, type SessionUser, type Subscription } from './api'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
 import { SubscriptionDetail } from './screens/SubscriptionDetail'
@@ -32,15 +32,30 @@ export function App() {
     setUser(null)
   }
 
+  // One sign-out handler serves both signed-in screens, because both carry the app bar.
+  async function handleSignOut() {
+    await signOut()
+    signedOut()
+  }
+
   if (selected) {
     return (
       <SubscriptionDetail
         subscription={selected}
+        email={user.email}
         onBack={() => setSelected(null)}
+        onSignOut={handleSignOut}
         onSignedOut={signedOut}
       />
     )
   }
 
-  return <Home user={user} onSelect={setSelected} onSignedOut={signedOut} />
+  return (
+    <Home
+      email={user.email}
+      onSelect={setSelected}
+      onSignOut={handleSignOut}
+      onSignedOut={signedOut}
+    />
+  )
 }
