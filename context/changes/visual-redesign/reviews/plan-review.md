@@ -6,8 +6,8 @@
 - **Repository state**: commit `8418a54` on `main`. Nothing of this change is on disk yet; the working
   tree carries only another agent's edits under `tools/reviewer/` and
   `context/changes/ai-review-pipeline/`, which this review does not touch.
-- **Verdict**: REVISE (approve with required changes). Re-verified at `15468e6`: all eleven findings
-  and all nine design findings resolved, three new required items in `## Re-verification`
+- **Verdict**: SOUND, approved for implementation. Opened as REVISE; every finding and every
+  re-verification item closed by `2345c2b`. See `## Re-verification` for the audit trail
 - **Findings**: 4 critical, 6 warnings, 1 observation, plus 9 design findings returned to the designer
 - **Reviewer**: independent; did not write the plan or the design specification
 
@@ -654,3 +654,45 @@ are corrected.
 `change.md` stays at `status: planned`. The reviewer's note says it moves to `plan_reviewed` when R1,
 R2 and R3 close, and the toolkit assigns that write to the review skill rather than to the plan's
 author, so it belongs to the reviewer.
+
+### Second re-verification: R1 to R5 closed
+
+Third and final pass, against `plan.md`, `design-spec.md` and `reference/` at `2345c2b`, with the
+designer's mockup regeneration at `1632329`. **Nothing required remains.**
+
+- **R1, closed.** Progress row `4.24` is added at `plan.md:1476` and every block now matches. Counted
+  again, criteria against rows: phase 1 9/9 and 7/7, phase 2 6/6 and 6/6, phase 3 5/5 and 10/10, phase
+  4 8/8 and 16/16, phase 5 9/9 and 10/10, phase 6 7/7 and 8/8. 101 rows, all indices unique, no
+  checkbox outside the section, one `## Progress` heading after `## References`.
+- **R2, closed.** `reference/mockup-detail.html` now carries the fourth `dl` group
+  (`<dt>Active participants</dt><dd>2</dd>` at line 110) and `<h2>Participants</h2>` with no count at
+  line 119. The three PNGs were regenerated and were opened and read, not just checked by timestamp:
+  `mockup-detail-light-desktop.png` and `mockup-detail-dark-desktop.png` both show the four cell
+  ledger line ending in "Active participants 2", a count-free Participants heading, "Sep 2026 costs
+  110,00 zł" through the display formatter, and visibly underlined link-variant controls;
+  `mockup-detail-light-mobile.png` shows the four cells stacked with `dt` left and `dd` right and the
+  email hidden in the app bar, at 780 device pixels for 390 CSS pixels at 2x.
+- **R3, closed.** The instruction no longer points at the package's `index.css`. The plan now carries
+  the two literal ranges at `plan.md:279-280` and states that they are weight independent, which is
+  correct. Both strings were compared byte for byte against `package/400.css` in the 5.3.0 tarball and
+  match exactly. The note that `ł` is U+0142 and sits inside the latin-ext range is right.
+- **R4, closed.** Design-spec 3.3's link variant now underlines in `--border` rather than `--rule`
+  (`design-spec.md:176`), and the mockup's `.link` rule matches at line 37. That takes the underline
+  from 1.41:1 to 3.29:1 on `--ground` and 3.52:1 on `--paper`, so 2.1's condition that `--rule` never
+  carries a control now holds everywhere, and phase 6's check for it is no longer passing on wording
+  alone.
+- **R5, closed.** The scope bullet reads "six pieces of shipped client code" against the six locations
+  it lists and the guard row below it, and the Resolution section's row count reads 94 before and 100
+  after, which was the true figure at `d2f71d8`.
+
+### Final verdict
+
+**SOUND. Approved for implementation.** All four critical findings, all six warnings, the observation,
+all nine design findings and all five re-verification items are resolved in the plan, the
+specification and the design artifacts. The stability guards are now falsifiable rather than
+aspirational, every phase gate can fail for the reason it names, the specification and the plan agree
+on every point where they previously did not, and the two documents agree with the shipped code the
+change must preserve.
+
+`change.md` moves to `status: plan_reviewed` with this pass. Per this repository's convention no date
+field is written; the approval is dated by the commit that carries it.
