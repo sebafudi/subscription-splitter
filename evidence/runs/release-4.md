@@ -374,3 +374,84 @@ Left for their owners:
 - The goal-box updates for G05 and B12 go to the designated status writer. This file does not edit
   `GOALS.md`, `context/STATUS.md` or `evidence/index.md`.
 - The change is not archived. `change.md` reads `impl_reviewed`.
+
+## Consent roundtrip
+
+The step this file left open is now done. It was performed by the owner, on the live release 4
+above, and it is recorded here as the owner's report plus read-only corroboration from the remote
+database. No agent watched the consent screen, so the report is the primary evidence and the
+queries below are the check on it.
+
+### The owner's report
+
+Tested against `https://subscription-splitter.sebastianfudalej.workers.dev` at release SHA
+`bad3f2816611c00cd691b4ef67f1108d618bed60`, Cloudflare version
+`1d0f71c1-6832-4bc1-aace-5feef621e715`. The owner reports that Google sign-in works, covering the
+four steps this file asked for:
+
+1. Consent completed on Google's own screen, reached from the live login button.
+2. The return landed on the application root, signed in, on a new account whose Home was empty: no
+   subscriptions, and none of the seeded owner's data.
+3. Sign-out from that Google-created account.
+4. A second sign-in with the same Google account returned to the same account rather than creating
+   a second one.
+
+The consent audience is still External in Testing with the owner as its only test user, so this
+says that Google sign-in works for a listed test user. It does not say that public Google login
+works, and no artifact claims that.
+
+### Corroboration from the remote database
+
+Read-only queries against the remote D1, run with `npx wrangler d1 execute
+subscription-splitter-db --remote --command "<query>"`. Every one returns a count and nothing else:
+no address, no name and no identifier was selected, printed or recorded. Table and column names
+were read from `migrations/0001_auth.sql` first.
+
+| Query | Result |
+|---|---|
+| `select count(*) as google_accounts from account where providerId = 'google'` | 1 |
+| `select count(*) as password_accounts from account where providerId = 'credential'` | 2 |
+| `select count(*) as total_accounts from account` | 3 |
+| `select count(*) as users from "user"` | 3 |
+| `select count(*) from (select userId from account group by userId having count(distinct providerId) > 1)` | 0 |
+| `select count(*) from session s join account a on a.userId = s.userId and a.providerId = 'google'` | 1 |
+| `select count(*) as total_sessions from session` | 18 |
+| `select count(*) from subscriptions s where s.user_id not in (select userId from account where providerId = 'google')` | 2 |
+| `select count(*) from subscriptions s join account a on a.userId = s.user_id and a.providerId = 'google'` | 1 |
+| `select count(distinct user_id) from subscriptions` | 2 |
+| `select count(*) from subscriptions s join account a on a.userId = s.user_id and a.providerId = 'google' where strftime('%s', s.created_at) >= strftime('%s', a.createdAt)` | 1 |
+
+What each number supports, stated no more strongly than it can be:
+
+- **A Google account exists and the provider ran.** One `account` row carries
+  `providerId = 'google'`, it holds a `scope` value and no `password`, which is the shape the
+  library writes after a token exchange. Nothing local can produce that row on the remote database.
+- **It is its own account, not the seeded owner's.** User rows went from the two seeded accounts
+  that D-005 created and D-010 describes to three, the two `credential` account rows are still
+  there, and no user carries more than one `providerId`. So the Google identity created a new user
+  rather than being linked onto `owner@example.com`, which is the rule D-013 fixes and the product
+  rule the change brief states.
+- **The demo owner's records are untouched.** Subscriptions owned by users with no Google account
+  row still number 2, the figure release 4 recorded as "Your subscriptions (2)", across the same
+  two distinct owners as before.
+- **The Google account started empty.** It now owns one subscription, and that subscription was
+  created at or after its own `account` row, so it was added after the account existed rather than
+  inherited with it. The empty Home at first sign-in is the owner's report; this ordering is
+  consistent with it and does not by itself prove it.
+- **One live session for that account.** Consistent with a sign-out invalidating the first session
+  and a second sign-in opening another, which is the roundtrip reported. On its own a single row
+  does not prove two sign-ins happened, and it is not offered as proof of one.
+
+One note on method, because the naive query answers the opposite. `account.createdAt` is declared
+`INTEGER` in `migrations/0001_auth.sql` but the library writes a text timestamp into it, and
+`subscriptions.created_at` is text. SQLite orders every integer before every text value, so
+comparing a millisecond number against either column returns a result that reads as a real finding
+and is an artefact of the type ordering. Both sides are parsed with `strftime('%s', ...)` above,
+which is what makes the ordering claim mean anything.
+
+### What is still not claimed
+
+- Public Google login. The audience stays External in Testing.
+- The `account_not_linked` refusal against a live Google identity whose address matches the seeded
+  owner. It stays covered by the integration case against the real D1, not live; the zero
+  multi-provider users above is the configuration holding, not that refusal being exercised.

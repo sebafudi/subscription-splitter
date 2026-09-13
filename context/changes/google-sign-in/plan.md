@@ -762,6 +762,17 @@ applied to the remote D1 database, confirmed with `wrangler d1 migrations list -
 assumed from D-010; and that all three origins are registered on the OAuth client, since a mismatch
 fails at Google rather than here.
 
+**Closed.** The live gate is satisfied at release 4, `bad3f28`, Cloudflare version
+`1d0f71c1-6832-4bc1-aace-5feef621e715`. The two checks that come before the consent screen both
+passed there: `wrangler d1 migrations list --remote` answered `No migrations to apply!`, and the
+social call from the deployed origin answered 200 with an `accounts.google.com` url rather than 403
+with `INVALID_CALLBACK_URL`, so the deployed `APP_ORIGINS` carries the button's own origin. The
+consent roundtrip itself was then completed by the owner, who reports consent, an empty Home on a new
+account, a sign-out and a second sign-in returning to that same account. It is recorded with
+count-only corroboration from the remote database under "Consent roundtrip" in
+`evidence/runs/release-4.md`. It stays outside the Progress rows above, as this section says it must:
+nothing in this plan could make it pass.
+
 ## Rollback
 
 The feature is absent when the environment is absent. Removing `GOOGLE_CLIENT_ID` and
