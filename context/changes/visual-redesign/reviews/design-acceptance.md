@@ -65,7 +65,8 @@ to retake.
 
 All three required corrections are implemented in `src/client/index.css`, browser-checked at 1280
 and 390 in light and dark, and the affected captures are retaken. No appearance was changed beyond
-what A1 to A3 ask for. SHA for all three: recorded below once the commit lands.
+what A1 to A3 ask for. All three land in one commit, `f642b89`, together with the D11 filter select
+height, because the three are one stylesheet edit and share a single browser check.
 
 | Correction | What changed | Measured after the change | Captures retaken |
 | --- | --- | --- | --- |

@@ -1442,8 +1442,7 @@ placed beside the 32px rule rather than inside the existing breakpoint block, be
 selectors have equal specificity and the later one would otherwise win on source order. Verified in a
 browser: 32px at 1280 in a `--border` box at the right end of the subtitle line, 44px at 390 under
 the subtitle, and with all five add panels open at 390 no non-link control among the 55 visible is
-under 44px while the page still does not scroll horizontally. Progress row 6.13 closes with this
-change.
+under 44px while the page still does not scroll horizontally. Progress row 6.13 closes with `f642b89`.
 
 ### Designer hand-off, phase 6
 
@@ -1680,5 +1679,5 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes — fac48ee
 - [x] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border — fac48ee
 - [x] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5 — fac48ee
-- [x] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
+- [x] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high — f642b89
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings
