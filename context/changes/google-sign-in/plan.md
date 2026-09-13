@@ -849,7 +849,7 @@ function and the browser pass.
 #### Automated
 
 - [x] 2.1 Typecheck passes across all three projects
-- [ ] 2.2 The whole suite passes with no test file changed in this phase
+- [x] 2.2 The whole suite passes; one client unit test file was added in this phase (`src/client/components/ui/googleErrors.test.ts`, the return-leg mapping and the url cleanup, added here by instruction rather than left unasserted until phase 3; rows 3.2 and 3.16 record what it asserts) — e6b3dab
 - [x] 2.3 The production build succeeds
 - [x] 2.4 No `GOOGLE_CLIENT` string appears anywhere under `src/client`
 - [x] 2.5 No `error_description` appears anywhere under `src/client`
@@ -871,25 +871,25 @@ function and the browser pass.
 
 #### Automated
 
-- [ ] 3.1 Typecheck passes across all three projects
-- [ ] 3.2 The unit suite passes, including one case per error-mapping row plus unknown and missing codes
-- [ ] 3.3 The integration suite passes
-- [ ] 3.4 `npm test` passes with no Google value in the environment
-- [ ] 3.5 `tests/integration/auth.test.ts` is unchanged from `main`
-- [ ] 3.6 The whole suite passes a second time with both Google values set locally
-- [ ] 3.7 The production build succeeds
-- [ ] 3.8 Provider absent: the social call answers 404 and the configuration read answers false
-- [ ] 3.9 Provider present: the authorize url carries the right client id, redirect uri, three scopes, state and S256 challenge, and a verification row exists
-- [ ] 3.10 A callback with a fabricated state redirects with an error and creates no session
-- [ ] 3.11 A Google identity whose email matches a seeded password account is refused with `account_not_linked`
-- [ ] 3.12 An OAuth-shaped account sees an empty subscription list and is answered 404 for the seeded owner's subscription
-- [ ] 3.13 `10.8.0.x` is recorded in the prefix allocation comment and the new file uses it
-- [ ] 3.14 CI is unchanged, or gains exactly one secretless step if the second-project fallback landed
-- [ ] 3.16 The start-failure mapping returns the did-not-finish sentence for an HTTP error and the Google connection sentence for a rejection with no response, both asserted in full
+- [x] 3.1 Typecheck passes across all three projects — 461b950 (both gate runs, secretless and configured)
+- [x] 3.2 The unit suite passes, including one case per error-mapping row plus unknown and missing codes — e6b3dab (satisfied by `src/client/components/ui/googleErrors.test.ts`, which landed in phase 2; fifteen cases, re-run green in both phase 3 gate runs)
+- [x] 3.3 The integration suite passes — 461b950 (12 files, 119 cases, both runs)
+- [x] 3.4 `npm test` passes with no Google value in the environment — 461b950 (run A, `.dev.vars` moved aside)
+- [x] 3.5 `tests/integration/auth.test.ts` is unchanged from `main` — 461b950 (`git diff c842f64 -- tests/integration/auth.test.ts` is empty; `c842f64` is the file's state before this change began)
+- [x] 3.6 The whole suite passes a second time with both Google values set locally — 461b950 (run B, `.dev.vars` restored)
+- [x] 3.7 The production build succeeds — 461b950 (both runs)
+- [x] 3.8 Provider absent: the social call answers 404 and the configuration read answers false — 43f41f2 (satisfied by the two cases in the first describe block of `tests/integration/google-auth.test.ts`, which landed in phase 1)
+- [x] 3.9 Provider present: the authorize url carries the right client id, redirect uri, three scopes, state and S256 challenge, and a verification row exists — 43f41f2
+- [x] 3.10 A callback with a fabricated state redirects with an error and creates no session — 43f41f2 (asserted at the sharper reading the plan records: the redirect lands on the app root carrying `error=state_mismatch`, and a following `/api/me` is 401)
+- [x] 3.11 A Google identity whose email matches a seeded password account is refused with `account_not_linked` — 43f41f2 (`handleOAuthUserInfo` called with `{ context: await auth.$context }` against the real D1; the plan's fallback of dropping the case was not needed)
+- [x] 3.12 An OAuth-shaped account sees an empty subscription list and is answered 404 for the seeded owner's subscription — 43f41f2
+- [x] 3.13 `10.8.0.x` is recorded in the prefix allocation comment and the new file uses it — 43f41f2 (`tests/integration/accounts.ts` line 17, and both helpers in the new file pass the prefix)
+- [x] 3.14 CI is unchanged, or gains exactly one secretless step if the second-project fallback landed — 461b950 (`.github/workflows/ci.yml` is unchanged; mutating `env` reaches the Worker behind `SELF.fetch`, so the second-project fallback was never needed)
+- [x] 3.16 The start-failure mapping returns the did-not-finish sentence for an HTTP error and the Google connection sentence for a rejection with no response, both asserted in full — e6b3dab (satisfied by `googleErrors.test.ts`, which also asserts the sentence is not `CONNECTION_FAILURE`)
 
 #### Manual
 
-- [ ] 3.15 The new integration file claims nothing about Google's consent, token exchange or identity
+- [x] 3.15 The new integration file claims nothing about Google's consent, token exchange or identity — 43f41f2 (read once end to end: every assertion stops at the authorization url, the fabricated literals are named as such, and the file's own comments state the boundary and that the refusal case asserts the library's function rather than this application's route)
 
 ### Phase 4: The verification pass
 
