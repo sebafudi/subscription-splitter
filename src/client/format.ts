@@ -1,8 +1,7 @@
 /**
  * Display formatting for months and dates. Presentation only: every value the
- * client sends stays `YYYY-MM` or `YYYY-MM-DD`, and every input and hint keeps
- * the ISO form. Neither function touches an amount, which only `formatMoney`
- * produces.
+ * client sends stays `YYYY-MM` or `YYYY-MM-DD`. Neither function touches an
+ * amount, which only `formatMoney` produces.
  *
  * The parts are read as UTC and formatted in UTC, so a month never slides into
  * its neighbour in a runtime whose local zone sits behind Greenwich.

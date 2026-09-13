@@ -190,6 +190,11 @@ describe('deleting a subscription with its whole ledger', () => {
 
     const before = await countsFor(target.id)
     const siblingBefore = await countsFor(sibling.id)
+    // Without this the fixture could go empty and the rollback assertion below
+    // would compare all-zero to all-zero while proving nothing.
+    for (const [table, count] of Object.entries(before)) {
+      expect(count, `expected a row in ${table} before the failed batch`).toBeGreaterThan(0)
+    }
 
     await expect(
       env.DB.batch([

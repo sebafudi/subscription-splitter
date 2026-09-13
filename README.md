@@ -22,7 +22,7 @@ The install approves the `workerd` and `esbuild` build scripts recorded in `pack
 
 Copy `.dev.vars.example` to `.dev.vars` and fill in the values for local development. `.dev.vars` is ignored by git. Deployment secrets go through `wrangler secret put`, never into source.
 
-`.dev.vars` needs, at minimum: `BETTER_AUTH_SECRET` (any local string), `APP_ORIGINS` (the origins you will sign in from, comma-separated - `http://localhost:8787` for `wrangler dev`, `http://localhost:5173` for `vite dev`), `COOKIE_SECURE` (leave unset locally unless a browser refuses the session cookie over plain http, then set it to `false`; every deployed environment leaves it unset), `SEED_ENABLED` and `SEED_TOKEN` (needed only to run the seed call below), and the four `SEED_OWNER_*` / `SEED_REVIEWER_*` values the seed call reads.
+`.dev.vars` needs, at minimum: `BETTER_AUTH_SECRET` (any local string), `APP_ORIGINS` (the origins you will sign in from, comma-separated - `http://localhost:8787` for `wrangler dev`, `http://localhost:5173` for `vite dev`), `COOKIE_SECURE` (leave unset locally unless a browser refuses the session cookie over plain http, then set it to `false`; the refusal is silent, so the sign-in form simply returns to the login screen with no error shown; every deployed environment leaves it unset), `SEED_ENABLED` and `SEED_TOKEN` (needed only to run the seed call below), and the four `SEED_OWNER_*` / `SEED_REVIEWER_*` values the seed call reads.
 
 ## Run
 

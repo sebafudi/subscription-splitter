@@ -12,7 +12,7 @@ type Props = {
   id: string
   label: string
   /** Sits under the control and stays visible; it carries meaning a label cannot, never the
-   * format of a value, which the calendar controls themselves show. */
+   * format of a calendar value, which the calendar controls themselves show. */
   hint?: string
   /** One sentence, never prefixed with the wire name. */
   error?: string

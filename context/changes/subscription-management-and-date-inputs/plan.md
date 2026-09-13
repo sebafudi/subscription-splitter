@@ -1226,7 +1226,7 @@ exercised on data that matters.
 
 #### Automated
 
-- [ ] 6.1 Typecheck, the whole suite and the production build all still pass
+- [x] 6.1 Typecheck, the whole suite and the production build all still pass — e40acbf
 - [x] 6.2 No file under `src/`, `tests/` or `migrations/` changed in this phase — 890a50a
 - [x] 6.3 No calendar date, timestamp, deadline or duration estimate appears in any edited file — 890a50a
 

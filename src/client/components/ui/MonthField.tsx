@@ -71,6 +71,7 @@ export function MonthField({
   return (
     <select
       {...control}
+      autoComplete="off"
       required={required}
       disabled={disabled}
       value={value}

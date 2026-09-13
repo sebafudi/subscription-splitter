@@ -1,7 +1,7 @@
 ---
 change_id: subscription-management-and-date-inputs
 title: Edit and delete the subscription itself, and use native browser calendar controls
-status: plan_reviewed
+status: implemented
 ---
 
 ## Notes
