@@ -41,8 +41,12 @@ thirteen decision records `D-001` through `D-013`, and the checkpoints read for 
 - **W09.** Its maintenance half is current and the text now says so; it stays open on the final
   independent audit, which has not run and whose report belongs at `evidence/audit/final-audit.md`.
 - **F01 to F03, B11, B13 to B16, A15+, C10+, G01, G03 to G05.** Left with their current text, per the
-  task's instruction. G01 in particular is one step from closing: all ten plan-review findings are
-  resolved at `g01-plan-fix`, and what remains is the reviewer's independent re-verification.
+  task's instruction. G01 in particular is now ready to close and was left unchecked only because its
+  re-verification landed while this pass was writing: `3d6c1d0` records the reviewer's independent
+  re-verification of the plan-review resolution with verdict SOUND, all ten findings verified closed.
+  `context/STATUS.md` and `evidence/index.md` record that outcome; the `GOALS.md` box does not,
+  because the task that assigned this pass named G01 among the boxes to leave with their current
+  text. The next status pass should check it.
 
 ## Changed paths
 
@@ -50,11 +54,12 @@ thirteen decision records `D-001` through `D-013`, and the checkpoints read for 
   working-tree line rewritten now that the four concurrent tasks have finished; a new leading bullet
   in Active change recording the complete `F-01` to `S-06` ledger with the six archive paths; the
   `visual-redesign` entry moved to archived with its closing paragraph rewritten; the
-  `google-sign-in` entry given the plan-review resolution and the re-verification gate; the
+  `google-sign-in` entry given the plan-review resolution and its SOUND re-verification; the
   Deployment section's current release rewritten to release 2 with the rollback path, the walkthrough
   and the retaken captures; Next executable action items 6 to 9 rewritten.
-- `evidence/index.md`: eight rows appended, five for V06 (release record, live smoke, captures,
-  archive, roadmap) and one each superseding B12, B08 and D05 against release 2.
+- `evidence/index.md`: nine rows appended, five for V06 (release record, live smoke, captures,
+  archive, roadmap), one each superseding B12, B08 and D05 against release 2, and one recording the
+  S-07 plan-review re-verification that landed during this pass.
 - `AGENTS.md`: two stale one-liners corrected, see below.
 - `context/checkpoints/status-sync-4.md`: this file.
 - Workspace file, not under Git: `GOALS.md` (V06, W06, W07 and W08 checked with their evidence
@@ -80,5 +85,6 @@ deploy, no course upload, no nested delegation. Staging was by explicit path thr
 
 ## Next action
 
-The final independent audit, goal F01, writing `evidence/audit/final-audit.md`. In parallel, the
-reviewer's re-verification of the S-07 plan-review resolution, which closes G01 and unblocks phase 1.
+The final independent audit, goal F01, writing `evidence/audit/final-audit.md`. Separately, check
+G01 in the workspace `GOALS.md`: its re-verification landed at `3d6c1d0` with verdict SOUND, so
+nothing gates phase 1 of the S-07 plan.
