@@ -105,8 +105,17 @@ with `history.replaceState` so a reload shows a clean login. Focus moves to the 
 | `account_not_linked` | alert per 3.8 | "This Google account cannot be used here. Sign in with your email and password instead." |
 | any other code, or a failed exchange | alert per 3.8 | "Google sign-in did not finish. Try again, or sign in with your email." |
 
+The three state codes share one sentence deliberately. Staleness, replay and tampering all end the
+same way for the person at the keyboard, start again from this page, and the interface does not
+accuse.
+
 The `account_not_linked` sentence is identical whatever the reason for the refusal, so it confirms
 nothing about whether an account with that address exists.
+
+If the configuration read said Google is available but the call that produces the Google URL
+answers with an HTTP error such as 404 or 500, the button re-enables and the fourth sentence,
+"Google sign-in did not finish. Try again, or sign in with your email.", shows as an alert per 3.8.
+The connection sentence is reserved for a request that never reached the server.
 
 ## Home for a Google-created account
 
