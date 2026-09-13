@@ -204,7 +204,18 @@ count below comes from a detached worktree at `54b6d8c` holding the phase 3 clie
 | `MonthField` and `DateField` render sites | seven and one |
 | `git status` under `src/server/`, `src/domain/`, `migrations/`, `tests/` | clean |
 
-Typecheck and build were also run green in the shared tree.
+Phase 1 landed at `7b2e56f` while this was being committed, so the gates were run once more in the
+shared tree with both phases present and everything clean:
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | passes, all three projects |
+| `npm run test:unit` | 20 files, 243 tests, all passing |
+| `npm run test:integration` | 13 files, 131 tests, all passing |
+| `npm run build` | succeeds |
+
+That is the authoritative run; the isolated worktree above was only needed while phase 1 was in
+flight.
 
 ## Progress rows ticked
 
