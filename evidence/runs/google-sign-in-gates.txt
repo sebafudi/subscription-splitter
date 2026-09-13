@@ -458,3 +458,120 @@ $ git log -S"$GOOGLE_CLIENT_SECRET" --all --oneline   -> no commit (run with the
   `.dev.vars` into the shell, never printed; the secret appears in no commit reachable from any ref)
 $ git grep -lF "$GOOGLE_CLIENT_SECRET" HEAD   -> no file (the secret appears in no tracked file)
 $ git diff --stat -- tests/integration/auth.test.ts   -> empty
+
+## Callback fix
+
+The `run_worker_first` fix for release 3's defect D1. Decision
+`context/decisions/D-014-run-worker-first-for-api.md`, research in `research.md` under "Callback
+navigation and the asset layer". Only `wrangler.jsonc` changes; no source file is touched.
+
+### The reproduction, before the edit
+
+Run against the built configuration, not the source one:
+
+  $ npm run build
+  $ npx wrangler dev -c dist/subscription_splitter/wrangler.json --env-file .dev.vars --port 8799 \
+      --local --persist-to .wrangler/state
+
+`dist/subscription_splitter/wrangler.json` is what the Vite plugin writes and what `wrangler deploy`
+uploads, so it carries `assets.directory` and runs the same asset layer the deployed Worker does.
+`--env-file .dev.vars` binds the local values; no value is printed by any command below.
+
+  $ curl -sS -D - -o - 'http://localhost:8799/api/auth/callback/google?state=bogus&code=bogus' \
+      -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-Dest: document' -H 'Accept: text/html'
+  HTTP/1.1 200 OK
+  Content-Type: text/html; charset=utf-8
+  body: 535 bytes, `<!doctype html><html lang="en">  <head>    <meta charset="UTF-8" />`
+  wrangler request log: no entry, the request never reached the Worker
+
+  $ curl -sS -D - 'http://localhost:8799/api/auth/callback/google?state=bogus&code=bogus' \
+      -H 'Sec-Fetch-Mode: cors'
+  HTTP/1.1 302 FOUND
+  Location: /?error=state_mismatch
+
+  $ curl -sS -D - 'http://localhost:8799/api/me'
+  HTTP/1.1 401 Unauthorized
+
+One header decides it, which is release 3's live matrix reproduced off the deployed origin.
+
+### The edit
+
+`wrangler.jsonc`, `assets` block only:
+
+  "not_found_handling": "single-page-application",
+  "run_worker_first": ["/api/*"]
+
+Rebuilt, and the built configuration carries it:
+
+  $ grep -o '"assets":{[^}]*}' dist/subscription_splitter/wrangler.json
+  "assets":{"not_found_handling":"single-page-application","run_worker_first":["/api/*"],"directory":"../client"}
+
+### The same server after the edit
+
+  /api/auth/callback/google?state=bogus&code=bogus, navigate   302 -> /?error=state_mismatch
+  /api/auth/callback/google?state=bogus&code=bogus, cors       302 -> /?error=state_mismatch
+  /some/client/route, navigate                                 200 text/html, 535 bytes, index.html
+  /subscriptions/does-not-exist, navigate                      200 text/html, 535 bytes, index.html
+  /, navigate                                                  200 text/html, 535 bytes, index.html
+  /api/me, no cookie                                           401 {"error":"unauthorized"}
+  /api/me, navigate                                            401 {"error":"unauthorized"}
+  /api/health                                                  200 {"ok":true}
+  /api/auth-config                                             200 {"google":true}
+  /api/nope, navigate                                          404 {"error":"not found"}
+  /assets/index-CLEnPkyw.css                                   200 text/css, 16892 bytes
+  /assets/index-CQZzLfmQ.js                                    200 text/javascript, 276667 bytes
+  /assets/ibm-plex-sans-latin-400-normal-CDDApCn2.woff2        200 font/woff2, 22588 bytes
+
+The navigation now reaches the Worker and redirects to the app root with the error code. Client
+routes, the root and every static asset are unchanged, and an unmatched `/api` path still answers the
+Worker's JSON 404 rather than the client shell.
+
+### No integration test is added, and why
+
+The Workers test pool loads `wrangler.jsonc` through `vitest.integration.config.ts`, but that file
+carries no `assets.directory`; the Vite plugin supplies it at build time. The pool therefore runs no
+asset layer and cannot reproduce either the defect or the fix. Probed rather than assumed, with a
+throwaway test file since removed:
+
+  SELF.fetch('/api/auth/callback/google?state=bogus&code=bogus', navigate headers)
+    -> 302 /?error=state_mismatch      (the same answer with the setting absent)
+  SELF.fetch('/some/client/route', navigate headers)
+    -> 404 "not found"                 (the Worker's own notFound, not index.html)
+
+A test asserting the fixed behaviour would pass with the setting removed, so it would assert nothing.
+The fix is verified by the `wrangler dev` run above and by the live checks in
+`evidence/runs/release-4-live-smoke.txt`.
+
+### Gates
+
+  $ npm run typecheck
+  > tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+  exit: 0
+
+  $ npm run test:unit
+   Test Files  18 passed (18)
+        Tests  214 passed (214)
+
+  $ npm run test:integration
+   Test Files  12 passed (12)
+        Tests  119 passed (119)
+
+  $ npm run build
+  vite v8.3.0 building subscription_splitter environment for production...
+  ✓ 675 modules transformed.
+  dist/subscription_splitter/index.js   869.09 kB │ gzip: 206.76 kB
+  ✓ built in 94ms
+  vite v8.3.0 building client environment for production...
+  ✓ 54 modules transformed.
+  dist/client/assets/index-CLEnPkyw.css  16.89 kB │ gzip:  4.09 kB
+  dist/client/assets/index-CQZzLfmQ.js  276.66 kB │ gzip: 82.70 kB
+  exit: 0
+
+Identical to the figures release 3 recorded: three typecheck projects clean, 18 unit files and 214
+cases, 12 integration files and 119 cases, and the same two client asset names, so the fix changes no
+emitted client byte.
+
+### Stability guards for this fix
+
+  $ git diff --stat -- src migrations tests   -> empty
+  $ git diff --name-only                      -> wrangler.jsonc only, among non-documentation files

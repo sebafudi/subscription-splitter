@@ -454,6 +454,80 @@ being true.
   login works while the audience stays in Testing. D-012 also records that the Web client and the
   credentials do not exist yet, which is why open question 2 below remains open.
 
+## Callback navigation and the asset layer
+
+Added after release 3, which found the defect live. This section is the research behind decision
+`context/decisions/D-014-run-worker-first-for-api.md`.
+
+### Evidence
+
+Cloudflare's static-assets documentation states the rule directly, on the Workers configuration page
+and on the static-assets routing pages, read through Context7 against
+`/llmstxt/developers_cloudflare_workers_llms-full_txt`:
+
+> By default, Workers are invoked for non-navigation requests that do not match static assets. For
+> top-level navigation requests, browsers send a `Sec-Fetch-Mode: navigate` header, which triggers
+> the `not_found_handling` behavior instead of the Worker. You can override this implicit routing by
+> using the `run_worker_first` setting, which allows you to explicitly define route patterns that
+> should always invoke your Worker.
+
+And, on when that behaviour applies:
+
+> When using the `assets_navigation_prefers_asset_serving` compatibility flag or a compatibility date
+> of 2025-04-01 or later, navigation requests (requests with `Sec-Fetch-Mode: navigate`) will not
+> invoke the Worker script. This behavior reduces billable invocations by serving static assets
+> directly for browser navigations, which is particularly beneficial for client-heavy applications.
+> If you need to run the Worker script before serving assets, such as for authentication or logging,
+> you can enable the `assets.run_worker_first` setting.
+
+`run_worker_first` takes either `true`, which sends every request to the Worker first, or an array of
+glob patterns, which sends only the matching paths. A pattern prefixed with `!` is a negative
+exception evaluated against the positive ones. The documentation's own example for an API mounted
+beside a single-page application is the exact shape this repository needs:
+
+```jsonc
+"assets": {
+  "not_found_handling": "single-page-application",
+  "run_worker_first": ["/api/*"]
+}
+```
+
+The two settings are independent and compose. `not_found_handling` decides what the asset layer does
+with a path it has no asset for; `run_worker_first` decides whether the asset layer is consulted at
+all for that path. Paths outside the `run_worker_first` patterns keep the single-page-application
+fallback unchanged.
+
+### Inference
+
+This repository's compatibility date is `2026-08-22`, well past `2025-04-01`, so the navigation
+behaviour above is active and is not opt-in. Every client API call this application makes is `fetch`
+or XHR, which carries `Sec-Fetch-Mode: cors` or `same-origin` and reaches the Worker untouched, which
+is why nothing else was affected. The OAuth return leg is the one thing the application does that
+needs a top-level document navigation to an `/api` path, so it is the one thing the asset layer
+intercepted.
+
+Reproduced locally before any edit, against the built configuration `npm run build` writes to
+`dist/subscription_splitter/wrangler.json`, which is the configuration `wrangler deploy` uploads and
+therefore the only local run that carries the deployed asset layer. `wrangler dev` on that file
+answered a navigation to `/api/auth/callback/google?state=bogus&code=bogus` with 200 and
+`index.html`, and the wrangler request log recorded no request at all, while the same url as a
+`cors` fetch was answered 302 to `/?error=state_mismatch` and was logged. That is the release 3
+matrix reproduced off the deployed origin, and it isolates the asset layer rather than the Worker.
+
+`npm run dev`, the Vite plugin, does not reproduce it, and neither does the integration suite: the
+Workers test pool reads `wrangler.jsonc`, which carries no `assets.directory` because the Vite plugin
+fills that in at build time, so the pool has no asset layer to run. A probe test confirmed it rather
+than assuming it. Under `SELF.fetch` a navigation to `/api/auth/callback/google` answers 302 and a
+navigation to `/some/client/route` answers the Worker's own `404 not found` instead of `index.html`.
+A test asserting the fixed behaviour would therefore pass with the setting removed, so no integration
+test is added for this fix. It is verified by `wrangler dev` on the built configuration and by the
+live pass.
+
+### Decision
+
+Apply `"run_worker_first": ["/api/*"]` under `assets` in `wrangler.jsonc` and keep
+`not_found_handling: single-page-application` for everything else. Recorded as D-014.
+
 ## Open questions
 
 1. Whether all six migrations are applied to the remote D1 database. Expected yes from D-010;

@@ -911,3 +911,28 @@ function and the browser pass.
 - [x] 4.11 The action row holds one line at 1280 and stacks at 390 with no horizontal scroll — 9ce597a
 - [x] 4.12 The captures the delta's amended checklist names are written under `evidence/screenshots/` — 9ce597a (sixteen, `google-sign-in-accept-01` through `-08` in light and dark)
 - [x] 4.13 An HTTP error from the social call shows the did-not-finish alert and a request that never reaches the server shows the connection sentence — 9ce597a (404, 500 and 401 each take the did-not-finish sentence)
+
+### Post-review fix: the Worker runs first for `/api/*`
+
+Added after release 3 found defect D1 live, recorded in `evidence/runs/release-3.md`. A top-level
+browser navigation to `/api/auth/callback/google` was answered by Cloudflare's asset layer with
+`index.html` and never reached the Worker, so the Google return leg could not complete on the
+deployed origin. The fix is one setting in `wrangler.jsonc`, `"run_worker_first": ["/api/*"]` under
+`assets`, decided in `context/decisions/D-014-run-worker-first-for-api.md`. Evidence for every row is
+under "Callback fix" in `evidence/runs/google-sign-in-gates.txt`.
+
+#### Automated
+
+- [ ] 5.1 Typecheck passes across all three projects
+- [ ] 5.2 The unit suite passes, unchanged at 18 files and 214 cases
+- [ ] 5.3 The integration suite passes, unchanged at 12 files and 119 cases
+- [ ] 5.4 The production build succeeds and emits the same two client asset names
+- [ ] 5.5 Nothing under `src`, `migrations` or `tests` has changed
+
+#### Manual
+
+- [ ] 5.6 The defect reproduces against the built configuration under `wrangler dev` before the edit
+- [ ] 5.7 After the edit a navigation to `/api/auth/callback/google` with a fabricated state reaches the Worker and redirects to the app root carrying the error code
+- [ ] 5.8 After the edit a navigation to a client route and to the root still serves `index.html`, and every static asset is still served
+- [ ] 5.9 After the edit `/api/me` is still 401 with no cookie, whether the request is a navigation or a fetch, and an unmatched `/api` path still answers the Worker's JSON 404
+- [ ] 5.10 Whether the Workers test pool can reproduce the asset layer is settled by a probe rather than assumed, and the answer is recorded

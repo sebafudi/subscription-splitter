@@ -8,9 +8,10 @@
   // Better Auth needs AsyncLocalStorage for request context (decision D-001).
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    // The Vite plugin fills in assets.directory at build time; only the
-    // client-routing fallback is set by hand.
-    "not_found_handling": "single-page-application"
+    // The Vite plugin fills in assets.directory at build time; the client-routing
+    // fallback and the worker-first api routes are set by hand (decision D-014).
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
   },
   "d1_databases": [
     {
