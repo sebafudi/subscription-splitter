@@ -1,7 +1,7 @@
 ---
 change_id: google-sign-in
 title: Add Google sign-in alongside the existing password login
-status: planned
+status: plan_reviewed
 ---
 
 ## Notes
