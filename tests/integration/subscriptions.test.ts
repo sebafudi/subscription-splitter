@@ -325,6 +325,9 @@ describe('the editable subscription settings', () => {
     const patchRes = await patchPlan(cookie, plan.id, { start_month: '2025-01' })
     expect(patchRes.status).toBe(200)
     expect(await patchRes.json()).toMatchObject({ startMonth: '2025-01' })
+
+    const getRes = await SELF.fetch(`${base}/${plan.id}`, { headers: { cookie } })
+    expect(await getRes.json()).toMatchObject({ startMonth: '2025-01' })
   })
 
   it('refuses a first month below the ten-year floor, on create and on patch alike', async () => {
@@ -363,6 +366,9 @@ describe('the editable subscription settings', () => {
     const patchRes = await patchPlan(cookie, plan.id, { start_month: '2026-05' })
     expect(patchRes.status).toBe(200)
     expect(await patchRes.json()).toMatchObject({ startMonth: '2026-05' })
+
+    const getRes = await SELF.fetch(`${base}/${plan.id}`, { headers: { cookie } })
+    expect(await getRes.json()).toMatchObject({ startMonth: '2026-05' })
   })
 
   it('refuses a first month moved past a dependent record, naming the binding month and the kind that pins it', async () => {

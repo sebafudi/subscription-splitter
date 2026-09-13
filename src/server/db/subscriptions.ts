@@ -312,6 +312,18 @@ export async function update(
     bindings.push(id, id, id)
   }
 
+  if (monthMovesLater && shifted) {
+    // The owner's leave month is the sixth bound, and it travels like the other
+    // five rather than being left to the `CHECK` on the range row: a constraint
+    // violation inside a batch throws, and a throw is a 500 where the product
+    // specifies a 400 naming the month. Only a later move can pass a leave
+    // month, so only a later move needs the clause.
+    clauses.push(
+      'exists (select 1 from active_ranges where id = ? and (left_month is null or left_month >= ?))',
+    )
+    bindings.push(shifted.id, next.start_month)
+  }
+
   if (monthMovesLater) {
     // The `ar.id <> ?` exclusion is the owner's opening range while it is being
     // shifted: without it the clause would refuse the very move the shift
@@ -372,10 +384,19 @@ export async function update(
     // the ordinary 404, or a bound now binds, which is the ordinary 400.
     const after = await get(db, id, userId)
     if (!after) return { ok: false, kind: 'not-found' }
+
+    // The owner's ranges are read again rather than reused: the row captured
+    // before the batch is exactly what is stale when the owner-range clause is
+    // the one that stopped the write, and naming the leave month needs the
+    // value the clause actually saw.
+    const afterRanges = monthMoves ? await readOwnerRanges(db, id, userId) : []
+    const afterOpening = afterRanges[0]
+    const afterShifted = afterOpening && afterOpening.joined_month === after.startMonth ? afterOpening : null
+
     const lost = await deriveRefusal(db, id, {
       currency: next.currency !== after.currency,
       laterMonth: next.start_month > after.startMonth ? next.start_month : null,
-      shifted,
+      shifted: afterShifted,
     })
     return {
       ok: false,
@@ -384,17 +405,11 @@ export async function update(
     }
   }
 
-  return {
-    ok: true,
-    subscription: {
-      ...existing,
-      name: next.name,
-      currency: next.currency,
-      locale: next.locale,
-      timeZone: next.time_zone,
-      startMonth: next.start_month,
-    },
-  }
+  // Read back rather than assembled from the patch, so the response is the
+  // stored row and a caller refreshing its held object from it cannot drift.
+  const saved = await get(db, id, userId)
+  if (!saved) return { ok: false, kind: 'not-found' }
+  return { ok: true, subscription: saved }
 }
 
 async function readOwnerRanges(db: D1Database, id: string, userId: string): Promise<OwnerRangeRow[]> {

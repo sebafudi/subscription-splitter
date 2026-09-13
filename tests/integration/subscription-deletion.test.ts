@@ -189,6 +189,7 @@ describe('deleting a subscription with its whole ledger', () => {
     const userId = await userIdFor(cookie)
 
     const before = await countsFor(target.id)
+    const siblingBefore = await countsFor(sibling.id)
 
     await expect(
       env.DB.batch([
@@ -200,5 +201,6 @@ describe('deleting a subscription with its whole ledger', () => {
     ).rejects.toThrow()
 
     expect(await countsFor(target.id)).toEqual(before)
+    expect(await countsFor(sibling.id)).toEqual(siblingBefore)
   })
 })

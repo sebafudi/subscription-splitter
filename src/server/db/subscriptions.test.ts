@@ -14,7 +14,7 @@ type StubRow = Record<string, unknown>
 
 type StubOptions = {
   subscriptions?: Array<StubRow | null>
-  ownerRanges?: StubRow[]
+  ownerRanges?: StubRow[][]
   amounts?: StubRow
   minimums?: StubRow
   changes?: number
@@ -52,6 +52,7 @@ class StubDatabase {
   readonly batches: StubStatement[][] = []
   readonly runs: StubStatement[] = []
   private subscriptionReads = 0
+  private ownerRangeReads = 0
 
   constructor(private readonly options: StubOptions) {}
 
@@ -79,7 +80,12 @@ class StubDatabase {
   }
 
   answerAll(sql: string): StubRow[] {
-    if (sql.includes('is_owner = 1')) return this.options.ownerRanges ?? []
+    if (sql.includes('is_owner = 1')) {
+      const answers = this.options.ownerRanges ?? []
+      const answer = answers[Math.min(this.ownerRangeReads, answers.length - 1)] ?? []
+      this.ownerRangeReads += 1
+      return answer
+    }
     return []
   }
 
@@ -153,9 +159,11 @@ describe('update', () => {
 
     const result = await update(db.asDatabase(), 'sub-1', 'user-1', { name: 'Renamed plan' })
 
+    // The stub answers every read with the same row and applies no write, so a
+    // response carrying the stored name is the read-back itself being asserted.
     expect(result).toEqual({
       ok: true,
-      subscription: expect.objectContaining({ id: 'sub-1', name: 'Renamed plan' }),
+      subscription: expect.objectContaining({ id: 'sub-1', name: 'Family plan' }),
     })
     expect(db.batches).toHaveLength(1)
     expect(db.batches[0]).toHaveLength(1)
@@ -185,7 +193,7 @@ describe('update', () => {
   it('gives currency precedence over the first month when the lost race could name either', async () => {
     const db = new StubDatabase({
       subscriptions: [storedRow, storedRow],
-      ownerRanges: [{ id: 'range-1', joined_month: '2026-01', left_month: null }],
+      ownerRanges: [[{ id: 'range-1', joined_month: '2026-01', left_month: null }]],
       amounts: { has_price: 1, has_payment: 0, has_schedule: 0 },
       minimums: {
         min_joined: '2026-02',
@@ -205,5 +213,52 @@ describe('update', () => {
       field: 'currency',
       message: 'currency cannot change while prices, payments or standing orders are recorded',
     })
+  })
+
+  it('names the owner leave month when the range closes between the read and the write', async () => {
+    const db = new StubDatabase({
+      subscriptions: [storedRow, storedRow],
+      ownerRanges: [
+        [{ id: 'range-1', joined_month: '2026-01', left_month: null }],
+        [{ id: 'range-1', joined_month: '2026-01', left_month: '2026-02' }],
+      ],
+      minimums: {
+        min_joined: null,
+        min_price: null,
+        min_break: null,
+        min_payment: null,
+        min_schedule: null,
+      },
+      changes: 0,
+    })
+
+    const result = await update(db.asDatabase(), 'sub-1', 'user-1', { start_month: '2026-03' })
+
+    expect(result).toEqual({
+      ok: false,
+      kind: 'refused',
+      field: 'start_month',
+      message: 'start_month cannot be later than 2026-02 because your own first active range ends then',
+    })
+  })
+
+  it('carries the owner leave month into the update where clause, so the range rule never reaches the CHECK', async () => {
+    const db = new StubDatabase({
+      subscriptions: [storedRow, storedRow],
+      ownerRanges: [[{ id: 'range-1', joined_month: '2026-01', left_month: null }]],
+      minimums: {
+        min_joined: null,
+        min_price: null,
+        min_break: null,
+        min_payment: null,
+        min_schedule: null,
+      },
+    })
+
+    await update(db.asDatabase(), 'sub-1', 'user-1', { start_month: '2026-03' })
+
+    const settingsUpdate = db.batches[0][0]
+    expect(settingsUpdate.sql).toContain('left_month is null or left_month >= ?')
+    expect(settingsUpdate.bindings).toContain('range-1')
   })
 })
