@@ -1176,13 +1176,13 @@ exercised on data that matters.
 
 #### Automated
 
-- [x] 4.1 Typecheck passes across all three projects
-- [x] 4.2 The whole suite passes, including the change-only body tests
-- [x] 4.3 The production build succeeds
-- [x] 4.4 No `valueAsDate` or `valueAsNumber` appears anywhere under `src/client/`
-- [x] 4.5 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed
-- [x] 4.6 The four existing `ConfirmStrip` call sites are unchanged
-- [x] 4.16 No `new Date(` appears under `src/client/` outside the two known-safe sites, and
+- [x] 4.1 Typecheck passes across all three projects — 54d3ff8
+- [x] 4.2 The whole suite passes, including the change-only body tests — 54d3ff8
+- [x] 4.3 The production build succeeds — 54d3ff8
+- [x] 4.4 No `valueAsDate` or `valueAsNumber` appears anywhere under `src/client/` — 54d3ff8
+- [x] 4.5 Nothing under `src/server/`, `src/domain/`, `migrations/` or `tests/` has changed — 54d3ff8
+- [x] 4.6 The four existing `ConfirmStrip` call sites are unchanged — 54d3ff8
+- [x] 4.16 No `new Date(` appears under `src/client/` outside the two known-safe sites, and — 54d3ff8
       `subscriptionFieldLabels` is the only subscription label map
 
 #### Manual
