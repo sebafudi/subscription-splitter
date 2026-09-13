@@ -118,7 +118,8 @@ change.
 - **Assumes `@fontsource/ibm-plex-sans@5.3.0` stays available at that exact version.** If it does not,
   the version is a plan-level correction and the four faces and the budget are unchanged. The four
   `@font-face` blocks are hand-written against the package's published `./files/*.woff2` export, so a
-  version bump needs a glance at the package's aggregate CSS for the `unicode-range` values.
+  version bump needs a glance at the package's per-subset CSS for the two `unicode-range` values,
+  which the plan carries literally.
 - **The shipped client already derives four figures** that design-spec 5.5 and the forms require on
   screen: the assumed total and elapsed-month counts at `RecurringSection.tsx:111-112` and the
   major-to-minor conversions in three forms. They are preserved verbatim. The boundary this change

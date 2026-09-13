@@ -113,9 +113,8 @@ The designer accepts the result against design-spec 11 from captured evidence.
   properties and native elements.
 - **No new client-side derivation of money.** No component starts deriving a share, a balance, an
   owed amount or an active count. The boundary is about new arithmetic, not about all arithmetic, and
-  the specification's opening paragraph says so: five pieces of shipped client code do compute, four of
-  them are what design-spec 5.5 and the forms require on screen, and all of them are preserved
-  verbatim. They are: the assumed total and the elapsed-month counts at `RecurringSection.tsx:111-112`,
+  the specification's opening paragraph says so: six pieces of shipped client code do compute, and all
+  of them are preserved verbatim. They are: the assumed total and the elapsed-month counts at `RecurringSection.tsx:111-112`,
   the major-to-minor conversions at `PriceHistory.tsx:16`, `PaymentForm.tsx:24` and
   `ScheduleForm.tsx:21`, and the inverse that fills an edit field at `PaymentForm.tsx:28` and
   `ScheduleForm.tsx:25`. Reading a wire amount as zero or not zero, whether for a colour (design-spec
@@ -271,9 +270,16 @@ imported CSS, so importing them would ship eight files and 154,380 bytes against
 `"IBM Plex Sans"`, `font-style: normal`, `font-display: swap`, weights 400 and 600, each with a single
 `src` pointing at `@fontsource/ibm-plex-sans/files/ibm-plex-sans-<subset>-<weight>-normal.woff2` for
 subsets `latin` and `latin-ext`. That subpath is an explicit entry in the package's `exports` map, so
-it resolves without reaching into `node_modules`. Copy the four `unicode-range` declarations from the
-package's aggregate `index.css`, which is the only file that carries them: without them the latin-ext
-faces load on every page rather than only where `zł` appears. Nothing is imported into
+it resolves without reaching into `node_modules`.
+
+Each block carries a `unicode-range`. Without one, the latin-ext faces load on every page rather than
+only where `zł` appears. The ranges are weight independent, so there are two values and not four; the
+same pair applies to both 400 and 600:
+
+- `latin`: `U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD`
+- `latin-ext`: `U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF`
+
+`ł` is U+0142 and sits in the latin-ext range, so `zł` renders as intended. Nothing is imported into
 `src/client/main.tsx`; no italic and no other weight exists anywhere in the build.
 
 #### 3. The token layer and the base stylesheet
@@ -1270,8 +1276,9 @@ the designer has answered it.
   detail column in both directions
 - The contrast record covers the text pairs at AA with `--ink-faint` at 3:1, and the non-text pairs at
   3:1 including `--border` on both grounds, in both themes, naming the tool
-- No control anywhere is bordered in `--rule`; every input, select, quiet button, panel and tile uses
-  `--border`
+- No control anywhere takes `--rule` as its visible boundary: every input, select, quiet button,
+  panel and tile is bordered in `--border`, and the link variant's underline is `--border` too per
+  design-spec 3.3, so the check matches the exemption's intent and not only the word "border"
 - Reduced motion on and off are compared for all three motions of design-spec 2.5: the disclosure is
   instant, the entry highlight is static and clears with the status line, and the status line appears
   and dismisses instantly
@@ -1466,6 +1473,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists
 - [ ] 4.6 The member, range and price payload keys are unchanged
 - [ ] 4.7 No router was added and App.tsx still holds the selection in one useState
+- [ ] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing
 
 #### Manual
 
@@ -1531,7 +1539,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [ ] 6.9 The keyboard pass of design-spec 11.6 is walked and recorded
 - [ ] 6.10 The section index current-item tracking of design-spec 11.7 is walked in both directions
 - [ ] 6.11 The contrast record covers the text pairs at AA and the non-text pairs at 3:1 in both themes
-- [ ] 6.15 No control is bordered in --rule and every control boundary uses --border
+- [ ] 6.15 No control takes --rule as its boundary, link underlines included; every control uses --border
 - [ ] 6.12 Reduced motion on and off are compared for all three motions of design-spec 2.5
 - [ ] 6.13 No screen or state scrolls horizontally at 390 and every control there is at least 44px high
 - [ ] 6.14 The designer has reviewed the captures against design-spec 11 and accepted or recorded findings

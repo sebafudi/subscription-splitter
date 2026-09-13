@@ -533,7 +533,7 @@ no-participant refusal is stated as "no participant other than the organizer", w
 `PaymentForm.tsx:32` already computes; and `noUnusedLocals` is recorded as the reason phase 2 ships
 only what Login, session loading and phase 3 consume.
 
-Progress rows: 87 before this review, 100 after.
+Progress rows: 94 before this review, 100 after.
 
 `change.md` is left at `status: planned`. The toolkit assigns the move to `plan_reviewed` to the
 review skill, not to the plan's author, so it belongs to the re-verification pass rather than to this
@@ -636,3 +636,21 @@ weight and colour are meant to carry it, 2.1 is worth one sentence saying so.
 shipped client code do compute" and then lists six locations, which the guard row below it correctly
 calls "six shipped exceptions". And the Resolution section above records "Progress rows: 87 before this
 review, 100 after"; the count at `d2f71d8` was 94, and 100 is right.
+
+
+## Resolution, re-verification round
+
+R1, R2 and R3 are closed. R4 was closed by the designer in the same round and R5's two numeric nits
+are corrected.
+
+| Item | Resolution |
+| --- | --- |
+| R1 phase 4 had eight automated criteria and seven Progress rows | Added `- [ ] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing` to phase 4's Automated block. Criteria against rows now read phase 1 9/9, phase 2 6/6, phase 3 5/5, phase 4 8/8, phase 5 9/9, phase 6 7/7, with every manual block matching. Progress total 101 |
+| R2 the mockup showed the removed count and a three-cell line | Closed by the designer: `reference/mockup-detail.html` and the three PNGs were regenerated with the four-cell ledger line and a count-free Participants heading, and design-spec 3.3 moved the link underline to `--border`. Committed at `1632329` with the note in design-spec section 12 |
+| R3 the unicode-range instruction pointed at a file holding half of what it promised | The plan no longer tells the implementer where to copy from. Phase 1 change 2 now carries the two literal values, states that they are weight independent so there are two and not four, and notes that `ł` is U+0142 inside the latin-ext range. `plan-brief.md` points at the per-subset CSS rather than the aggregate |
+| R4 the link underline still used `--rule` | Closed by the designer in design-spec 3.3, which now reads `--border` and so measures 3.29:1 and 3.52:1 rather than 1.41:1 and 1.51:1. The plan's phase 6 check was widened to match the exemption's intent: no control takes `--rule` as its visible boundary, link underlines included, rather than only checking for a `border` property |
+| R5 two numeric nits | "five pieces of shipped client code do compute" now reads six, matching the six locations listed beside it and the guard row below it. The Resolution section's "87 before this review" now reads 94, which was the count at `d2f71d8` |
+
+`change.md` stays at `status: planned`. The reviewer's note says it moves to `plan_reviewed` when R1,
+R2 and R3 close, and the toolkit assigns that write to the review skill rather than to the plan's
+author, so it belongs to the reviewer.
