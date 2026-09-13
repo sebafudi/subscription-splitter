@@ -284,7 +284,7 @@ not recreate them.
 ## S-08: Subscription management and native calendar inputs
 
 - **Change ID:** `subscription-management-and-date-inputs`
-- **Status:** planning
+- **Status:** in-progress
 - **Prerequisites:** shipped ledger and accepted visual design.
 - **Source:** explicit user request; `context/foundation/subscription-management-brief.md`.
 - **Outcome:** edit/delete the subscription itself and use real browser calendar controls throughout.

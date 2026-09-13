@@ -6,7 +6,9 @@ Worker over D1. Four ledger slices shipped the product behaviour: sessions over 
 subscriptions, participants with inclusive active ranges, effective-dated prices, break months,
 payments, standing orders with per-month exceptions, and the summary that derives every balance from
 them. The roadmap ledger `F-01` through `S-07` is archived under `context/archive/`, `S-07`
-`google-sign-in` having added Google sign-in beside the password login. No roadmap item is open.
+`google-sign-in` having added Google sign-in beside the password login. `S-08`
+`subscription-management-and-date-inputs` is the active change: editing and deleting the subscription
+itself, and native browser calendar controls in place of the plain-text month and date fields.
 
 ## Hard rules
 
@@ -44,6 +46,11 @@ integration. `npm run typecheck` covers all three projects. Rest: @README.md.
 - Zod schemas are the one validation contract, shared by routes and client forms, applied at the
   entry point rather than per screen.
 - Participants with payments or schedules are archived or closed out, never hard-deleted (409).
+  Deleting the whole subscription is the one exception and removes them with it, because that rule
+  protects a participant inside a ledger the organizer is keeping, not the ledger itself.
+- Months and dates are entered through the browser's own calendar control, with a native select of
+  named months where a browser has no month picker. The wire format stays `YYYY-MM` and `YYYY-MM-DD`,
+  read and written through `.value`; never build a `Date` from a field value.
 
 ## Testing
 

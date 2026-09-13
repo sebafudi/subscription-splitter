@@ -152,6 +152,10 @@ of the organizer's.
 - FR-005: Organizer can create a subscription with a name, a currency, a first month, a display locale and a time zone. Priority: must-have
   > Socratic: Counter-argument considered: "currency, locale and time zone are over-configuration for one household".
   > Resolved: kept; the time zone decides which month is current, which changes what is owed.
+  > Shipped: `POST /api/subscriptions` writes the subscription and its owner participant in one batch.
+  > All five settings stay editable afterwards, under FR-027, and creation applies the same first-month
+  > floor the edit applies, so a subscription cannot be created below the bound its own settings screen
+  > enforces.
 - FR-006: Organizer can record what the plan costs from a given month onward, leaving earlier months at their old price. Priority: must-have
   > Socratic: Counter-argument considered: "just store one current price and correct history by hand". Resolved: kept;
   > a price change is the most common event that makes a naive tracker wrong for every past month at once.
@@ -164,6 +168,33 @@ of the organizer's.
   > `monthsLosingTheirPrice` in `src/domain/prices.ts`, and `?confirm=true` is how the caller proceeds.
   > Removing a skipped month has no such gate, because restoring a month to its recorded price cannot
   > leave a month unpriced.
+- FR-027: Organizer can change a subscription's name, currency, display locale, time zone and first month after it has been created. Priority: must-have
+  > Socratic: Counter-argument considered: "a setting chosen at creation should be permanent, because every
+  > record underneath it was entered against that setting". Resolved: each setting is either display only or
+  > bounded by the records themselves, so the bound is the safeguard and a ban is only needed where no bound
+  > can be stated.
+  > Shipped: `PATCH /api/subscriptions/:id` takes any non-empty subset of the five and refuses with a 400
+  > naming the field at fault. Currency changes only while no price, no payment and no standing order
+  > exists, because §Non-Goals holds one subscription to one currency with no conversion and every amount
+  > is stored in minor units carrying no currency of its own; once an amount exists the field is shown
+  > locked with that reason. Locale is display only and changes freely. Time zone changes freely and moves
+  > which month counts as current, as the non-functional requirement below records. The first month moves
+  > earlier as far as January ten years before the current year, and later only as far as the earliest
+  > month any dependent record uses: the earliest participant join month, price month, skipped month,
+  > payment month and standing-order first month. A refusal names the binding month and the kind of record
+  > that pins it. The owner participant's opening active range moves with the first month in the same write
+  > when it starts there, and that shift is refused only when the moved range would end before it starts.
+- FR-028: Organizer can delete a subscription, which removes it together with everything recorded under it: its participants, their active months, its prices, its skipped months, its payments, its standing orders and the months of those marked as not received. Priority: must-have
+  > Socratic: Counter-argument considered: "removing a ledger that records money which actually changed
+  > hands is the one irreversible act in this product". Resolved: kept, behind a confirmation that names the
+  > subscription and lists what goes with it; a ledger the organizer has stopped keeping has no other exit,
+  > and an archived subscription is a state nothing else in the product reads.
+  > Shipped: `DELETE /api/subscriptions/:id` answers 204, or the existing non-disclosing 404 for an unknown
+  > or foreign id. The removal is one atomic write across the eight tables, deepest first, so a subscription
+  > is never left half removed. Nothing outside the named subscription is touched: another account's records
+  > and the organizer's own other subscriptions all survive. This is the one place a participant who has
+  > payments or a standing order is removed outright rather than archived (FR-012) or refused (FR-013),
+  > because that rule protects a participant inside a ledger the organizer is keeping, not the ledger itself.
 
 ### Participants
 
@@ -180,7 +211,9 @@ of the organizer's.
   > in the same batch as the subscription (`create` in `src/server/db/subscriptions.ts`), a database
   > constraint holds the one-owner rule, a second owner is refused, and the owner participant cannot be
   > deleted. The organizer therefore never performs a "mark as owner" action; the requirement is met by
-  > construction rather than by a step they take.
+  > construction rather than by a step they take. Deleting the whole subscription removes the owner
+  > participant with everything else under it (FR-028); what is never moved or removed is ownership while
+  > the subscription exists.
 - FR-012: Organizer can archive a participant who has payment history rather than deleting them. An archived participant keeps every liability and every payment they already had; archiving decides only how they are shown. One who is settled up is hidden from the list behind a toggle that says how many are hidden, and one who still owes or is still ahead stays visible. Priority: must-have
   > Socratic: Counter-argument considered: "archiving clutters the list". Resolved: kept; deleting a payer would destroy
   > the record of money that actually changed hands.
@@ -221,6 +254,20 @@ of the organizer's.
   > Socratic: Counter-argument considered: "the distinction confuses the reader". Resolved: kept; presenting assumed money
   > as confirmed money is the one way this product could mislead its user.
 
+### Entering months and dates
+
+- FR-029: Organizer enters every month and every date through the browser's own calendar control, and through a list of named months where a browser offers no month picker. Priority: must-have
+  > Socratic: Counter-argument considered: "a typed ISO string is unambiguous and needs no browser support
+  > matrix". Resolved: it is unambiguous to read and hostile to write; the organizer was typing the month out
+  > as `YYYY-MM` into a plain box, with the format spelled out in a hint beside it.
+  > Shipped: a date field is the browser's date control. A month field is one shared control that renders
+  > the browser's month control where it exists, and a list of month names carrying their year, in the
+  > subscription's own display locale, where it does not; a probe run once per page load decides which of
+  > the two appears. Both shapes read and write the same `YYYY-MM` and `YYYY-MM-DD` strings the product
+  > has always stored and sent, so nothing about the records or the requests changes. Where a server rule sets a lower bound,
+  > the control carries it as a convenience only; the server rule stays the enforcement, because a browser
+  > is free to ignore the attribute.
+
 ## Non-Functional Requirements
 
 - Every amount shown is an exact minor-unit value, and for any month what all participants owe plus what
@@ -229,12 +276,17 @@ of the organizer's.
 - A record that was saved is present and unchanged after the page is reloaded and after the product is
   restarted.
 - The month the product treats as current matches the calendar month in the subscription's own time zone,
-  regardless of where the product runs or where the organizer is.
+  regardless of where the product runs or where the organizer is. That time zone is an editable setting
+  (FR-027), so changing it can move which month counts as current and therefore every balance by one
+  month's worth; the field says so before the change is made, and no stored record moves with it.
 - An input that would break a stated money or membership rule is rejected with a message naming the field
   at fault, and nothing is stored.
 - Repeated failed sign-in attempts stop being useful to an attacker working through a password list, while
   an organizer who mistypes their password a few times in a row can still get in.
-- Amounts and months are displayed in the subscription's own currency and language conventions.
+- Amounts and months are displayed in the subscription's own currency and language conventions. The
+  display locale is editable at any time because it changes nothing but the rendering; the currency is
+  editable only while no amount has been recorded, because every amount is stored without a currency of
+  its own and changing it would relabel history.
 - The product is usable on current versions of the mainstream desktop and mobile browsers.
 
 ## Business Logic
