@@ -73,10 +73,20 @@
 | `d73ad99` | docs(google-sign-in): correct the error-redirect claim in the research |
 | `2aaa594` | docs(google-sign-in): record the plan review resolution |
 | `d98d99c` | docs(google-sign-in): note the plan review is resolved |
+| `44b6664` | docs(google-sign-in): point the spec references at the s-06 archive |
 
 `change.md` stays at `status: plan_reviewed`, which is where the precedent leaves a change whose plan
 review is closed and whose phase 1 has not begun: `context/archive/ai-review-pipeline/change.md` sat
 at that status through its own resolution commit and moved on only when implementation started.
+
+## One thing the next task should know
+
+S-06 was archived by another task while this one ran, so
+`context/changes/visual-redesign/design-spec.md` is now
+`context/archive/visual-redesign/design-spec.md`. `plan.md` was corrected in both places that name it.
+`frame.md`, `research.md` and this change's `change.md` still carry the old path in prose; they are
+accurate about the content and stale only about the location, and rewriting them was outside this
+task's assignment.
 
 ## Constraints honoured
 
