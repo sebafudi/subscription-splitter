@@ -1168,9 +1168,9 @@ exercised on data that matters.
 
 #### Manual
 
-- [ ] 3.8 Each of the eight fields submits the same wire value it did before, checked once per field
-- [ ] 3.10 Participant To and standing order Last month take their `min` from their partner field and
-      lose it when the partner is cleared
+- [x] 3.8 Each of the eight fields submits the same wire value it did before, checked once per field — e40acbf
+- [x] 3.10 Participant To and standing order Last month take their `min` from their partner field and
+      lose it when the partner is cleared — e40acbf
 
 ### Phase 4: The detail header, the edit panel and the deletion strip
 
@@ -1187,35 +1187,40 @@ exercised on data that matters.
 
 #### Manual
 
-- [ ] 4.7 The action row sits under the subtitle with the delta's spacing, disabled during first load
-- [ ] 4.8 The edit panel opens in place, pre-filled, with focus on Name
-- [ ] 4.9 Currency is locked with its hint naming the subscription's own code where an amount exists
-- [ ] 4.10 A submit with no differences closes the panel with no request and no status line
-- [ ] 4.11 A saved edit updates title, subtitle and the Home row, shows "Changes saved" and returns focus
-- [ ] 4.12 A refused first month shows the field error with the panel open and the values kept
-- [ ] 4.13 The strip shows both sentences, focuses Keep, and Keep and Escape both return focus
-- [ ] 4.14 A real deletion of a disposable subscription returns Home with the sentence and `h1` focus
-- [ ] 4.15 A failed deletion closes the strip, shows the header alert and moves focus to it
+- [x] 4.7 The action row sits under the subtitle with the delta's spacing, disabled during first load — e40acbf
+- [x] 4.8 The edit panel opens in place, pre-filled, with focus on Name — e40acbf
+- [x] 4.9 Currency is locked with its hint naming the subscription's own code where an amount exists — e40acbf
+- [x] 4.10 A submit with no differences closes the panel with no request and no status line — e40acbf
+- [x] 4.11 A saved edit updates title, subtitle and the Home row, shows "Changes saved" and returns focus — e40acbf
+- [x] 4.12 A refused first month shows the field error with the panel open and the values kept — e40acbf
+- [x] 4.13 The strip shows both sentences, focuses Keep, and Keep and Escape both return focus — e40acbf
+- [x] 4.14 A real deletion of a disposable subscription returns Home with the sentence and `h1` focus — e40acbf
+- [x] 4.15 A failed deletion closes the strip, shows the header alert and moves focus to it — e40acbf
 - [ ] 4.17 `error` disables both buttons; `no-owner` enables Delete, disables Edit, and deletes normally
 
 ### Phase 5: Browser verification and the acceptance pass
 
 #### Automated
 
-- [ ] 5.1 Typecheck, the whole suite and the production build all pass on the captured tree
-- [ ] 5.2 Every capture the delta's section 11 names exists under `evidence/screenshots/` as `s08-*`
+- [x] 5.1 Typecheck, the whole suite and the production build all pass on the captured tree — e40acbf
+- [x] 5.2 Every capture the delta's section 11 names exists under `evidence/screenshots/` as `s08-*` — e40acbf
 
 #### Manual
 
-- [ ] 5.3 Every calendar field renders `type="month"` or `type="date"` in Chrome, inspected not assumed
-- [ ] 5.4 In Safari every month field renders the fallback select and the payment date its native picker
-- [ ] 5.5 Control heights measured and equal to 40px and 44px, or the `min-height` exception recorded
-- [ ] 5.6 The focus ring is present and unmodified on a month input, a date input and the select
-- [ ] 5.7 Enter and Escape inside the native controls measured in both browsers and recorded
-- [ ] 5.8 With reduced motion on, the panel and the strip appear instantly
-- [ ] 5.9 At 390 nothing scrolls horizontally, with the panel open and with the strip open
-- [ ] 5.10 Firefox, Edge and the two mobile browsers reported from published data and marked unverified
-- [ ] 5.11 Deletion was exercised only on a synthetic disposable subscription
+- [x] 5.3 Every calendar field renders `type="month"` or `type="date"` in Chrome, inspected not assumed — e40acbf
+- [x] 5.4 In Safari every month field renders the fallback select and the payment date its native picker — e40acbf
+- [x] 5.5 Control heights measured and equal to 40px and 44px, or the `min-height` exception recorded — e40acbf
+- [x] 5.6 The focus ring is present and unmodified on a month input, a date input and the select — e40acbf
+- [x] 5.7 Enter and Escape inside the native controls measured in both browsers and recorded — e40acbf
+- [x] 5.8 With reduced motion on, the panel and the strip appear instantly — e40acbf
+- [x] 5.9 At 390 nothing scrolls horizontally, with the panel open and with the strip open — e40acbf
+- [x] 5.10 Firefox, Edge and the two mobile browsers reported from published data and marked unverified — e40acbf
+- [x] 5.11 Deletion was exercised only on a synthetic disposable subscription — e40acbf
+
+> 2.8 and the `no-owner` half of 4.17 stay open. 2.8 is only checkable on `e47b427`, and every call
+> site uses the controls on the current tree. The `no-owner` state needs a subscription whose owner
+> participant is absent, which the product's own routes refuse to produce; the `error` half of 4.17 is
+> verified. Reasons and what would close them: `evidence/runs/s08-browser-verification.md`.
 
 ### Phase 6: Foundation documents
 
