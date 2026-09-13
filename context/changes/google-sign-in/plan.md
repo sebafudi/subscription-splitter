@@ -848,24 +848,24 @@ function and the browser pass.
 
 #### Automated
 
-- [x] 2.1 Typecheck passes across all three projects
+- [x] 2.1 Typecheck passes across all three projects — cf3e3de
 - [x] 2.2 The whole suite passes; one client unit test file was added in this phase (`src/client/components/ui/googleErrors.test.ts`, the return-leg mapping and the url cleanup, added here by instruction rather than left unasserted until phase 3; rows 3.2 and 3.16 record what it asserts) — e6b3dab
-- [x] 2.3 The production build succeeds
-- [x] 2.4 No `GOOGLE_CLIENT` string appears anywhere under `src/client`
-- [x] 2.5 No `error_description` appears anywhere under `src/client`
-- [x] 2.6 Nothing under `src/server`, `src/domain` or `migrations` has changed
+- [x] 2.3 The production build succeeds — cf3e3de
+- [x] 2.4 No `GOOGLE_CLIENT` string appears anywhere under `src/client` — cf3e3de
+- [x] 2.5 No `error_description` appears anywhere under `src/client` — cf3e3de
+- [x] 2.6 Nothing under `src/server`, `src/domain` or `migrations` has changed — cf3e3de
 
 #### Manual
 
-- [x] 2.7 The action row matches the delta at 1280 in light and in dark, mark in its own colours
-- [x] 2.8 At 390 the buttons stack full width, Sign in first, both at least 44px high, no horizontal scroll
-- [x] 2.9 Tab order is email, password, Sign in, Continue with Google, and Enter in a field submits the password form
-- [x] 2.10 The Google press disables both fields and both buttons, keeps the label, sets `aria-busy` on button and form, and leaves for Google
-- [x] 2.11 A press with the network blocked re-enables the form and shows the connection sentence with focus on the alert line
-- [x] 2.12 Each of the four return outcomes renders its own sentence in the right tone and takes focus
-- [x] 2.13 After any outcome renders, the query is gone from the URL and a reload shows a clean login
-- [x] 2.14 With no Google value set the login screen is exactly today's, with nothing marking the absence and no shift after loading
-- [x] 2.15 An HTTP error from the social call re-enables the form and shows the did-not-finish alert rather than the connection sentence
+- [x] 2.7 The action row matches the delta at 1280 in light and in dark, mark in its own colours — 751d4df
+- [x] 2.8 At 390 the buttons stack full width, Sign in first, both at least 44px high, no horizontal scroll — 751d4df
+- [x] 2.9 Tab order is email, password, Sign in, Continue with Google, and Enter in a field submits the password form — 751d4df
+- [x] 2.10 The Google press disables both fields and both buttons, keeps the label, sets `aria-busy` on button and form, and leaves for Google — 751d4df
+- [x] 2.11 A press with the network blocked re-enables the form and shows the connection sentence with focus on the alert line — 751d4df
+- [x] 2.12 Each of the four return outcomes renders its own sentence in the right tone and takes focus — 751d4df
+- [x] 2.13 After any outcome renders, the query is gone from the URL and a reload shows a clean login — 751d4df
+- [x] 2.14 With no Google value set the login screen is exactly today's, with nothing marking the absence and no shift after loading — 751d4df
+- [x] 2.15 An HTTP error from the social call re-enables the form and shows the did-not-finish alert rather than the connection sentence — 751d4df
 
 ### Phase 3: The tests
 

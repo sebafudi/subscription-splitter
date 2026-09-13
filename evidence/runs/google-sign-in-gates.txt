@@ -448,6 +448,13 @@ body:
 $ grep -n "scope:" src/server/auth.ts   -> no match (no `scope` option is set; the plan's wider
   `grep -n "scope"` matches only prose, including the pre-existing "module scope" on line 5)
 $ git diff --stat -- src/domain migrations src/client   -> empty
-$ git diff -- . | grep -E "GOOGLE_CLIENT_(ID|SECRET)=.+"   -> no match (the diff carries the two
-  names with empty values in `.dev.vars.example` and no value anywhere)
+$ git diff -- . | grep -E "GOOGLE_CLIENT_(ID|SECRET)=.+"   -> no match (this command finds
+  assignment-shaped text only, and it proves just that: the diff carries the two names with empty
+  values in `.dev.vars.example` and no assigned credential value. It does not cover prose. The one
+  credential value that does appear in this change range is the client id, written out in
+  `context/decisions/D-012-google-oauth-provisioning.md`, where D-012 records it deliberately as a
+  public value. The client secret is cleared by a separate and wider check, below)
+$ git log -S"$GOOGLE_CLIENT_SECRET" --all --oneline   -> no commit (run with the value read from
+  `.dev.vars` into the shell, never printed; the secret appears in no commit reachable from any ref)
+$ git grep -lF "$GOOGLE_CLIENT_SECRET" HEAD   -> no file (the secret appears in no tracked file)
 $ git diff --stat -- tests/integration/auth.test.ts   -> empty

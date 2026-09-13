@@ -1,7 +1,7 @@
 ---
 change_id: google-sign-in
 title: Add Google sign-in alongside the existing password login
-status: implemented
+status: impl_reviewed
 ---
 
 ## Notes
@@ -40,3 +40,9 @@ origin is goal G05, not a row here: it needs `GOOGLE_CLIENT_ID` on the deployed 
 deploy, and the consent audience stays External in Testing, so no artifact in this change says that
 public Google login works. Everything local is verified, including the state a deployment without
 credentials is in, which is what continuous integration runs.
+
+The implementation review in `reviews/impl-review.md` is APPROVED and resolved: both required
+findings, F1 on the phase 2 Progress commits and F2 on the wording of the secret guard, are applied,
+and all six observations are decided in that file's `## Resolution` section. The designer acceptance
+in `reviews/design-acceptance.md` accepts the delta without corrections. `status` is now
+`impl_reviewed`.

@@ -308,3 +308,61 @@ neither value was printed. The client secret appears in no tracked file and in n
   It sits inside the reviewed commit range but belongs to goal G02's provisioning record, not to this
   implementation. The change's own documents and every line of new code are free of them, and the new
   code carries block comments only, no inline ones.
+
+## Resolution
+
+Applied by the release task that carries goals G04 and G05, on the tree at `ed57890`. The two
+required findings were record corrections and are both applied. The six observations were each
+decided; one of them, O4, was re-checked against the code rather than accepted from the report.
+
+| Finding | Severity | Decision | Where |
+|---|---|---|---|
+| F1 | WARNING | FIXED | `context/changes/google-sign-in/plan.md`, Progress phase 2 |
+| F2 | WARNING | FIXED | `evidence/runs/google-sign-in-gates.txt`, Stability guards |
+| O1 | OBSERVATION | ACKNOWLEDGED, no change | `dist/` is git-ignored and the behaviour predates the change |
+| O2 | OBSERVATION | ACKNOWLEDGED, no change | `.login-submit` is kept as the test handle the manual rows select on |
+| O3 | OBSERVATION | ACKNOWLEDGED, no change | the delta sentence stands as the intent the reviewer reads it as |
+| O4 | OBSERVATION | NO FIX NEEDED, verified in the code | `src/client/api.ts:110-116` |
+| O5 | OBSERVATION | DEFERRED to the archive step | the guard text becomes `grep -n "scope:"` when the change is archived |
+| O6 | OBSERVATION | ACKNOWLEDGED, no change | the deviation is disclosed in both checkpoints and every row cites the commit that satisfies it |
+
+### F1 — fourteen phase 2 Progress rows carried no commit
+
+Fixed exactly as the finding specifies. `cf3e3de` now follows rows 2.1, 2.3, 2.4, 2.5 and 2.6, and
+`751d4df` follows the nine manual rows 2.7 to 2.15, in the ` — <sha>` separator the convention at
+`plan.md:824` states. Row 2.2 already carried `e6b3dab` and was left alone. All fifty-six Progress
+rows in the change now map to a commit.
+
+### F2 — the "no secret in the tree" guard read wider than what it checked
+
+Fixed by narrowing the stated conclusion and adding the two commands that actually clear the secret.
+The `git diff | grep -E "GOOGLE_CLIENT_(ID|SECRET)=.+"` line now says what it proves, that the diff
+carries no assignment-shaped credential value, and says what it does not cover, prose. It names the
+one credential value that does appear in the change range, the client id in
+`context/decisions/D-012-google-oauth-provisioning.md`, and points at D-012 recording it as public.
+
+Two wider checks were then run in this task and recorded beneath it, with the value read from
+`.dev.vars` into a shell variable and never printed:
+
+- `git log -S"$GOOGLE_CLIENT_SECRET" --all --oneline` returns no commit.
+- `git grep -lF "$GOOGLE_CLIENT_SECRET" HEAD` returns no file.
+
+The reviewer's blind spot stands unchanged: neither command scans loose or unreferenced objects.
+
+### F-obs — O4, the boot `Promise.all` and the delta's failed-read rule
+
+Re-read rather than accepted. The delta rule at `design-delta.md:92` is "if that read fails, treat
+Google as not configured". The code already satisfies it, at the source rather than at the call
+site, so no fix was made and no gate was re-run.
+
+`getAuthConfig` at `src/client/api.ts:110-116` wraps its whole request in `try`/`catch` and returns
+`{ google: false }` on every rejection. It therefore cannot reject, so the `Promise.all` at
+`src/client/App.tsx:19` cannot reject through the configuration read, and a failing `/api/auth-config`
+neither breaks nor delays the login screen. It resolves to not configured and the screen paints its
+password-only action row, which is the delta's stated outcome.
+
+The one path that does leave the app on the 4.2 skeleton is `getMe` rethrowing a non-401, which is
+the session read's own failure handling. That behaviour is unchanged by this change and was left
+exactly as it was, per the reviewer's own reading that it predates the rewrite and belongs to
+whichever change owns the loading state. No unit test was added, because the function whose contract
+is at issue is already covered and nothing in the boot effect changed.
