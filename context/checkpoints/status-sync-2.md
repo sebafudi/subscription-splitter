@@ -3,7 +3,7 @@
 - Task id: `status-sync-2`
 - Model: Opus
 - Status: complete
-- HEAD when written: `c842f64`
+- HEAD when written: `c842f64`, revised against `d934944`
 
 ## Summary
 
@@ -42,9 +42,9 @@ captures, `evidence/repo-payload-audit.md`, `evidence/runs/visual-redesign-gates
 - **V06**: the release is executing now against `evidence/runs/release-2-plan.md`. No
   `context/checkpoints/release-2.md` existed when this ran, so no release candidate SHA is pinned in
   any document here. The live Worker still serves `8ed3422` (version `8e4fa506`).
-- **R1**: the four `impl-review-f1-index-current-*` captures are being relabelled under
-  `s06-r1-captures`. No checkpoint and no commit from that task existed when this ran, so it is
-  recorded as in progress and named as required before archive.
+- **R1**: closed. The `s06-r1-captures` task landed `6b30d5b`, `a5b5f18` and its checkpoint `d934944`
+  in this working tree while this task was writing, so the documents were revised in a second pass to
+  cite those commits rather than describe the work as in progress.
 - **W06 and W07**: only S-06's archive transition remains for either.
 - **B11**: the audit and its one required fix are done; the authorized upload, the verification of the
   submitted repository URL and reviewer access, and the LICENSE decision are the owner's.
