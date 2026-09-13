@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { monthControlBranch, monthOptionRange, supportsMonthInput } from './monthControl'
+import {
+  monthControlBranch,
+  monthOptionRange,
+  pairedMonthMin,
+  supportsMonthInput,
+  usableLocale,
+  usableTimeZone,
+} from './monthControl'
 
 type Probes = { reflectsType: boolean; sanitisesValue: boolean }
 
@@ -111,5 +118,40 @@ describe('monthOptionRange', () => {
     } finally {
       globalThis.Date = realDate
     }
+  })
+})
+
+describe('pairedMonthMin', () => {
+  it('takes the bound from a partner holding a complete month', () => {
+    expect(pairedMonthMin('2026-04')).toBe('2026-04')
+  })
+
+  it('releases the bound while the partner is still being typed', () => {
+    expect(pairedMonthMin('2026-')).toBeUndefined()
+  })
+
+  it('releases the bound when the partner is cleared', () => {
+    expect(pairedMonthMin('')).toBeUndefined()
+    expect(pairedMonthMin(null)).toBeUndefined()
+  })
+})
+
+describe('usableLocale', () => {
+  it('keeps a locale the runtime can read', () => {
+    expect(usableLocale('en-GB', 'pl-PL')).toBe('en-GB')
+  })
+
+  it('falls back when the tag is malformed', () => {
+    expect(usableLocale('not a locale', 'pl-PL')).toBe('pl-PL')
+  })
+})
+
+describe('usableTimeZone', () => {
+  it('keeps a zone the runtime knows', () => {
+    expect(usableTimeZone('America/New_York', 'Europe/Warsaw')).toBe('America/New_York')
+  })
+
+  it('falls back when the zone is unknown', () => {
+    expect(usableTimeZone('Mars/Olympus', 'Europe/Warsaw')).toBe('Europe/Warsaw')
   })
 })

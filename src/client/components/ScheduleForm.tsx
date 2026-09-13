@@ -3,10 +3,16 @@ import { ApiError, SignedOutError, createSchedule, updateSchedule, type Member, 
 import { Field } from './ui/Field'
 import { labelFor, messageWithLabel, scheduleFieldLabels } from './ui/fieldLabels'
 import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
+import { MonthField } from './ui/MonthField'
+import { pairedMonthMin } from './ui/monthControl'
 
 type Props = {
   subscriptionId: string
   members: Member[]
+  /** The subscription's first month, the lower bound every schedule month shares. */
+  subscriptionStartMonth: string
+  locale: string
+  timeZone: string
   editing: Schedule | null
   /** The panel's own error line, owned by the section so the panel can take its red left rule. */
   alert: string | null
@@ -27,6 +33,9 @@ function toMajor(minor: number): string {
 export function ScheduleForm({
   subscriptionId,
   members,
+  subscriptionStartMonth,
+  locale,
+  timeZone,
   editing,
   alert,
   onAlert,
@@ -164,21 +173,19 @@ export function ScheduleForm({
       <Field
         id={`${prefix}_start`}
         label="First month"
-        hint="Month as YYYY-MM, like 2026-01"
         span={false}
         error={errorFor('start_month')}
       >
         {(control) => (
-          <input
+          <MonthField
             {...control}
             required
-            inputMode="numeric"
-            pattern="\d{4}-\d{2}"
-            autoComplete="off"
-            placeholder="2026-01"
+            min={subscriptionStartMonth}
+            locale={locale}
+            timeZone={timeZone}
             disabled={saving}
             value={startMonth}
-            onChange={(event) => setStartMonth(event.target.value)}
+            onChange={setStartMonth}
           />
         )}
       </Field>
@@ -190,15 +197,15 @@ export function ScheduleForm({
         error={errorFor('end_month')}
       >
         {(control) => (
-          <input
+          <MonthField
             {...control}
-            inputMode="numeric"
-            pattern="\d{4}-\d{2}"
-            autoComplete="off"
-            placeholder="2026-12"
+            min={pairedMonthMin(startMonth)}
+            emptyLabel="Still running"
+            locale={locale}
+            timeZone={timeZone}
             disabled={saving}
             value={endMonth}
-            onChange={(event) => setEndMonth(event.target.value)}
+            onChange={setEndMonth}
           />
         )}
       </Field>

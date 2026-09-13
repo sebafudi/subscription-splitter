@@ -227,6 +227,7 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           startMonth={subscription.startMonth}
           members={members}
           summary={summary}
+          timeZone={subscription.timeZone}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
@@ -236,6 +237,8 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           prices={prices}
           currency={summary.currency}
           locale={summary.locale}
+          startMonth={subscription.startMonth}
+          timeZone={subscription.timeZone}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
@@ -244,6 +247,8 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           subscriptionId={subscription.id}
           breakMonths={breakMonths}
           locale={summary.locale}
+          startMonth={subscription.startMonth}
+          timeZone={subscription.timeZone}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
@@ -254,6 +259,7 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           members={members}
           currency={summary.currency}
           locale={summary.locale}
+          startMonth={subscription.startMonth}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
@@ -266,6 +272,8 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           currentMonth={summary.currentMonth}
           currency={summary.currency}
           locale={summary.locale}
+          startMonth={subscription.startMonth}
+          timeZone={subscription.timeZone}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />

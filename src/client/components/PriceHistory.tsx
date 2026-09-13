@@ -8,6 +8,7 @@ import { ConfirmStrip } from './ui/ConfirmStrip'
 import { DisclosurePanel } from './ui/DisclosurePanel'
 import { Field } from './ui/Field'
 import { labelFor, messageWithLabel, priceFieldLabels } from './ui/fieldLabels'
+import { MonthField } from './ui/MonthField'
 import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
 import { LedgerEntry } from './ui/LedgerEntry'
 import { Money } from './ui/Money'
@@ -24,6 +25,8 @@ type Props = {
   prices: PriceEntry[]
   currency: string
   locale: string
+  startMonth: string
+  timeZone: string
   onChanged: () => void
   onSignedOut: () => void
 }
@@ -44,7 +47,16 @@ type PendingDelete = {
   refusal: string | null
 }
 
-export function PriceHistory({ subscriptionId, prices, currency, locale, onChanged, onSignedOut }: Props) {
+export function PriceHistory({
+  subscriptionId,
+  prices,
+  currency,
+  locale,
+  startMonth,
+  timeZone,
+  onChanged,
+  onSignedOut,
+}: Props) {
   const [sectionError, setSectionError] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [addAlert, setAddAlert] = useState<string | null>(null)
@@ -136,6 +148,9 @@ export function PriceHistory({ subscriptionId, prices, currency, locale, onChang
         <PriceForm
           key={addKey}
           subscriptionId={subscriptionId}
+          locale={locale}
+          startMonth={startMonth}
+          timeZone={timeZone}
           alert={addAlert}
           onAlert={setAddAlert}
           onCreated={(created) => {
@@ -209,6 +224,9 @@ export function PriceHistory({ subscriptionId, prices, currency, locale, onChang
 
 type FormProps = {
   subscriptionId: string
+  locale: string
+  startMonth: string
+  timeZone: string
   alert: string | null
   onAlert: (message: string | null) => void
   onCreated: (entry: PriceEntry) => void
@@ -216,7 +234,17 @@ type FormProps = {
   onSignedOut: () => void
 }
 
-function PriceForm({ subscriptionId, alert, onAlert, onCreated, onCancel, onSignedOut }: FormProps) {
+function PriceForm({
+  subscriptionId,
+  locale,
+  startMonth,
+  timeZone,
+  alert,
+  onAlert,
+  onCreated,
+  onCancel,
+  onSignedOut,
+}: FormProps) {
   const [month, setMonth] = useState('')
   const [amount, setAmount] = useState('')
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null)
@@ -284,21 +312,19 @@ function PriceForm({ subscriptionId, alert, onAlert, onCreated, onCancel, onSign
       <Field
         id="price_effective_from"
         label="Effective from"
-        hint="Month as YYYY-MM, like 2026-01"
         span={false}
         error={fieldError?.field === 'effective_from' ? fieldError.message : undefined}
       >
         {(control) => (
-          <input
+          <MonthField
             {...control}
             required
-            inputMode="numeric"
-            pattern="\d{4}-\d{2}"
-            autoComplete="off"
-            placeholder="2026-01"
+            min={startMonth}
+            locale={locale}
+            timeZone={timeZone}
             disabled={submitting}
             value={month}
-            onChange={(event) => setMonth(event.target.value)}
+            onChange={setMonth}
           />
         )}
       </Field>

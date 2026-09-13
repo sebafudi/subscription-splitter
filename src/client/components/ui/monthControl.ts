@@ -64,3 +64,41 @@ export function monthOptionRange({ min, max, value, currentMonth }: OptionRange)
 function yearOf(year: number): string {
   return String(year).padStart(4, '0')
 }
+
+/**
+ * The locale to label fallback options in. The New subscription form holds a
+ * locale the organizer is still typing, so a tag the runtime cannot read falls
+ * back to the form's default rather than throwing inside the formatter.
+ */
+export function usableLocale(locale: string, fallback: string): string {
+  try {
+    new Intl.DateTimeFormat(locale)
+    return locale
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * The time zone behind the fallback's default range, under the same rule: a
+ * zone `Intl` does not know falls back to the form's default instead of
+ * throwing out of `currentMonth`.
+ */
+export function usableTimeZone(timeZone: string, fallback: string): string {
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone })
+    return timeZone
+  } catch {
+    return fallback
+  }
+}
+
+/**
+ * The `min` a field takes from the field it is paired with: the partner's value
+ * while that value is a complete month, and nothing while it is still being
+ * typed or has been cleared, so clearing the partner releases the bound rather
+ * than freezing it.
+ */
+export function pairedMonthMin(partner: string | null): string | undefined {
+  return partner && /^\d{4}-\d{2}$/.test(partner) ? partner : undefined
+}

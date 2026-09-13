@@ -3,10 +3,14 @@ import { ApiError, SignedOutError, createMember, updateMember, type ActiveRangeI
 import { Field } from './ui/Field'
 import { labelFor, messageWithLabel, participantFieldLabels } from './ui/fieldLabels'
 import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
+import { MonthField } from './ui/MonthField'
+import { pairedMonthMin } from './ui/monthControl'
 
 type Props = {
   subscriptionId: string
   startMonth: string
+  locale: string
+  timeZone: string
   /** Null in the add panel; the participant being edited in an edit panel. */
   editing: Member | null
   /** The panel's own error line, owned by the section so the panel can take its red left rule. */
@@ -29,6 +33,8 @@ function rangesOf(member: Member | null, startMonth: string): ActiveRangeInput[]
 export function MemberForm({
   subscriptionId,
   startMonth,
+  locale,
+  timeZone,
   editing,
   alert,
   onAlert,
@@ -134,21 +140,19 @@ export function MemberForm({
             <Field
               id={`${prefix}_joined_${index}`}
               label="From"
-              hint="Month as YYYY-MM, like 2026-01"
               span={false}
               error={rangeError(index, 'joined_month')}
             >
               {(control) => (
-                <input
+                <MonthField
                   {...control}
                   required
-                  inputMode="numeric"
-                  pattern="\d{4}-\d{2}"
-                  autoComplete="off"
-                  placeholder="2026-01"
+                  min={startMonth}
+                  locale={locale}
+                  timeZone={timeZone}
                   disabled={submitting}
                   value={range.joined_month}
-                  onChange={(event) => setRange(index, { joined_month: event.target.value })}
+                  onChange={(month) => setRange(index, { joined_month: month })}
                 />
               )}
             </Field>
@@ -161,15 +165,15 @@ export function MemberForm({
               error={rangeError(index, 'left_month')}
             >
               {(control) => (
-                <input
+                <MonthField
                   {...control}
-                  inputMode="numeric"
-                  pattern="\d{4}-\d{2}"
-                  autoComplete="off"
-                  placeholder="2026-06"
+                  min={pairedMonthMin(range.joined_month)}
+                  emptyLabel="Still active"
+                  locale={locale}
+                  timeZone={timeZone}
                   disabled={submitting}
                   value={range.left_month ?? ''}
-                  onChange={(event) => setRange(index, { left_month: event.target.value })}
+                  onChange={(month) => setRange(index, { left_month: month })}
                 />
               )}
             </Field>

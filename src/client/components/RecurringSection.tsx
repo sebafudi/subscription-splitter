@@ -38,6 +38,8 @@ type Props = {
   currentMonth: MonthStr
   currency: string
   locale: string
+  startMonth: string
+  timeZone: string
   onChanged: () => void
   onSignedOut: () => void
 }
@@ -76,6 +78,8 @@ export function RecurringSection({
   currentMonth,
   currency,
   locale,
+  startMonth,
+  timeZone,
   onChanged,
   onSignedOut,
 }: Props) {
@@ -193,6 +197,9 @@ export function RecurringSection({
           key={addKey}
           subscriptionId={subscriptionId}
           members={members}
+          subscriptionStartMonth={startMonth}
+          locale={locale}
+          timeZone={timeZone}
           editing={null}
           alert={addAlert}
           onAlert={setAddAlert}
@@ -228,6 +235,9 @@ export function RecurringSection({
                     <ScheduleForm
                       subscriptionId={subscriptionId}
                       members={members}
+                      subscriptionStartMonth={startMonth}
+                      locale={locale}
+                      timeZone={timeZone}
                       editing={schedule}
                       alert={editAlert}
                       onAlert={setEditAlert}

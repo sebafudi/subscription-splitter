@@ -8,6 +8,7 @@ import {
   type Payment,
   type PaymentKind,
 } from '../api'
+import { DateField } from './ui/DateField'
 import { Field } from './ui/Field'
 import { labelFor, messageWithLabel, paymentFieldLabels } from './ui/fieldLabels'
 import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
@@ -16,6 +17,8 @@ type Props = {
   subscriptionId: string
   /** Participants only; the owner is never owed from, so the server refuses money recorded against them. */
   members: Member[]
+  /** The subscription's first month; no payment may be dated before it begins. */
+  startMonth: string
   editing: Payment | null
   /** The panel's own error line, owned by the section so the panel can take its red left rule. */
   alert: string | null
@@ -37,6 +40,7 @@ function toMajor(minor: number): string {
 export function PaymentForm({
   subscriptionId,
   members,
+  startMonth,
   editing,
   alert,
   onAlert,
@@ -148,19 +152,17 @@ export function PaymentForm({
       <Field
         id={`${prefix}_date`}
         label="Date received"
-        hint="Date as YYYY-MM-DD"
         span={false}
         error={errorFor('date')}
       >
         {(control) => (
-          <input
+          <DateField
             {...control}
             required
-            autoComplete="off"
-            placeholder="2026-01-15"
+            min={`${startMonth}-01`}
             disabled={saving}
             value={date}
-            onChange={(event) => setDate(event.target.value)}
+            onChange={setDate}
           />
         )}
       </Field>

@@ -24,6 +24,7 @@ type Props = {
   members: Member[]
   currency: string
   locale: string
+  startMonth: string
   onChanged: () => void
   onSignedOut: () => void
 }
@@ -45,6 +46,7 @@ export function PaymentList({
   members,
   currency,
   locale,
+  startMonth,
   onChanged,
   onSignedOut,
 }: Props) {
@@ -190,6 +192,7 @@ export function PaymentList({
           key={addKey}
           subscriptionId={subscriptionId}
           members={members}
+          startMonth={startMonth}
           editing={null}
           alert={addAlert}
           onAlert={setAddAlert}
@@ -221,6 +224,7 @@ export function PaymentList({
                   <PaymentForm
                     subscriptionId={subscriptionId}
                     members={members}
+                    startMonth={startMonth}
                     editing={payment}
                     alert={editAlert}
                     onAlert={setEditAlert}

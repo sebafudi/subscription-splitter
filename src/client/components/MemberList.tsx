@@ -21,6 +21,7 @@ type Props = {
   startMonth: string
   members: Member[]
   summary: Summary
+  timeZone: string
   onChanged: () => void
   onSignedOut: () => void
 }
@@ -36,7 +37,15 @@ type Props = {
  * default; one who still owes or is still ahead stays visible, because hiding
  * a live balance is how money goes missing from a screen.
  */
-export function MemberList({ subscriptionId, startMonth, members, summary, onChanged, onSignedOut }: Props) {
+export function MemberList({
+  subscriptionId,
+  startMonth,
+  members,
+  summary,
+  timeZone,
+  onChanged,
+  onSignedOut,
+}: Props) {
   const [showSettledArchived, setShowSettledArchived] = useState(false)
   const [sectionError, setSectionError] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
@@ -136,6 +145,8 @@ export function MemberList({ subscriptionId, startMonth, members, summary, onCha
             <MemberForm
               subscriptionId={subscriptionId}
               startMonth={startMonth}
+              locale={summary.locale}
+              timeZone={timeZone}
               editing={member}
               alert={editAlert}
               onAlert={setEditAlert}
@@ -281,6 +292,8 @@ export function MemberList({ subscriptionId, startMonth, members, summary, onCha
           key={addKey}
           subscriptionId={subscriptionId}
           startMonth={startMonth}
+          locale={summary.locale}
+          timeZone={timeZone}
           editing={null}
           alert={addAlert}
           onAlert={setAddAlert}

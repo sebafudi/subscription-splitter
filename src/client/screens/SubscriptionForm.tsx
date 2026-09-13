@@ -3,6 +3,17 @@ import { ApiError, SignedOutError, createSubscription, type Subscription } from 
 import { Field } from '../components/ui/Field'
 import { subscriptionFieldLabels, labelFor, messageWithLabel } from '../components/ui/fieldLabels'
 import { CONNECTION_FAILURE, FormAlert } from '../components/ui/FormAlert'
+import { MonthField } from '../components/ui/MonthField'
+import { usableLocale, usableTimeZone } from '../components/ui/monthControl'
+import { currentMonth } from '../../domain/months'
+
+const DEFAULT_LOCALE = 'pl-PL'
+const DEFAULT_TIME_ZONE = 'Europe/Warsaw'
+
+/** The floor the server applies on create: January ten years before the current year. */
+function firstMonthFloor(timeZone: string): string {
+  return `${String(Number(currentMonth(timeZone).slice(0, 4)) - 10).padStart(4, '0')}-01`
+}
 
 type Props = {
   /** The panel's own error line, owned by the screen so the panel can take its red left rule. */
@@ -16,8 +27,8 @@ type Props = {
 export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSignedOut }: Props) {
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('PLN')
-  const [locale, setLocale] = useState('pl-PL')
-  const [timeZone, setTimeZone] = useState('Europe/Warsaw')
+  const [locale, setLocale] = useState(DEFAULT_LOCALE)
+  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE)
   const [startMonth, setStartMonth] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null)
@@ -32,6 +43,11 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
     const invalid = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
     ;(invalid ?? alertLine.current)?.focus()
   }, [refusals])
+
+  // Both settings are free text until the form is submitted, so the month
+  // control reads them through the fallback rather than on trust.
+  const formLocale = usableLocale(locale, DEFAULT_LOCALE)
+  const formTimeZone = usableTimeZone(timeZone, DEFAULT_TIME_ZONE)
 
   function errorFor(wireName: string): string | undefined {
     return fieldError?.field === wireName ? fieldError.message : undefined
@@ -135,21 +151,19 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
 
       <Field
         id="sub_start_month"
-        label="Start month"
-        hint="Month as YYYY-MM, like 2026-01"
+        label="First month"
         error={errorFor('start_month')}
       >
         {(control) => (
-          <input
+          <MonthField
             {...control}
             required
-            inputMode="numeric"
-            pattern="\d{4}-\d{2}"
-            autoComplete="off"
-            placeholder="2026-01"
+            min={firstMonthFloor(formTimeZone)}
+            locale={formLocale}
+            timeZone={formTimeZone}
             disabled={submitting}
             value={startMonth}
-            onChange={(event) => setStartMonth(event.target.value)}
+            onChange={setStartMonth}
           />
         )}
       </Field>

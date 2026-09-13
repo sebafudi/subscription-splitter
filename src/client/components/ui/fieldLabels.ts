@@ -11,7 +11,7 @@ export const subscriptionFieldLabels: FieldLabels = {
   currency: 'Currency',
   locale: 'Locale',
   time_zone: 'Time zone',
-  start_month: 'Start month',
+  start_month: 'First month',
   owner_name: 'Your name on this plan',
 }
 
