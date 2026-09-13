@@ -54,3 +54,13 @@ Fonts         79,268 bytes, the same four woff2 files and no other font format
 
 Delta against the baseline: JavaScript 16,481 bytes, CSS 14,078 bytes,
 fonts 79,268 bytes.
+
+## Phase 5
+
+JavaScript   273,281 bytes
+CSS           16,512 bytes
+Fonts         79,268 bytes, the same four woff2 files and no other font format
+
+Delta against the baseline: JavaScript 21,348 bytes, CSS 13,500 bytes,
+fonts 79,268 bytes. The stylesheet is smaller than at phase 4 because the
+transitional rules that carried the not-yet-redesigned sections are gone.

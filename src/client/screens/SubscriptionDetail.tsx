@@ -243,6 +243,7 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
         <BreakMonths
           subscriptionId={subscription.id}
           breakMonths={breakMonths}
+          locale={summary.locale}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />

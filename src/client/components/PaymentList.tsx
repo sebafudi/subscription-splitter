@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react'
 import { formatMoney } from '../../domain/money'
-import {
-  ApiError,
-  SignedOutError,
-  deletePayment,
-  listPayments,
-  type Member,
-  type Payment,
-} from '../api'
+import { ApiError, SignedOutError, deletePayment, listPayments, type Member, type Payment } from '../api'
+import { formatDate } from '../format'
 import { PaymentForm } from './PaymentForm'
 import { PAYMENTS_RECEIVED } from './sections'
+import { ConfirmStrip } from './ui/ConfirmStrip'
+import { DisclosurePanel } from './ui/DisclosurePanel'
+import { CONNECTION_FAILURE } from './ui/FormAlert'
+import { LedgerEntry } from './ui/LedgerEntry'
+import { Money } from './ui/Money'
+import { SectionAlert } from './ui/SectionAlert'
+import { SectionHeader } from './ui/SectionHeader'
+import { StatusLine } from './ui/StatusLine'
+import { useSectionStatus } from './ui/useSectionStatus'
+
+const ADD_PANEL_ID = 'payment-add-panel'
+const ADD_BUTTON_ID = 'payment-add-button'
+const REFUSAL_ID = 'payment-refusal'
 
 type Props = {
   subscriptionId: string
@@ -43,9 +50,15 @@ export function PaymentList({
 }: Props) {
   const [filterMemberId, setFilterMemberId] = useState('')
   const [filtered, setFiltered] = useState<Payment[] | null>(null)
-  const [editing, setEditing] = useState<Payment | null>(null)
+  const [sectionError, setSectionError] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addAlert, setAddAlert] = useState<string | null>(null)
+  const [addKey, setAddKey] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editAlert, setEditAlert] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [focusTarget, setFocusTarget] = useState<string | null>(null)
+  const status = useSectionStatus()
 
   // The filter is the server's own, so one participant's history is the answer
   // the ownership rule gives rather than a slice taken in the browser.
@@ -61,130 +74,228 @@ export function PaymentList({
       })
       .catch((err) => {
         if (err instanceof SignedOutError) return onSignedOut()
-        if (current) setError('Could not filter the payments.')
+        if (current) setSectionError(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
       })
     return () => {
       current = false
     }
   }, [subscriptionId, filterMemberId, payments, onSignedOut])
 
+  useEffect(() => {
+    if (!focusTarget) return
+    document.getElementById(focusTarget)?.focus()
+    setFocusTarget(null)
+  }, [focusTarget])
+
   const visible = filtered ?? payments
+  const participants = members.filter((member) => !member.isOwner)
   const nameOf = (memberId: string) => members.find((member) => member.id === memberId)?.name ?? 'Unknown participant'
   const money = (minor: number) => formatMoney(minor, locale, currency)
 
-  async function handleDelete(payment: Payment) {
-    setError(null)
+  function closeAdd() {
+    setAddOpen(false)
+    setAddAlert(null)
+    setAddKey((key) => key + 1)
+    setFocusTarget(ADD_BUTTON_ID)
+  }
+
+  function closeEdit(paymentId: string) {
+    setEditingId(null)
+    setEditAlert(null)
+    setFocusTarget(`payment-edit-${paymentId}`)
+  }
+
+  async function confirmDelete(payment: Payment) {
+    setPendingDelete(null)
     try {
       await deletePayment(subscriptionId, payment.id)
-      setPendingDelete(null)
+      setSectionError(null)
+      setFocusTarget(PAYMENTS_RECEIVED.id)
+      status.confirm('Payment deleted', null)
       onChanged()
     } catch (err) {
-      if (err instanceof SignedOutError) return onSignedOut()
-      setError(err instanceof ApiError ? err.message : 'Could not delete that payment.')
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
+      setSectionError(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
+      setFocusTarget(`payment-delete-${payment.id}`)
     }
   }
 
   return (
-    <section>
-      <h3 id={PAYMENTS_RECEIVED.id} className="section-anchor">
-        {PAYMENTS_RECEIVED.title}
-      </h3>
-      <p className="row-detail">Money you saw arrive. Every amount here is recorded, not assumed.</p>
+    <section aria-labelledby={PAYMENTS_RECEIVED.id}>
+      <SectionHeader
+        id={PAYMENTS_RECEIVED.id}
+        title={PAYMENTS_RECEIVED.title}
+        count={visible.length}
+        subtitle={
+          <span className="subtitle-line">
+            <span>{PAYMENTS_RECEIVED.subtitle}</span>
+            <label className="filter-label" htmlFor="payment_filter">
+              Show{' '}
+              <select
+                id="payment_filter"
+                value={filterMemberId}
+                onChange={(event) => setFilterMemberId(event.target.value)}
+              >
+                <option value="">Everyone</option>
+                {participants.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </span>
+        }
+        status={<StatusLine message={status.message} />}
+        action={
+          !addOpen && (
+            <button
+              type="button"
+              className="btn-primary"
+              id={ADD_BUTTON_ID}
+              aria-expanded={addOpen}
+              aria-controls={ADD_PANEL_ID}
+              aria-disabled={participants.length === 0 || undefined}
+              aria-describedby={participants.length === 0 ? REFUSAL_ID : undefined}
+              onClick={() => {
+                if (participants.length === 0) return
+                status.clear()
+                setAddOpen(true)
+              }}
+            >
+              {PAYMENTS_RECEIVED.action}
+            </button>
+          )
+        }
+      >
+        {participants.length === 0 && (
+          <p id={REFUSAL_ID} className="section-refusal t-small soft">
+            Add a participant before recording a payment.
+          </p>
+        )}
+        <SectionAlert message={sectionError} onDismiss={() => setSectionError(null)} />
+      </SectionHeader>
 
-      {error && (
-        <p role="alert" className="field-error">
-          {error}
-        </p>
-      )}
-
-      <div className="filter-row">
-        <label htmlFor="payment_filter">Show</label>
-        <select
-          id="payment_filter"
-          value={filterMemberId}
-          onChange={(event) => setFilterMemberId(event.target.value)}
-        >
-          <option value="">Everyone</option>
-          {members
-            .filter((member) => !member.isOwner)
-            .map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-        </select>
-      </div>
+      <DisclosurePanel
+        id={ADD_PANEL_ID}
+        open={addOpen}
+        title="Record a payment"
+        onCancel={closeAdd}
+        invalid={addAlert !== null}
+      >
+        <PaymentForm
+          key={addKey}
+          subscriptionId={subscriptionId}
+          members={members}
+          editing={null}
+          alert={addAlert}
+          onAlert={setAddAlert}
+          onSaved={(saved) => {
+            closeAdd()
+            setSectionError(null)
+            status.confirm('Payment recorded', saved.id)
+            onChanged()
+          }}
+          onCancel={closeAdd}
+          onSignedOut={onSignedOut}
+        />
+      </DisclosurePanel>
 
       {visible.length === 0 ? (
-        <p>No payments recorded yet.</p>
+        <p className="section-empty t-body soft">No payments recorded yet.</p>
       ) : (
-        <ul className="row-list">
-          {visible.map((payment) => (
-            <li key={payment.id} className="row">
-              <div className="row-main">
-                <strong>
-                  {money(payment.amount)} from {nameOf(payment.memberId)}
-                </strong>
-                <div className="row-detail">
-                  {payment.date}, {KIND_LABEL[payment.kind]}
-                  {payment.note && `, ${payment.note}`}
-                </div>
-
-                {pendingDelete === payment.id && (
-                  <div role="alert" className="inline-confirm">
-                    <p>
-                      Delete the {money(payment.amount)} recorded on {payment.date} from{' '}
-                      {nameOf(payment.memberId)}? Their balance moves back by that amount.
-                    </p>
-                    <div className="button-row">
-                      <button type="button" onClick={() => handleDelete(payment)}>
-                        Delete it
-                      </button>
-                      <button type="button" onClick={() => setPendingDelete(null)}>
-                        Keep it
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {editing?.id === payment.id && (
+        <ul className="entry-list">
+          {visible.map((payment) =>
+            editingId === payment.id ? (
+              <li key={payment.id}>
+                <DisclosurePanel
+                  id={`payment-edit-panel-${payment.id}`}
+                  open
+                  title="Edit payment"
+                  onCancel={() => closeEdit(payment.id)}
+                  invalid={editAlert !== null}
+                >
                   <PaymentForm
                     subscriptionId={subscriptionId}
                     members={members}
                     editing={payment}
-                    onSaved={() => {
-                      setEditing(null)
+                    alert={editAlert}
+                    onAlert={setEditAlert}
+                    onSaved={(saved) => {
+                      closeEdit(saved.id)
+                      setSectionError(null)
+                      status.confirm('Changes saved', saved.id)
                       onChanged()
                     }}
-                    onCancelEdit={() => setEditing(null)}
+                    onCancel={() => closeEdit(payment.id)}
                     onSignedOut={onSignedOut}
                   />
-                )}
-              </div>
-
-              <div className="button-row">
-                <button
-                  type="button"
-                  onClick={() => setEditing(editing?.id === payment.id ? null : payment)}
-                >
-                  {editing?.id === payment.id ? 'Close' : 'Edit'}
-                </button>
-                <button type="button" onClick={() => setPendingDelete(payment.id)}>
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
+                </DisclosurePanel>
+              </li>
+            ) : (
+              <li key={payment.id}>
+                <LedgerEntry
+                  highlighted={status.highlightedId === payment.id}
+                  primary={
+                    <>
+                      <Money value={money(payment.amount)} /> from {nameOf(payment.memberId)}
+                    </>
+                  }
+                  secondary={
+                    <>
+                      {KIND_LABEL[payment.kind]}
+                      {payment.note && `, ${payment.note}`}
+                    </>
+                  }
+                  figure={<span className="t-small soft tnum">{formatDate(payment.date, locale)}</span>}
+                  confirm={
+                    pendingDelete === payment.id ? (
+                      <ConfirmStrip
+                        question={`Delete the ${money(payment.amount)} payment from ${nameOf(payment.memberId)}?`}
+                        onConfirm={() => void confirmDelete(payment)}
+                        onKeep={() => {
+                          setPendingDelete(null)
+                          setFocusTarget(`payment-delete-${payment.id}`)
+                        }}
+                      />
+                    ) : undefined
+                  }
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        className="btn-link t-small"
+                        id={`payment-edit-${payment.id}`}
+                        onClick={() => {
+                          status.clear()
+                          setEditAlert(null)
+                          setEditingId(payment.id)
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-link t-small"
+                        id={`payment-delete-${payment.id}`}
+                        onClick={() => {
+                          status.clear()
+                          setPendingDelete(payment.id)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  }
+                />
+              </li>
+            ),
+          )}
         </ul>
       )}
-
-      <PaymentForm
-        subscriptionId={subscriptionId}
-        members={members}
-        editing={null}
-        onSaved={onChanged}
-        onSignedOut={onSignedOut}
-      />
     </section>
   )
 }

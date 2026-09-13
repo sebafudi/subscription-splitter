@@ -881,8 +881,7 @@ main section {
   margin-top: var(--s-6);
 }
 
-.section-open h2,
-.section-anchor {
+.section-open h2 {
   scroll-margin-top: var(--scroll-offset);
 }
 
@@ -916,6 +915,80 @@ main section {
 
 .settled-archived-toggle {
   margin-top: var(--s-3);
+}
+
+/* A subtitle that also carries a control is a layout row, not running text, so
+   it is not held to the 64ch measure. */
+.section-subtitle:has(.subtitle-line) {
+  max-width: none;
+}
+
+.subtitle-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.filter-label select {
+  height: 32px;
+}
+
+.section-refusal {
+  margin-top: var(--s-1);
+}
+
+/* Standing order month tiles. Each state is distinguishable with colour removed:
+   a solid border and a green rule, a dashed border, or a solid border and a red rule. */
+.tiles {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.tile {
+  width: 156px;
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+}
+
+.tile-month {
+  font-weight: 600;
+}
+
+.tile-counted {
+  border-left: 3px solid var(--green);
+}
+
+.tile-excluded {
+  border-style: dashed;
+}
+
+.tile-not-received {
+  border-left: 3px solid var(--red);
+}
+
+.tile-reason-red {
+  color: var(--red);
 }
 
 /* The participant form's active-month ranges */
@@ -1012,6 +1085,8 @@ main section {
 }
 
 .login form {
+  display: flex;
+  flex-direction: column;
   gap: var(--s-4);
   margin-top: var(--s-2);
 }
@@ -1081,6 +1156,20 @@ main section {
     width: max-content;
   }
 
+  .subtitle-line {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tile {
+    width: auto;
+  }
+
   .login {
     padding-inline: var(--s-4);
   }
@@ -1102,133 +1191,3 @@ main section {
   }
 }
 
-/* Transitional rules. These carry the screens phases 3 to 5 have not redesigned yet
-   and are deleted with the markup that needs them. */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-}
-
-.field-error {
-  color: var(--red);
-}
-
-.panel-form {
-  border-top: 1px solid var(--rule);
-  padding-top: var(--s-4);
-}
-
-.row-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-}
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--s-2);
-  border-bottom: 1px solid var(--rule);
-  padding-bottom: var(--s-3);
-}
-
-.row-main {
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-.row-detail {
-  font-size: var(--t-small-size);
-  color: var(--ink-soft);
-  margin: var(--s-1) 0 0;
-}
-
-.tag {
-  font-size: var(--t-small-size);
-  color: var(--ink-soft);
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-}
-
-.inline-confirm,
-.inline-edit {
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: var(--s-2) var(--s-3);
-  margin-top: var(--s-2);
-}
-
-.inline-confirm {
-  border-color: var(--red);
-}
-
-.inline-confirm p {
-  margin: 0 0 var(--s-2);
-}
-
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2);
-}
-
-.schedule {
-  align-items: flex-start;
-}
-
-.month-grid {
-  list-style: none;
-  padding: 0;
-  margin: var(--s-2) 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-}
-
-.month-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-1);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: var(--s-2);
-  flex: 1 1 12rem;
-  font-size: var(--t-small-size);
-  background: var(--paper);
-}
-
-.month-name {
-  font-weight: 600;
-}
-
-.month-chip.counted {
-  border-left: 3px solid var(--green);
-}
-
-.month-chip.not-counted {
-  border-style: dashed;
-}
-
-.month-state {
-  color: var(--ink-soft);
-}
-
-/* A button on a screen that has not been redesigned yet carries no variant class,
-   so it takes the quiet boundary until its phase replaces it. */
-button:not(.btn-primary):not(.btn-quiet):not(.btn-link):not(.btn-destructive):not(.appbar-mark):not(
-    .entry-button
-  ) {
-  border: 1px solid var(--border);
-}

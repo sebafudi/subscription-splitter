@@ -1339,6 +1339,17 @@ behaviour, in which the created subscription is appended to the list and the scr
 Everything else in that clause is implemented, so the panel closes, the heading row reads
 "Subscription created" and the new row takes the highlight.
 
+**D10, raised in phase 5. Design-spec 3.4 and 6: how a field pair sits when only one half has a hint.**
+Design-spec 3.4 stacks a field as label, optional hint, control. Design-spec 6 pairs "From + Date
+received" and "Amount + Kind" in the payment form, and in both pairs exactly one half carries a hint:
+the date hint and the amount hint from 3.4, against two selects that have none. The two-column grid
+of 3.7 aligns the tops of the two field boxes, so the hinted half's control sits one line lower than
+its partner's and the two controls in a pair do not share a baseline. Every other pair in section 6
+has a hint on both halves or on neither, so this is the only form affected. The specification does
+not say how unequal field boxes sit in one row, and both the current top alignment and a bottom
+alignment are appearances. No Progress row asserts it, so none is left unticked. Left in place for
+it: the grid's own alignment, which is what the rules design-spec 3.4 and 3.7 fix produce together.
+
 **D9, raised in phase 4. Design-spec 5.2: `[Replace]` on the price 409 has no route behind it.**
 Design-spec 5.2 turns the server's "a price already recorded for that month" 409 into a two-button
 pattern inside the panel, "question from the server, `[Replace]` (primary) and `[Keep the existing
@@ -1535,28 +1546,28 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [ ] 5.1 Typecheck passes across all three projects
-- [ ] 5.2 The whole suite passes with no test file changed
-- [ ] 5.3 The production build succeeds
-- [ ] 5.4 scheduleMonthStatuses is called exactly once in src/client and decides every tile state
-- [ ] 5.5 The exclusion map is still total over MonthExclusion with no two entries sharing a string
-- [ ] 5.6 The payment and schedule payload keys are unchanged
-- [ ] 5.7 The payments filter still reaches the server and nothing is filtered in the component
-- [ ] 5.18 No wire name can reach a rendered string anywhere under src/client
-- [ ] 5.19 The seven exclusion phrase values are byte-identical to main
+- [x] 5.1 Typecheck passes across all three projects
+- [x] 5.2 The whole suite passes with no test file changed
+- [x] 5.3 The production build succeeds
+- [x] 5.4 scheduleMonthStatuses is called exactly once in src/client and decides every tile state
+- [x] 5.5 The exclusion map is still total over MonthExclusion with no two entries sharing a string
+- [x] 5.6 The payment and schedule payload keys are unchanged
+- [x] 5.7 The payments filter still reaches the server and nothing is filtered in the component
+- [x] 5.18 No wire name can reach a rendered string anywhere under src/client
+- [x] 5.19 The seven exclusion phrase values are byte-identical to main
 
 #### Manual
 
-- [ ] 5.8 Skipped months matches design-spec 5.3 at 1280 in light and in dark
-- [ ] 5.9 Payments received keeps its subtitle, places the Show filter and shows recorded amounts
-- [ ] 5.10 Recording, editing and deleting a payment each confirm with their own status sentence
-- [ ] 5.11 Both no-participant refusals render as a focusable disabled button with its describedby sentence
-- [ ] 5.12 Standing order amounts carry the assumed treatment and never the recorded one
-- [ ] 5.13 One standing order shows all three tile states, each identifiable in greyscale
-- [ ] 5.14 Each dashed tile carries its own exclusion phrase with no prefix and no two conditions share one
-- [ ] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary
-- [ ] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss
-- [ ] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally
+- [x] 5.8 Skipped months matches design-spec 5.3 at 1280 in light and in dark
+- [x] 5.9 Payments received keeps its subtitle, places the Show filter and shows recorded amounts
+- [x] 5.10 Recording, editing and deleting a payment each confirm with their own status sentence
+- [x] 5.11 Both no-participant refusals render as a focusable disabled button with its describedby sentence
+- [x] 5.12 Standing order amounts carry the assumed treatment and never the recorded one
+- [x] 5.13 One standing order shows all three tile states, each identifiable in greyscale
+- [x] 5.14 Each dashed tile carries its own exclusion phrase with no prefix and no two conditions share one
+- [x] 5.15 Toggling one month changes only that month and leaves the assumed total matching the summary
+- [x] 5.16 A failed unskip and a failed tile toggle each render in their own section alert and clear on Dismiss
+- [x] 5.17 At 390 the tiles use the two-column grid and the page does not scroll horizontally
 
 ### Phase 6: The responsive, accessibility and acceptance pass
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatMoney } from '../../domain/money'
 import type { MemberMonthInputs, MonthExclusion } from '../../domain/month-status'
 import { scheduleMonthStatuses } from '../../domain/recurring'
@@ -12,8 +12,22 @@ import {
   type MonthStr,
   type Schedule,
 } from '../api'
+import { formatMonth } from '../format'
 import { ScheduleForm } from './ScheduleForm'
 import { STANDING_ORDERS } from './sections'
+import { ConfirmStrip } from './ui/ConfirmStrip'
+import { DisclosurePanel } from './ui/DisclosurePanel'
+import { CONNECTION_FAILURE } from './ui/FormAlert'
+import { LedgerEntry } from './ui/LedgerEntry'
+import { Money } from './ui/Money'
+import { SectionAlert } from './ui/SectionAlert'
+import { SectionHeader } from './ui/SectionHeader'
+import { StatusLine } from './ui/StatusLine'
+import { useSectionStatus } from './ui/useSectionStatus'
+
+const ADD_PANEL_ID = 'schedule-add-panel'
+const ADD_BUTTON_ID = 'schedule-add-button'
+const REFUSAL_ID = 'schedule-refusal'
 
 type Props = {
   subscriptionId: string
@@ -39,6 +53,10 @@ type Props = {
  * up only when there is one. Defaulting a missing reason to a named condition
  * would turn an absence into a specific claim about the organizer's own
  * action.
+ *
+ * The tile that shows a phrase is already dashed, which is what the old
+ * "not counted, " prefix said in words, so the prefix is simply not reproduced.
+ * The phrases themselves are untouched.
  */
 const REASON_PHRASE: Record<MonthExclusion, string> = {
   'break-month': 'the plan was paused that month',
@@ -61,45 +79,171 @@ export function RecurringSection({
   onChanged,
   onSignedOut,
 }: Props) {
-  const [editing, setEditing] = useState<Schedule | null>(null)
+  const [sectionError, setSectionError] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addAlert, setAddAlert] = useState<string | null>(null)
+  const [addKey, setAddKey] = useState(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editAlert, setEditAlert] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [focusTarget, setFocusTarget] = useState<string | null>(null)
+  const status = useSectionStatus()
 
+  useEffect(() => {
+    if (!focusTarget) return
+    document.getElementById(focusTarget)?.focus()
+    setFocusTarget(null)
+  }, [focusTarget])
+
+  const participants = members.filter((member) => !member.isOwner)
   const money = (minor: number) => formatMoney(minor, locale, currency)
 
-  async function run(action: () => Promise<unknown>) {
-    setError(null)
+  function closeAdd() {
+    setAddOpen(false)
+    setAddAlert(null)
+    setAddKey((key) => key + 1)
+    setFocusTarget(ADD_BUTTON_ID)
+  }
+
+  function closeEdit(scheduleId: string) {
+    setEditingId(null)
+    setEditAlert(null)
+    setFocusTarget(`schedule-edit-${scheduleId}`)
+  }
+
+  /** A tile toggle happens outside every panel, so its refusal belongs to the section alert. */
+  async function toggleMonth(action: () => Promise<unknown>, confirmation: string, scheduleId: string) {
     try {
       await action()
+      setSectionError(null)
+      status.confirm(confirmation, scheduleId)
       onChanged()
     } catch (err) {
-      if (err instanceof SignedOutError) return onSignedOut()
-      setError(err instanceof ApiError ? err.message : 'That did not work.')
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
+      setSectionError(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
+    }
+  }
+
+  async function confirmDelete(schedule: Schedule) {
+    setPendingDelete(null)
+    try {
+      await deleteSchedule(subscriptionId, schedule.id)
+      setSectionError(null)
+      setFocusTarget(STANDING_ORDERS.id)
+      status.confirm('Standing order deleted', null)
+      onChanged()
+    } catch (err) {
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
+      setSectionError(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
+      setFocusTarget(`schedule-delete-${schedule.id}`)
     }
   }
 
   return (
-    <section>
-      <h3 id={STANDING_ORDERS.id} className="section-anchor">
-        {STANDING_ORDERS.title}
-      </h3>
-      <p className="row-detail">
-        Money assumed received each month, without further entry. Nothing here is a recorded receipt.
-      </p>
+    <section aria-labelledby={STANDING_ORDERS.id}>
+      <SectionHeader
+        id={STANDING_ORDERS.id}
+        title={STANDING_ORDERS.title}
+        count={schedules.length}
+        subtitle={STANDING_ORDERS.subtitle}
+        status={<StatusLine message={status.message} />}
+        action={
+          !addOpen && (
+            <button
+              type="button"
+              className="btn-primary"
+              id={ADD_BUTTON_ID}
+              aria-expanded={addOpen}
+              aria-controls={ADD_PANEL_ID}
+              aria-disabled={participants.length === 0 || undefined}
+              aria-describedby={participants.length === 0 ? REFUSAL_ID : undefined}
+              onClick={() => {
+                if (participants.length === 0) return
+                status.clear()
+                setAddOpen(true)
+              }}
+            >
+              {STANDING_ORDERS.action}
+            </button>
+          )
+        }
+      >
+        {participants.length === 0 && (
+          <p id={REFUSAL_ID} className="section-refusal t-small soft">
+            Add a participant before adding a standing order.
+          </p>
+        )}
+        <SectionAlert message={sectionError} onDismiss={() => setSectionError(null)} />
+      </SectionHeader>
 
-      {error && (
-        <p role="alert" className="field-error">
-          {error}
-        </p>
-      )}
+      <DisclosurePanel
+        id={ADD_PANEL_ID}
+        open={addOpen}
+        title="Add a standing order"
+        onCancel={closeAdd}
+        invalid={addAlert !== null}
+      >
+        <ScheduleForm
+          key={addKey}
+          subscriptionId={subscriptionId}
+          members={members}
+          editing={null}
+          alert={addAlert}
+          onAlert={setAddAlert}
+          onSaved={(saved) => {
+            closeAdd()
+            setSectionError(null)
+            status.confirm('Standing order added', saved.id)
+            onChanged()
+          }}
+          onCancel={closeAdd}
+          onSignedOut={onSignedOut}
+        />
+      </DisclosurePanel>
 
       {schedules.length === 0 ? (
-        <p>No standing orders yet.</p>
+        <p className="section-empty t-body soft">No standing orders yet.</p>
       ) : (
-        <ul className="row-list">
+        <ul className="entry-list">
           {schedules.map((schedule) => {
             const member = members.find((candidate) => candidate.id === schedule.memberId)
             if (!member) return null
+
+            if (editingId === schedule.id) {
+              return (
+                <li key={schedule.id}>
+                  <DisclosurePanel
+                    id={`schedule-edit-panel-${schedule.id}`}
+                    open
+                    title="Edit standing order"
+                    onCancel={() => closeEdit(schedule.id)}
+                    invalid={editAlert !== null}
+                  >
+                    <ScheduleForm
+                      subscriptionId={subscriptionId}
+                      members={members}
+                      editing={schedule}
+                      alert={editAlert}
+                      onAlert={setEditAlert}
+                      onSaved={(saved) => {
+                        closeEdit(saved.id)
+                        setSectionError(null)
+                        status.confirm('Changes saved', saved.id)
+                        onChanged()
+                      }}
+                      onCancel={() => closeEdit(schedule.id)}
+                      onSignedOut={onSignedOut}
+                    />
+                  </DisclosurePanel>
+                </li>
+              )
+            }
 
             // The one call that decides how every month below is drawn. The
             // screen applies none of the six conditions itself, so a month the
@@ -115,47 +259,105 @@ export function RecurringSection({
             const assumedTotal = countedMonths.length * schedule.amount
 
             return (
-              <li key={schedule.id} className="row schedule">
-                <div className="row-main">
-                  <strong>
-                    {money(schedule.amount)} a month from {member.name}
-                  </strong>
-                  <div className="row-detail">
-                    from {schedule.startMonth}
-                    {schedule.endMonth ? ` until ${schedule.endMonth}` : ', still running'}
-                  </div>
-                  <div className="row-detail">
-                    <strong>{money(assumedTotal)}</strong> assumed received so far, over{' '}
-                    {countedMonths.length} of {statuses.length} elapsed month(s).
-                  </div>
-
+              <li key={schedule.id}>
+                <LedgerEntry
+                  highlighted={status.highlightedId === schedule.id}
+                  primary={
+                    <>
+                      <Money value={money(schedule.amount)} treatment="assumed" /> a month from {member.name}
+                    </>
+                  }
+                  figure={
+                    <span className="t-small soft">
+                      {schedule.endMonth
+                        ? `until ${formatMonth(schedule.endMonth, locale)}`
+                        : `from ${formatMonth(schedule.startMonth, locale)}, still running`}
+                    </span>
+                  }
+                  secondary={
+                    <>
+                      <Money value={money(assumedTotal)} treatment="assumed" /> assumed received so far, over{' '}
+                      {countedMonths.length} of {statuses.length} elapsed months
+                    </>
+                  }
+                  confirm={
+                    pendingDelete === schedule.id ? (
+                      <ConfirmStrip
+                        question={`Delete ${member.name}'s standing order? Its assumed receipts and not-received marks go with it. Recorded payments stay.`}
+                        onConfirm={() => void confirmDelete(schedule)}
+                        onKeep={() => {
+                          setPendingDelete(null)
+                          setFocusTarget(`schedule-delete-${schedule.id}`)
+                        }}
+                      />
+                    ) : undefined
+                  }
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        className="btn-link t-small"
+                        id={`schedule-edit-${schedule.id}`}
+                        onClick={() => {
+                          status.clear()
+                          setEditAlert(null)
+                          setEditingId(schedule.id)
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-link t-small"
+                        id={`schedule-delete-${schedule.id}`}
+                        onClick={() => {
+                          status.clear()
+                          setPendingDelete(schedule.id)
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  }
+                >
                   {statuses.length > 0 && (
-                    <ul className="month-grid">
-                      {statuses.map((status) => {
-                        const togglable = status.counts || status.reason === 'excepted'
+                    <ul className="tiles">
+                      {statuses.map((monthStatus) => {
+                        const notReceived = !monthStatus.counts && monthStatus.reason === 'excepted'
+                        const tileClass = monthStatus.counts
+                          ? 'tile tile-counted'
+                          : notReceived
+                            ? 'tile tile-not-received'
+                            : 'tile tile-excluded'
                         return (
-                          <li
-                            key={status.month}
-                            className={status.counts ? 'month-chip counted' : 'month-chip not-counted'}
-                          >
-                            <span className="month-name">{status.month}</span>
-                            <span className="month-state">
-                              {status.counts
-                                ? `${money(schedule.amount)} assumed received`
-                                : `not counted${status.reason ? `, ${REASON_PHRASE[status.reason]}` : ''}`}
-                            </span>
-                            {togglable && (
+                          <li key={monthStatus.month} className={tileClass}>
+                            <span className="tile-month t-small">{formatMonth(monthStatus.month, locale)}</span>
+                            {monthStatus.counts && (
+                              <span className="t-small tnum">
+                                <Money value={money(schedule.amount)} treatment="assumed" /> assumed received
+                              </span>
+                            )}
+                            {!monthStatus.counts && monthStatus.reason && (
+                              <span className={notReceived ? 't-small tile-reason-red' : 't-small soft'}>
+                                {REASON_PHRASE[monthStatus.reason]}
+                              </span>
+                            )}
+                            {(monthStatus.counts || notReceived) && (
                               <button
                                 type="button"
+                                className="btn-link t-small"
                                 onClick={() =>
-                                  run(() =>
-                                    status.counts
-                                      ? markMonthNotReceived(subscriptionId, schedule.id, status.month)
-                                      : clearMonthNotReceived(subscriptionId, schedule.id, status.month),
+                                  void toggleMonth(
+                                    () =>
+                                      monthStatus.counts
+                                        ? markMonthNotReceived(subscriptionId, schedule.id, monthStatus.month)
+                                        : clearMonthNotReceived(subscriptionId, schedule.id, monthStatus.month),
+                                    monthStatus.counts ? 'Marked not received' : 'Marked received',
+                                    schedule.id,
                                   )
                                 }
                               >
-                                {status.counts ? 'Mark not received' : 'Mark received'}
+                                {monthStatus.counts ? 'Mark not received' : 'Mark received'}
                               </button>
                             )}
                           </li>
@@ -163,71 +365,12 @@ export function RecurringSection({
                       })}
                     </ul>
                   )}
-
-                  {pendingDelete === schedule.id && (
-                    <div role="alert" className="inline-confirm">
-                      <p>
-                        Delete this standing order for {member.name}? Their assumed receipts of{' '}
-                        {money(assumedTotal)} go with it, and so do the months marked as not received.
-                      </p>
-                      <div className="button-row">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            run(async () => {
-                              await deleteSchedule(subscriptionId, schedule.id)
-                              setPendingDelete(null)
-                            })
-                          }
-                        >
-                          Delete it
-                        </button>
-                        <button type="button" onClick={() => setPendingDelete(null)}>
-                          Keep it
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {editing?.id === schedule.id && (
-                    <ScheduleForm
-                      subscriptionId={subscriptionId}
-                      members={members}
-                      editing={schedule}
-                      onSaved={() => {
-                        setEditing(null)
-                        onChanged()
-                      }}
-                      onCancelEdit={() => setEditing(null)}
-                      onSignedOut={onSignedOut}
-                    />
-                  )}
-                </div>
-
-                <div className="button-row">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(editing?.id === schedule.id ? null : schedule)}
-                  >
-                    {editing?.id === schedule.id ? 'Close' : 'Edit'}
-                  </button>
-                  <button type="button" onClick={() => setPendingDelete(schedule.id)}>
-                    Delete
-                  </button>
-                </div>
+                </LedgerEntry>
               </li>
             )
           })}
         </ul>
       )}
-
-      <ScheduleForm
-        subscriptionId={subscriptionId}
-        members={members}
-        editing={null}
-        onSaved={onChanged}
-        onSignedOut={onSignedOut}
-      />
     </section>
   )
 }

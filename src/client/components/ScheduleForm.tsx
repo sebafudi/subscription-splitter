@@ -1,19 +1,18 @@
-import { useState } from 'react'
-import {
-  ApiError,
-  SignedOutError,
-  createSchedule,
-  updateSchedule,
-  type Member,
-  type Schedule,
-} from '../api'
+import { useEffect, useRef, useState } from 'react'
+import { ApiError, SignedOutError, createSchedule, updateSchedule, type Member, type Schedule } from '../api'
+import { Field } from './ui/Field'
+import { labelFor, messageWithLabel, scheduleFieldLabels } from './ui/fieldLabels'
+import { CONNECTION_FAILURE, FormAlert } from './ui/FormAlert'
 
 type Props = {
   subscriptionId: string
   members: Member[]
   editing: Schedule | null
-  onSaved: () => void
-  onCancelEdit?: () => void
+  /** The panel's own error line, owned by the section so the panel can take its red left rule. */
+  alert: string | null
+  onAlert: (message: string | null) => void
+  onSaved: (schedule: Schedule) => void
+  onCancel: () => void
   onSignedOut: () => void
 }
 
@@ -25,7 +24,16 @@ function toMajor(minor: number): string {
   return (minor / 100).toFixed(2)
 }
 
-export function ScheduleForm({ subscriptionId, members, editing, onSaved, onCancelEdit, onSignedOut }: Props) {
+export function ScheduleForm({
+  subscriptionId,
+  members,
+  editing,
+  alert,
+  onAlert,
+  onSaved,
+  onCancel,
+  onSignedOut,
+}: Props) {
   const participants = members.filter((member) => !member.isOwner)
   const [memberId, setMemberId] = useState(editing?.memberId ?? '')
 
@@ -40,18 +48,40 @@ export function ScheduleForm({ subscriptionId, members, editing, onSaved, onCanc
   const [amount, setAmount] = useState(editing ? toMajor(editing.amount) : '')
   const [startMonth, setStartMonth] = useState(editing?.startMonth ?? '')
   const [endMonth, setEndMonth] = useState(editing?.endMonth ?? '')
-  const [error, setError] = useState<{ field?: string; message: string } | null>(null)
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [refusals, setRefusals] = useState(0)
+  const form = useRef<HTMLFormElement>(null)
+  const alertLine = useRef<HTMLParagraphElement>(null)
 
-  const idPrefix = editing ? `edit_schedule_${editing.id}` : 'new_schedule'
+  const prefix = editing ? `schedule_${editing.id}` : 'schedule_new'
+
+  useEffect(() => {
+    if (refusals === 0) return
+    const invalid = form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
+    ;(invalid ?? alertLine.current)?.focus()
+  }, [refusals])
+
+  function errorFor(wireName: string): string | undefined {
+    return fieldError?.field === wireName ? fieldError.message : undefined
+  }
+
+  function refuse(field: string | undefined, message: string) {
+    const named = field && labelFor(scheduleFieldLabels, field) ? field : undefined
+    setFieldError(named ? { field: named, message: messageWithLabel(scheduleFieldLabels, named, message) } : null)
+    onAlert(named ? null : message)
+    setRefusals((count) => count + 1)
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
-    setError(null)
+    if (saving) return
+    setFieldError(null)
+    onAlert(null)
 
     const minor = toMinor(amount)
     if (!Number.isFinite(minor)) {
-      setError({ field: 'amount', message: 'Enter an amount such as 10.00' })
+      refuse('amount', 'Enter an amount such as 10.00')
       return
     }
 
@@ -65,104 +95,126 @@ export function ScheduleForm({ subscriptionId, members, editing, onSaved, onCanc
         start_month: startMonth.trim(),
         end_month: endMonth.trim() === '' ? null : endMonth.trim(),
       }
-      if (editing) {
-        await updateSchedule(subscriptionId, editing.id, body)
-      } else {
-        await createSchedule(subscriptionId, body)
-        setAmount('')
-        setStartMonth('')
-        setEndMonth('')
-      }
-      onSaved()
+      const saved = editing
+        ? await updateSchedule(subscriptionId, editing.id, body)
+        : await createSchedule(subscriptionId, body)
+      onSaved(saved)
     } catch (err) {
-      if (err instanceof SignedOutError) return onSignedOut()
-      setError(
-        err instanceof ApiError
-          ? { field: err.field, message: err.message }
-          : { message: 'Could not save that standing order.' },
-      )
+      if (err instanceof SignedOutError) {
+        onSignedOut()
+        return
+      }
+      if (err instanceof ApiError) {
+        refuse(err.field, err.message)
+      } else {
+        refuse(undefined, CONNECTION_FAILURE)
+      }
     } finally {
       setSaving(false)
     }
   }
 
-  if (participants.length === 0) {
-    return <p>Add a participant before recording a standing order.</p>
-  }
-
   return (
-    <form onSubmit={handleSubmit} noValidate className={editing ? 'inline-edit' : 'panel-form'}>
-      <label htmlFor={`${idPrefix}_member`}>From</label>
-      <select id={`${idPrefix}_member`} value={selectedMemberId} onChange={(event) => setMemberId(event.target.value)}>
-        {participants.map((member) => (
-          <option key={member.id} value={member.id}>
-            {member.name}
-          </option>
-        ))}
-      </select>
-      {error?.field === 'member_id' && (
-        <p role="alert" className="field-error">
-          {error.message}
-        </p>
-      )}
+    <form
+      ref={form}
+      onSubmit={handleSubmit}
+      noValidate
+      className="panel-grid"
+      aria-busy={saving || undefined}
+    >
+      <FormAlert message={alert} ref={alertLine} />
 
-      <label htmlFor={`${idPrefix}_amount`}>Amount each month</label>
-      <input
-        id={`${idPrefix}_amount`}
-        required
-        inputMode="decimal"
-        placeholder="10.00"
-        value={amount}
-        onChange={(event) => setAmount(event.target.value)}
-      />
-      {error?.field === 'amount' && (
-        <p role="alert" className="field-error">
-          {error.message}
-        </p>
-      )}
-
-      <label htmlFor={`${idPrefix}_start`}>First month (YYYY-MM)</label>
-      <input
-        id={`${idPrefix}_start`}
-        required
-        placeholder="2026-01"
-        value={startMonth}
-        onChange={(event) => setStartMonth(event.target.value)}
-      />
-      {error?.field === 'start_month' && (
-        <p role="alert" className="field-error">
-          {error.message}
-        </p>
-      )}
-
-      <label htmlFor={`${idPrefix}_end`}>Last month (optional, leave empty while it is still running)</label>
-      <input
-        id={`${idPrefix}_end`}
-        placeholder="2026-12"
-        value={endMonth}
-        onChange={(event) => setEndMonth(event.target.value)}
-      />
-      {error?.field === 'end_month' && (
-        <p role="alert" className="field-error">
-          {error.message}
-        </p>
-      )}
-
-      {error && !error.field && (
-        <p role="alert" className="field-error">
-          {error.message}
-        </p>
-      )}
-
-      <div className="button-row">
-        <button type="submit" disabled={saving}>
-          {editing ? 'Save this standing order' : 'Record this standing order'}
-        </button>
-        {editing && onCancelEdit && (
-          <button type="button" onClick={onCancelEdit}>
-            Cancel
-          </button>
+      <Field id={`${prefix}_member`} label="From" error={errorFor('member_id')}>
+        {(control) => (
+          <select
+            {...control}
+            disabled={saving}
+            value={selectedMemberId}
+            onChange={(event) => setMemberId(event.target.value)}
+          >
+            {participants.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
         )}
+      </Field>
+
+      <Field
+        id={`${prefix}_amount`}
+        label="Amount each month"
+        hint="Amount, like 100.00"
+        span={false}
+        error={errorFor('amount')}
+      >
+        {(control) => (
+          <input
+            {...control}
+            required
+            inputMode="decimal"
+            placeholder="10.00"
+            disabled={saving}
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        )}
+      </Field>
+
+      <Field
+        id={`${prefix}_start`}
+        label="First month"
+        hint="Month as YYYY-MM, like 2026-01"
+        span={false}
+        error={errorFor('start_month')}
+      >
+        {(control) => (
+          <input
+            {...control}
+            required
+            inputMode="numeric"
+            pattern="\d{4}-\d{2}"
+            autoComplete="off"
+            placeholder="2026-01"
+            disabled={saving}
+            value={startMonth}
+            onChange={(event) => setStartMonth(event.target.value)}
+          />
+        )}
+      </Field>
+
+      <Field
+        id={`${prefix}_end`}
+        label="Last month"
+        hint="Leave empty while it is still running"
+        error={errorFor('end_month')}
+      >
+        {(control) => (
+          <input
+            {...control}
+            inputMode="numeric"
+            pattern="\d{4}-\d{2}"
+            autoComplete="off"
+            placeholder="2026-12"
+            disabled={saving}
+            value={endMonth}
+            onChange={(event) => setEndMonth(event.target.value)}
+          />
+        )}
+      </Field>
+
+      <div className="panel-actions">
+        <button
+          type="submit"
+          className="btn-primary"
+          aria-busy={saving || undefined}
+          aria-disabled={saving || undefined}
+        >
+          {editing ? 'Save changes' : 'Record this standing order'}
+        </button>
+        <button type="button" className="btn-quiet" onClick={onCancel}>
+          Cancel
+        </button>
       </div>
     </form>
   )

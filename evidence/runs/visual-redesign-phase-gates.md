@@ -170,3 +170,49 @@ Three observations for the designer, none of them a design question:
   participant it reads "Show 1 settled archived participants".
 - Months render through the subscription's `locale` throughout, so the seeded `pl-PL` subscriptions
   read "from lip 2026" and "wrz 2026 costs 120,00 zł" rather than the English months the mockup shows.
+
+## Phase 5: skipped months, payments received and standing orders
+
+| Capture | What it shows |
+| --- | --- |
+| `phase-5-skipped-and-payments-light-desktop.png` | Skipped months with its subtitle and a month through the formatter beside a link-variant Unskip, then Payments received with the Show filter at the right end of the subtitle line and each entry carrying the kind label as its secondary line and the date in the figure column |
+| `phase-5-tiles-light-desktop.png` | Standing orders at 1280 in light: the monthly amount and the assumed total both in the assumed treatment, with the month tiles under each entry |
+| `phase-5-tiles-three-states-light-desktop.png` | one standing order showing counted, excluded by rule and marked not received at once |
+| `phase-5-tiles-greyscale-light-desktop.png` | the same three states with the page rendered in greyscale, each still identifiable from its border, its rule and its words |
+| `phase-5-tiles-dark-desktop.png` | the section in dark |
+| `phase-5-payment-add-light-desktop.png` | the Record a payment panel with its two declared pairs and the Note field spanning |
+| `phase-5-refusals-light-desktop.png` | a subscription with no participant: both refusals as a disabled but focusable primary with its sentence under the heading, and all five empty sentences |
+| `phase-5-tiles-light-mobile.png` | the tiles at 390 in the two-column grid at full width, with no page-level horizontal scroll |
+
+Measured during the same session rather than captured:
+
+- Recording, editing and deleting a payment each produced their own sentence, "Payment recorded",
+  "Changes saved" and "Payment deleted", the new row took the highlight, the edit opened in place, and
+  focus went back to the opening control each time and to the section's `h2` after the delete.
+- The delete strip asked "Delete the 13,50 zl payment from Alice?" with focus on Keep.
+- Both refusals carry `aria-disabled="true"` without the `disabled` attribute, so the button stays
+  focusable, and each names its own sentence through `aria-describedby`. Clicking the refused button
+  opened nothing.
+- Marking one month not received and then received again moved only that standing order: the entry
+  read 55,00 then 110,00 assumed received over 1 then 2 of 3 elapsed months, and the participant's
+  Paid cell in the summary moved by exactly the same 55,00 in both directions. The other standing
+  order did not move.
+- A failed unskip and a failed tile toggle each landed in their own section's alert, left the row and
+  the tile exactly as they were, raised no alert in any other section, and cleared on Dismiss.
+- `scheduleMonthStatuses` is called once in `src/client`, the seven exclusion phrases are byte
+  identical to `main`, and no tile reproduces the old "not counted, " prefix.
+- The three tile states were compared in greyscale: dashed border with a phrase and no toggle;
+  solid border with a left rule, "marked as not received" and Mark received; solid border with a left
+  rule, the assumed figure and Mark not received.
+- At 390 the tiles compute a two-column grid at full tile width, the filter sits under the subtitle,
+  and the page does not scroll horizontally.
+- No console error or warning was logged during the whole phase 5 session.
+
+The captures were taken against the two seeded subscriptions. Two throwaway subscriptions and one
+throwaway payment were created to reach the no-participant refusals and the payment flows, and one
+standing order's first month was moved to bring all three tile states into a single entry; every one
+of them was reverted, so the local database holds exactly the synthetic fixtures it started with.
+
+One observation for the designer, recorded as design question D10 in the plan rather than resolved
+here: in the payment form's two pairs exactly one half carries a hint, so the two controls in a pair
+do not share a baseline.
