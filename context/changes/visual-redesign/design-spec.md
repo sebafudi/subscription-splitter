@@ -273,7 +273,13 @@ the field marked invalid per 3.4 and the message element referenced by `aria-des
 prefix the message with the wire name. Map wire names to labels in the client with a display map
 per form (for example `effective_from` to "Effective from", `start_month` to "First month",
 `member_id` to "From", `joined_month` to "From", `left_month` to "To"); a wire name with no mapping
-is shown as the generic form error below, never raw.
+is shown as the generic form error below, never raw. The sentence itself stays the server's: the
+server is out of scope and its messages begin with the wire name ("start_month must be in YYYY-MM
+format with a valid month"). The client applies one mechanical transform before display: when the
+message starts with that field's wire name followed by a space, replace that leading token with the
+field's display label ("Start month must be in YYYY-MM format with a valid month"); otherwise show
+the message verbatim. No other rewriting; no per-rule copy in the client. A wire name that survives
+inside a server sentence after this transform is acceptable and is not a defect.
 
 A generic or server error for the whole form is a line at the top of the panel at `--t-body` colour
 `--red`, `role="alert"`, with the panel getting a 3px left rule `--red`. Copy states what happened
@@ -400,8 +406,10 @@ Payments walkthrough                               PLN, from Jul 2026
 - Load error: alert line per 3.8 with a `[Try again]` quiet button.
 - New subscription form fields: Name (span), Currency and Locale (pair), Time zone (span), Start
   month (span, month hint), Your name on this plan (span, hint "How you appear in the participant
-  list"). Primary "Create subscription". Success: status line "Subscription created" in the Home
-  heading row, then the detail screen opens.
+  list"). Primary "Create subscription". Success: the panel closes, the status line "Subscription
+  created" shows in the Home heading row, the new row appears in the list with the entry highlight,
+  and the screen stays on Home. The new row is itself the button that opens the detail; nothing
+  navigates automatically.
 
 ### 4.4 Subscription detail
 
@@ -719,6 +727,11 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 | 7 standing-order question | 3.10: consequence clause added |
 | 8 payments count under filter | 5.4: N is the rows listed under the current filter |
 | 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
+
+Implementation round, after Phase 3 (plan D7 and D8): 4.3 now keeps the screen on Home after a
+create, with the status line and highlight visible and the new row as the way in; 3.8 now defines
+the leading wire-name token replacement for server field messages. Rows 3.11 and 3.12 and the
+equivalent rows in phases 4 and 5 are to be judged against these texts.
 
 Implementation round, after Phases 1 and 2: the link variant is fixed at 24px at every width and
 exempt from the 44px mobile rule (3.3, 8); the month and date formatters pass `timeZone: "UTC"`
