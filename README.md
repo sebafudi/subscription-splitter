@@ -93,6 +93,9 @@ and is provisioned once, the first time this repository is deployed.
 remote D1 database `subscription-splitter-db`, which shares no data with the local database
 `npm run dev` uses: a record created locally never appears there, and the reverse. That database is
 seeded once, by the one-time seeding procedure below, and seeding is switched off again afterwards.
+Reviewer account credentials are delivered out of band through the submission form and are not stored
+in this repository; see decision D-010 in `context/decisions/D-010-live-demo-data-and-reviewer-access.md`
+for how access is granted.
 
 The seed route creates accounts and nothing else. It cannot produce a subscription, a participant, a
 price or a payment, so demo data on the live instance is created the same way any other data is,
