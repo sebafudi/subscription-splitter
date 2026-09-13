@@ -103,6 +103,32 @@ export async function signIn(email: string, password: string): Promise<void> {
   })
 }
 
+/**
+ * Whether this deployment carries Google credentials. A failed read is treated as
+ * not configured, so the login screen still paints rather than being thrown away.
+ */
+export async function getAuthConfig(): Promise<{ google: boolean }> {
+  try {
+    return await request<{ google: boolean }>('/api/auth-config')
+  } catch {
+    return { google: false }
+  }
+}
+
+/**
+ * Answers 200 with the authorize url as JSON while also setting a `Location`
+ * header, so the caller navigates itself. `errorCallbackURL` is what makes a
+ * failure two hops later land on this app's login screen rather than on the
+ * library's own error page, so it goes on every call.
+ */
+export async function startGoogleSignIn(): Promise<{ url: string }> {
+  const appRoot = `${window.location.origin}/`
+  return request<{ url: string }>('/api/auth/sign-in/social', {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'google', callbackURL: appRoot, errorCallbackURL: appRoot }),
+  })
+}
+
 export async function signOut(): Promise<void> {
   // A body-less POST still carries a (possibly empty) body stream once it
   // reaches the router, which then requires a JSON content-type; sending an

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getMe, signOut, type SessionUser, type Subscription } from './api'
+import { getAuthConfig, getMe, signOut, type SessionUser, type Subscription } from './api'
 import { AppBar } from './components/AppBar'
 import { Login } from './screens/Login'
 import { Home } from './screens/Home'
@@ -11,9 +11,15 @@ export function App() {
   // behind a router. Holding the object, not the id, means the detail screen
   // has the name and the first month to show before the summary arrives.
   const [selected, setSelected] = useState<Subscription | null>(null)
+  // Read once beside the session and held here, so a later sign-out repaints the
+  // login screen with its final action row rather than asking again.
+  const [googleEnabled, setGoogleEnabled] = useState(false)
 
   useEffect(() => {
-    getMe().then(setUser)
+    Promise.all([getMe(), getAuthConfig()]).then(([me, config]) => {
+      setGoogleEnabled(config.google)
+      setUser(me)
+    })
   }, [])
 
   if (user === 'loading') {
@@ -31,7 +37,7 @@ export function App() {
   }
 
   if (!user) {
-    return <Login onSignedIn={() => getMe().then(setUser)} />
+    return <Login googleEnabled={googleEnabled} onSignedIn={() => getMe().then(setUser)} />
   }
 
   function signedOut() {
