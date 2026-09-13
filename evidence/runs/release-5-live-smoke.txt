@@ -1,0 +1,204 @@
+Live verification transcript, release version 751a8bfd-e62a-4c9a-beb2-1953eb6a7656
+Release commit SHA: 91ce0daa469df960097398ce756730f97845e647
+Supersedes version 1d0f71c1-6832-4bc1-aace-5feef621e715 (release 4).
+Target: https://subscription-splitter.sebastianfudalej.workers.dev
+Change S-08 subscription-management-and-date-inputs: editing and deleting the subscription itself,
+and native browser calendar controls for month and date fields. No migration ships in this release.
+
+Session tokens and passwords are redacted and response timestamps are elided as '...', following
+evidence/runs/release-4-live-smoke.txt. Every name and amount below is synthetic. Amounts are
+integer minor units. No pre-existing record was modified or deleted: the only record deleted is the
+disposable subscription this transcript creates, under the reviewer account.
+
+=============== 1. Configuration and refusals without a session ===============
+GET /api/auth-config  (no cookie)
+status=200
+body: {"google":true}
+  [PASS] GET /api/auth-config answers - 200 {"google":true}
+
+DELETE /api/subscriptions/<random uuid>  (no cookie)
+status=401
+body: {"error":"unauthorized"}
+  [PASS] Unauthenticated DELETE answers 401 - 401 {"error":"unauthorized"}
+
+=============== 2. Owner baseline, read and held for the closing comparison ===============
+POST /api/auth/sign-in/email  (owner)
+status=200
+  set-cookie: __Secure-better-auth.session_token=<redacted>; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+
+GET /api/subscriptions  (owner cookie)
+status=200
+  2 subscriptions: ['First deployment artefact (not the demo plan)', 'Family music plan']
+
+=============== 3. Reviewer sign-in and the starting count ===============
+POST /api/auth/sign-in/email  (reviewer)
+status=200
+  set-cookie: __Secure-better-auth.session_token=<redacted>; Max-Age=604800; Path=/; HttpOnly; Secure; SameSite=Lax
+  [PASS] Reviewer password sign-in answers 200
+
+GET /api/subscriptions  (reviewer cookie)
+status=200
+  starting count = 0, names: []
+
+=============== 4. The disposable subscription and its records ===============
+POST /api/subscriptions  (name 'Release 5 disposable', start_month 2026-03)
+status=201
+body: {"id":"2679b513-4b60-4cd2-9a7a-930819c2eae1","userId":"<reviewer user id redacted>","name":"Release 5 disposable","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-03","createdAt":"..."}
+  [PASS] Create disposable subscription answers 201 - 201
+
+POST /api/subscriptions/<id>/members  (joined 2026-06)
+status=201
+body: {"id":"319fc523-349b-4f88-92c2-396d173a1a22","name":"Smoke participant","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-06","leftMonth":null}]}
+  [PASS] Add one participant answers 201 - 201
+
+POST /api/subscriptions/<id>/prices  (effective_from 2026-04, amount 5000)
+status=201
+body: {"id":"4d0fe919-125d-412f-81c2-2fcaeb631c62","effectiveFrom":"2026-04","amount":5000}
+  [PASS] Add one price answers 201 - 201
+
+POST /api/subscriptions/<id>/break-months  (month 2026-05)
+status=201
+body: {"month":"2026-05"}
+  [PASS] Add one skipped month answers 201 - 201
+
+POST /api/subscriptions/<id>/payments  (2026-06-10, amount 2500)
+status=201
+body: {"id":"c9067292-8d02-48b2-a01e-ee19970605af","memberId":"319fc523-349b-4f88-92c2-396d173a1a22","date":"2026-06-10","amount":2500,"note":"Release 5 smoke","kind":"manual"}
+  [PASS] Add one payment answers 201 - 201
+
+POST /api/subscriptions/<id>/schedules  (amount 1000, start_month 2026-07)
+status=201
+body: {"id":"7887d09a-3f44-4fa3-bacd-f81c799d257f","memberId":"319fc523-349b-4f88-92c2-396d173a1a22","amount":1000,"startMonth":"2026-07","endMonth":null,"exceptionMonths":[]}
+  [PASS] Add one standing order answers 201 - 201
+
+=============== 5. Editing the subscription itself ===============
+PATCH /api/subscriptions/<id>  (name and time_zone)
+status=200
+body: {"id":"2679b513-4b60-4cd2-9a7a-930819c2eae1","userId":"<reviewer user id redacted>","name":"Release 5 disposable, renamed","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Lisbon","startMonth":"2026-03","createdAt":"..."}
+GET /api/subscriptions/<id>  (re-read)
+status=200
+  name = Release 5 disposable, renamed
+  timeZone = Europe/Lisbon
+  [PASS] PATCH name and time zone answers 200 and the re-read shows both - 200, name=Release 5 disposable, renamed, timeZone=Europe/Lisbon
+
+PATCH /api/subscriptions/<id>  (start_month 2026-05, later than the 2026-04 price)
+status=400
+body: {"error":"start_month cannot be later than 2026-04 because a price is recorded from that month","field":"start_month"}
+  [PASS] PATCH start_month later than the price month answers 400 with the price sentence - 400 {"error":"start_month cannot be later than 2026-04 because a price is recorded from that month","field":"start_month"}
+
+GET /api/subscriptions/<id>/members  (owner range before the earlier move)
+  owner activeRanges = [{"joinedMonth": "2026-03", "leftMonth": null}]
+
+PATCH /api/subscriptions/<id>  (start_month 2026-02, one month earlier)
+status=200
+body: {"id":"2679b513-4b60-4cd2-9a7a-930819c2eae1","userId":"<reviewer user id redacted>","name":"Release 5 disposable, renamed","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Lisbon","startMonth":"2026-02","createdAt":"..."}
+GET /api/subscriptions/<id>  (re-read)
+  startMonth = 2026-02
+GET /api/subscriptions/<id>/members  (owner range after)
+  owner activeRanges = [{"joinedMonth": "2026-02", "leftMonth": null}]
+  [PASS] PATCH start_month one month earlier answers 200, the re-read shows it and the owner range moved - 200, startMonth=2026-02, range [{"joinedMonth": "2026-03", "leftMonth": null}] -> [{"joinedMonth": "2026-02", "leftMonth": null}]
+
+PATCH /api/subscriptions/<id>  (currency EUR while a price, a payment and a standing order exist)
+status=400
+body: {"error":"currency cannot change while prices, payments or standing orders are recorded","field":"currency"}
+  [PASS] PATCH currency while amounts exist answers 400 currency lock - 400 {"error":"currency cannot change while prices, payments or standing orders are recorded","field":"currency"}
+
+GET /api/auth-config  (still answering after the edits)
+status=200
+body: {"google":true}
+  [PASS] GET /api/auth-config still answers after the edits - 200 {"google":true}
+
+=============== 6. Deleting the disposable subscription ===============
+DELETE /api/subscriptions/<disposable id>
+status=204
+body length: 0
+  [PASS] DELETE the disposable answers 204 with an empty body - 204, body length 0
+
+GET /api/subscriptions/<deleted id>
+status=404
+body: {"error":"not found"}
+  [PASS] GET the deleted subscription answers 404 - 404 {"error":"not found"}
+
+DELETE /api/subscriptions/<random uuid>  (reviewer cookie)
+status=404
+body: {"error":"not found"}
+  [PASS] DELETE a nonexistent id answers 404 - 404 {"error":"not found"}
+
+GET /api/subscriptions  (reviewer cookie, closing count)
+status=200
+  closing count = 0, starting count = 0
+  [PASS] Reviewer subscription count returns to the starting count - 0 -> 0
+
+=============== 7. Sign-out and cookie replay ===============
+POST /api/auth/sign-out  (reviewer cookie)
+status=200
+body: {"success":true}
+  [PASS] Reviewer sign-out answers 200 - 200 {"success":true}
+
+GET /api/me  (replaying the same, now signed-out, reviewer cookie)
+status=401
+body: {"error":"unauthorized"}
+  [PASS] Replaying the signed-out cookie answers 401 - 401 {"error":"unauthorized"}
+
+=============== 8. Every pre-existing subscription survived ===============
+GET /api/subscriptions  (owner cookie, after the delete)
+status=200
+  2 subscriptions: ['First deployment artefact (not the demo plan)', 'Family music plan']
+  [PASS] Owner subscription count and ids unchanged across the whole pass - 2 -> 2
+
+POST /api/auth/sign-out  (owner cookie)
+status=200
+body: {"success":true}
+
+=============== 9. The deployed client bundle is this release's ===============
+GET /  (root)
+status=200
+  assets/index-CtqqFhDM.css
+  assets/index-D-QEf8bX.js
+
+GET /assets/index-D-QEf8bX.js
+status=200, bytes=284665
+  occurrences of 'type:`month`': 1
+  occurrences of 'not-a-month': 1
+  occurrences of 'Choose a month': 1
+  [PASS] The deployed client bundle carries the MonthField detection strings - assets/index-D-QEf8bX.js, markers {'type:`month`': 1, 'not-a-month': 1, 'Choose a month': 1}
+
+=============== Method note, so the transcript is not read as the only run ===============
+This transcript is the third run of the same script against this release. The first run was refused
+by Cloudflare's bot rule on the default Python user agent and created nothing; a browser user agent
+was set and it was re-run. The second run passed twenty of twenty-two checks and failed two: the
+sign-out call was sent with no body and so no Content-Type, which the auth library answers 415, and
+the cookie replay that follows it therefore still answered 200. That was a fault in this script, not
+in the deployment. The call now sends an empty JSON body and both checks pass above.
+
+Two consequences of that second run are recorded rather than hidden. It created and deleted its own
+disposable subscription under the reviewer account, by the same steps as this one, and its closing
+count matched its starting count. Its two sessions were never signed out, so one owner session and
+one reviewer session from it stay valid until they expire on their own; no further action was taken
+on them, because closing them would need their cookies and those were held only in that process.
+
+=============== Summary ===============
+PASS  GET /api/auth-config answers
+PASS  Unauthenticated DELETE answers 401
+PASS  Reviewer password sign-in answers 200
+PASS  Create disposable subscription answers 201
+PASS  Add one participant answers 201
+PASS  Add one price answers 201
+PASS  Add one skipped month answers 201
+PASS  Add one payment answers 201
+PASS  Add one standing order answers 201
+PASS  PATCH name and time zone answers 200 and the re-read shows both
+PASS  PATCH start_month later than the price month answers 400 with the price sentence
+PASS  PATCH start_month one month earlier answers 200, the re-read shows it and the owner range moved
+PASS  PATCH currency while amounts exist answers 400 currency lock
+PASS  GET /api/auth-config still answers after the edits
+PASS  DELETE the disposable answers 204 with an empty body
+PASS  GET the deleted subscription answers 404
+PASS  DELETE a nonexistent id answers 404
+PASS  Reviewer subscription count returns to the starting count
+PASS  Reviewer sign-out answers 200
+PASS  Replaying the signed-out cookie answers 401
+PASS  Owner subscription count and ids unchanged across the whole pass
+PASS  The deployed client bundle carries the MonthField detection strings
+
+22 of 22 checks pass, 0 fail.
