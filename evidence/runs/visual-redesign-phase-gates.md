@@ -257,8 +257,8 @@ under `evidence/screenshots/` as `redesign-NN-<slug>-<theme>.png` and
 `redesign-NN-<slug>-mobile-<theme>.png` rather than beside the plan with the earlier phases' working
 evidence. Sixty-two files: twenty-three states at 1280 in both themes, and the eight states of
 design-spec 8 again at 390 in both themes. Every file is at a 2x device pixel ratio, so the desktop
-captures are 2560 by 1800 and the mobile ones 780 by 1688, except the two full-column captures of
-row 09, which run the height of the page.
+captures are 2560 by 1800 and the mobile ones 780 by 1688, except the four full-column captures of
+row 09, both desktop and both mobile, which run the height of the page.
 
 The three records the phase owes are `evidence/runs/visual-redesign-contrast.md` (new, both tables,
 both themes, the tool named), `evidence/runs/visual-redesign-keyboard.md` (new, the design-spec 11.6

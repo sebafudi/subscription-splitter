@@ -137,7 +137,7 @@ currency         2
 locale           2
 name             7
 
-Every one of the eleven Stability guards rows in plan.md, re-checked in one pass at the end of
+Every one of the ten Stability guards rows in plan.md, re-checked in one pass at the end of
 phase 6 against the pre-change baseline d4e755f:
 
 Wire field names unchanged            pass. The sixteen counts above are identical to the baseline.

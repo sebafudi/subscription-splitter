@@ -1,0 +1,121 @@
+# visual-redesign automated gates
+
+Every gate this change's Progress claims, re-run in one pass at 3d94766, which is the implementation-
+review resolution of finding F3. Output is verbatim, exit code recorded after each command.
+Commands come from package.json; this repository has no lint script and no end-to-end suite, so
+typecheck, the unit suite, the integration suite and the production build are every automated gate
+there is (context/foundation/test-plan.md sections 1 and 3).
+
+## npm run typecheck
+
+$ npm run typecheck
+
+> typecheck
+> tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit
+
+exit 0
+
+## npm run test:unit
+
+$ npm run test:unit
+
+> test:unit
+> vitest run --config vitest.unit.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+
+ Test Files  16 passed (16)
+      Tests  189 passed (189)
+   Start at  09:43:33
+   Duration  657ms (transform 451ms, setup 0ms, import 1.17s, tests 132ms, environment 1ms)
+
+exit 0
+
+## npm run test:integration
+
+$ npm run test:integration
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v4.1.11 /Users/sebastian.f/Projects/10xDevs/subscription-splitter
+
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+Using secrets defined in .dev.vars
+
+ Test Files  11 passed (11)
+      Tests  112 passed (112)
+   Start at  09:43:39
+   Duration  12.56s (transform 14.33s, setup 44.55s, import 384ms, tests 24.06s, environment 1ms)
+
+exit 0
+
+## npm run build
+
+$ npm run build
+
+> build
+> vite build
+
+vite v8.3.0 building subscription_splitter environment for production...
+transforming...
+✓ 675 modules transformed.
+rendering chunks...
+Using secrets defined in .dev.vars
+computing gzip size...
+dist/subscription_splitter/.dev.vars                                              0.40 kB
+dist/subscription_splitter/wrangler.json                                          1.52 kB │ gzip:   0.75 kB
+dist/subscription_splitter/.vite/manifest.json                                    3.69 kB │ gzip:   0.62 kB
+dist/subscription_splitter/assets/kysely-adapter-C8A9b7_p.js                      0.13 kB │ gzip:   0.10 kB
+dist/subscription_splitter/assets/kysely-migration-tables-DFfmKhq--BmaT-cAq.js    0.80 kB │ gzip:   0.45 kB
+dist/subscription_splitter/assets/sqlite-adapter-CuhN6gCj.js                      2.12 kB │ gzip:   0.82 kB
+dist/subscription_splitter/assets/bun-sqlite-dialect-C7ftEUSI-D89iQww2.js         4.62 kB │ gzip:   1.63 kB
+dist/subscription_splitter/assets/node-sqlite-dialect-DQlwED9W.js                 4.62 kB │ gzip:   1.62 kB
+dist/subscription_splitter/assets/d1-sqlite-dialect-D4qp4-wW-DUBzZRdx.js          5.14 kB │ gzip:   1.82 kB
+dist/subscription_splitter/assets/dist-CXx7FqTT.js                               14.56 kB │ gzip:   4.08 kB
+dist/subscription_splitter/assets/default-query-compiler-2C8slTxe.js             44.92 kB │ gzip:   7.91 kB
+dist/subscription_splitter/assets/dist-BsFroIdu.js                              218.25 kB │ gzip:  39.54 kB
+dist/subscription_splitter/assets/compiled-query-CTMHavmA.js                    235.66 kB │ gzip:  39.26 kB
+dist/subscription_splitter/assets/factory-CWV6QwZY.js                           268.20 kB │ gzip:  59.83 kB
+dist/subscription_splitter/index.js                                             866.95 kB │ gzip: 205.95 kB
+
+✓ built in 108ms
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 52 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/client/.assetsignore                                               0.03 kB
+dist/client/index.html                                                  0.53 kB │ gzip:  0.31 kB
+dist/client/assets/ibm-plex-sans-latin-ext-400-normal-C5H60-Va.woff2   15.98 kB
+dist/client/assets/ibm-plex-sans-latin-ext-600-normal-DOrvGEcy.woff2   16.44 kB
+dist/client/assets/ibm-plex-sans-latin-400-normal-CDDApCn2.woff2       22.58 kB
+dist/client/assets/ibm-plex-sans-latin-600-normal-CuJfVYMP.woff2       24.25 kB
+dist/client/assets/index-CdlKxmN3.css                                  16.70 kB │ gzip:  4.06 kB
+dist/client/assets/index-pS8gqfUD.js                                  273.34 kB │ gzip: 81.37 kB
+
+✓ built in 111ms
+exit 0
+
+## What this records
+
+All four gates pass at the revision named above. The unit suite reads 16 files and 189 tests against
+the 15 files and 185 tests the phase 6 record holds; the four added tests are
+`src/client/components/ui/apiMessages.test.ts`, the regression cover for review finding F6. The
+integration suite, the typecheck and the build are unchanged from the phase 6 numbers.
+
+These are the phases 1 to 5 gate claims answered with output rather than with a commit SHA, which is
+what F3 asks for. They are a re-run at the resolution revision, not a reconstruction of each phase's
+own run: the phase runs themselves were not recorded and cannot be recovered.

@@ -1313,6 +1313,16 @@ A mechanical code choice is not a design question. Which React hook holds a pane
 the section index uses an `IntersectionObserver` or a scroll handler, and how the display maps are
 typed are all the implementer's to make.
 
+**What this change learned about step 2**, recorded in answer to implementation-review finding F7.
+Two of the answers, D7 and D9, arrived after the code they govern had already been built: they
+ratified the existing behaviour rather than directing it, which the protocol permits but which costs
+the checkpoint its purpose. For D9 the dependent code landed in `5ac541f` and the answer in `0870801`
+after it. Nothing was built against an answer that had not arrived, and the structural separation
+holds in both directions, every answer commit touching only `design-spec.md` and every implementing
+commit touching only source. The practice to carry forward is to raise the checkpoint before building
+the candidate rather than alongside it, so an answer can still change the outcome. D11 and the
+acceptance round A1 to A3 followed that order: the answer in `7485476`, then the code in `f642b89`.
+
 Six questions were raised while writing this plan. All six were answered by the designer and folded
 into the specification, which records them in design-spec 12. None is open, and the phase items above
 implement the answers rather than the questions.
@@ -1455,7 +1465,7 @@ and then to request the designer's review against design-spec 11. It exists and 
 | The contrast record | `evidence/runs/visual-redesign-contrast.md` | Both tables, both themes, every row carrying its measured ratio, its threshold and the result, with the tool and method named and the `--rule` exemption's condition checked against the stylesheet |
 | The bundle record | `evidence/runs/visual-redesign-bundle.txt` | Phase 6 section against the `research.md` baseline and the design-spec 2.2 budget, with the four woff2 files listed and the exact font package version |
 | The keyboard record | `evidence/runs/visual-redesign-keyboard.md` | The design-spec 11.6 pass as prose, the 11.7 index walk, the reduced-motion comparison and its method, every forced state, and the data created and reverted |
-| The guards record | `evidence/runs/visual-redesign-guards.txt` | All eleven Stability guards rows re-checked in one pass, each with its result |
+| The guards record | `evidence/runs/visual-redesign-guards.txt` | All ten Stability guards rows re-checked in one pass, each with its result |
 | The phase record | `evidence/runs/visual-redesign-phase-gates.md` | The phase 6 section, in the same form as phases 1 to 5 |
 
 **The designer's review against design-spec 11 is requested.** The pass raised one checkpoint, D11
@@ -1535,6 +1545,15 @@ certification screenshots are refreshed; both belong to that release step.
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.
 
+Evidence for the rows below, added when the implementation review's findings were resolved:
+`evidence/runs/visual-redesign-gates.txt` holds the verbatim output and exit code of every automated
+gate, which is the backing phases 1 to 5 lacked (F3);
+`evidence/runs/visual-redesign-manual-rows.md` holds a browser re-measurement, with the computed
+value behind each claim, of rows 1.9, 1.11, 1.12, 2.12, 3.9 to 3.12, 4.9, 4.13, 4.18, 4.19, 4.21,
+4.23, 5.10 and 5.14 to 5.16 (F4); and
+`evidence/runs/visual-redesign-index-current-item.md` holds the browser verification of row 4.10 and
+6.10 against the amended design-spec 4.4 (F1). The earlier phase records stay as they were written.
+
 ### Phase 1: Tokens, typeface, base elements and the app bar
 
 #### Automated
@@ -1596,7 +1615,7 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field — 00813fe
 - [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button — 00813fe
 - [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span — 00813fe
-- [x] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail — 5ac541f
+- [x] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail (judged against design-spec 4.3 as amended in `02b213e`: the screen stays on Home and the new row is itself the button that opens Detail) — 5ac541f
 - [x] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus — 5ac541f
 - [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again — 00813fe
 - [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll — 00813fe
