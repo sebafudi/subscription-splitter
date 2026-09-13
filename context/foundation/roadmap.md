@@ -271,6 +271,7 @@ not recreate them.
 - **S-05: (supporting) A pull request receives an automated review comment produced by the reviewer package, with its prompts exercised by an evaluation suite.** - Archived to `context/archive/ai-review-pipeline/`. Lesson: an evaluation is only evidence at the budget the code actually ships, because the first two-model comparison ran at an uncommitted `maxOutputTokens` of 8000 and two of its four model failures were `no_object_generated`, the failure that budget itself caused; re-running at the shipped 16000 withdrew one pillar of the model decision and confirmed the other.
 - **S-06: The organizer uses a polished, responsive interface across every shipped screen, designed end to end by Fable 5.1, with the certified ledger behaviour preserved exactly.** - Archived to `context/archive/visual-redesign/`, shipped as release `c842f64` on Cloudflare version `84a95549-cd34-4065-a202-cf5f1385e9f9`. Lesson: a scroll-spy that names its own threshold drifts from the anchor it is meant to follow, because the section index tracked its current item at 100px while a click scrolled the heading to 116px and so marked the section before the one just clicked; reading the heading's own `scroll-margin-top` and watching the line one pixel below it is the only offset that cannot disagree with where a click lands.
 - **S-07: Google sign-in works on the deployed app while password login and private-account isolation remain intact.** - Archived to `context/archive/google-sign-in/`, shipped as release `bad3f28` on Cloudflare version `1d0f71c1-6832-4bc1-aace-5feef621e715`, with the callback fix decided in `D-014` and the consent roundtrip completed by the owner and recorded in `evidence/runs/release-4.md`. Lesson: a platform's static-asset layer can answer a request before the application code runs, so a route every `fetch` reaches can still be unreachable as a top-level browser navigation; when something works locally, passes the whole suite and fails only on the deployment, the asset layer intercepting navigations is the natural first candidate rather than the last, because `Sec-Fetch-Mode: navigate` is the single header that separates the two shapes and the Workers test pool runs no asset layer at all, so no test there can fail on it.
+- **S-08: edit/delete the subscription itself and use real browser calendar controls throughout.** - Archived to `context/archive/subscription-management-and-date-inputs/`, shipped as release `91ce0da` on Cloudflare version `751a8bfd-e62a-4c9a-beb2-1953eb6a7656`, with the five certification captures it alters retaken in `evidence/runs/release-5-captures.md`. Lesson: a comment that describes a rule holding across files other than its own goes stale in silence, because the change that falsifies it need never open the file the comment sits in; `format.ts` claimed that every input and hint keeps the ISO form, and the phase that replaced those inputs was scoped to `src/server/`, so no diff, no test and no typecheck could contradict it, and only reading the module against the shipped client did.
 
 ## S-07: Google sign-in
 
@@ -283,8 +284,8 @@ not recreate them.
 
 ## S-08: Subscription management and native calendar inputs
 
-- **Change ID:** `subscription-management-and-date-inputs`
-- **Status:** in-progress
+- **Change ID:** `subscription-management-and-date-inputs` (`context/archive/subscription-management-and-date-inputs/`)
+- **Status:** done
 - **Prerequisites:** shipped ledger and accepted visual design.
 - **Source:** explicit user request; `context/foundation/subscription-management-brief.md`.
 - **Outcome:** edit/delete the subscription itself and use real browser calendar controls throughout.
