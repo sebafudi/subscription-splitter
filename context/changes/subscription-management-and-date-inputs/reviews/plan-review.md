@@ -399,3 +399,132 @@ function taking `db` as a parameter can actually be observed. The `10.9.0.x` pre
 
 `change.md` moves to `status: plan_reviewed` with this pass. Per this repository's convention no date
 field is written; the review is dated by the commit that carries it.
+
+## Re-verification
+
+Second pass, against `plan.md` and `plan-brief.md` at `4ea9618` and `design-delta.md` at `d146993`,
+read in full and checked against the code again rather than against the Decision lines above. The
+five design findings were ruled by the designer; the eleven review findings were resolved by the
+planner.
+
+### Final verdict
+
+**SOUND. Approved for implementation.** All three critical findings, all six warnings, both
+observations, all five design findings and all six implementer notes are closed in the plan, the plan
+brief and the delta. The two additions the planner made beyond the review are sound and introduce no
+new status code, no ambiguity and no silent no-op. Two observations remain, neither of them required
+and neither moving a phase boundary; they are R1 and R2 below.
+
+### Findings, re-verified
+
+- **F1, closed.** The detection function now takes an element factory defaulting to
+  `() => document.createElement('input')` and returns false under `typeof document === 'undefined'`
+  (plan.md:313-321, 511-518), and the unit contract injects each probe fault separately with a stub
+  (`:576-578`). Re-checked `vitest.unit.config.ts`: `environment: 'node'`, include `src/**/*.test.ts`,
+  no DOM dependency in `package.json`. The suite can now run what criterion 2.2 claims.
+- **F2, closed.** The appended failing statement now duplicates a `break_months` row of the same
+  account's *second* subscription (plan.md:457-464). Statement seven of the batch is scoped to the
+  first subscription, so that row survives and the insert really does collide with the composite
+  primary key at `migrations/0004_prices_and_breaks.sql:23`. The contract also requires the file to
+  name the row and say why it survives, and Progress row 1.8 checks that.
+- **F3, closed.** The kind is gone from the plan, the plan brief and the delta, and the integration
+  list at plan.md:434-441 no longer carries the case. The Key finding at `:92-98` states the reason
+  correctly and cites the right lines: the overlap rule at `src/domain/members.ts:51` and the
+  leave-month refusal at `:35-37`. Re-derived independently a second time and it holds.
+- **F4, closed.** The union is named at plan.md:250-254 and the route mapping at `:398-399`. It
+  matches the `MemberRemoval` precedent at `src/server/db/members.ts:223`, and `get`, `list`, `create`
+  and `remove` keep their present returns, so no other call site moves.
+- **F5, closed, with Fix A.** The bound travels in the update's `where` (plan.md:271-285) and the
+  Risks table gained two rows (`:1075-1076`). The `ar.id <> ?` exclusion for the range being shifted
+  is right and is called out as the non-obvious part.
+- **F6, closed.** The handler is string-only with the reason stated (plan.md:533-538), and phase 3
+  agrees (`:629-631`).
+- **F7, closed.** The per-state table at plan.md:788-793 matches the delta's amended 4.4 and the four
+  states actually present at `src/client/screens/SubscriptionDetail.tsx:49-55`. Progress row 4.17
+  checks it.
+- **F8, closed.** `onUpdated(subscription)` is named at plan.md:801-802 and implemented as
+  `setSelected(updated)` at `:816`. Home is correctly left to its existing remount refetch.
+- **F9, closed, both halves.** The branch function is a pure export (plan.md:517-518, 578-579) and the
+  new "What no automated test in this repository covers" section (`:1054-1062`) states the residual
+  plainly.
+- **F10, closed.** The floor is in the delta and in the plan (plan.md:207-216), enforced in the
+  repository because it depends on the stored time zone, applied on create as well (`:404-412`), and
+  carried as `min` on both first-month controls. It is the same lower bound the select fallback
+  already used, so the picker path and the select path list the same span.
+- **F11, closed.** One label, one map. Phase 3 change 2 moves the create form's label and phase 4
+  change 4 edits the single entry rather than adding a map.
+
+### The two additions, checked
+
+- **The currency lock's `not exists` guard.** Sound, and the same window it closes is real. No new
+  status code: the patch still answers 200, 400 `{ error, field }`, 404 and 401, and the delete still
+  answers 204, 404 and 401. Nothing introduces a 409.
+- **The gate on the owner opening-range statement.** Checked for the case the gate could pass while
+  the first statement failed. The gate is `start_month = <new month>` on the subscription row, so it
+  can only be true after a failed first statement when the new month equals the stored one, and in
+  that case the shift is a write of the range's own existing value. Every other combination behaves:
+  a currency race, a minimum race and an earlier move with a currency race all leave the stored month
+  at its old value, so the gate is false and the second statement does not apply. The plan's reliance
+  on a later statement seeing an earlier one's write inside a batch is consistent with the vendor
+  behaviour research section 4 already records, and the deletion order depends on the same property.
+- **No silent no-op path.** `meta.changes === 0` on the first statement is explicitly resolved rather
+  than ignored (plan.md:293-297), re-reading into 404 when the row is gone and the ordinary 400
+  otherwise.
+
+### The rest of the re-verification brief
+
+- **The "First month" label change opens nothing.** `Start month` survives in `src/` at exactly two
+  places, `src/client/screens/SubscriptionForm.tsx:138` and
+  `src/client/components/ui/fieldLabels.ts:14`, both of which the plan changes. No test, fixture or
+  helper under `tests/` or `src/` asserts the string. Progress rows 3.9 and 4.16 make its absence a
+  gate.
+- **The ten-year floor breaks no existing creation path.** The floor for the current year is
+  `2016-01`. The earliest start month anywhere in `tests/` or `src/` is `2025-12`; the only other
+  out-of-range literal is `2026-13`, a deliberate malformed-month case the regex rejects before the
+  floor is reached. `src/server/routes/dev-seed.ts` creates accounts only and no subscription, so no
+  demo record is created through a path the floor touches.
+- **D4's paired `min` cannot hide a stored value.** The option-range rule is "always extended to
+  include the current value" (plan.md:519-524, delta's Bounds and Select fallback paragraphs), so a
+  `To` value earlier than its `From` still appears in the fallback select. On the picker branch an
+  out-of-range value is kept and marked invalid rather than cleared, which is what the delta means by
+  bounds being a convenience. Manual row 3.10 observes the pairing directly.
+- **The Progress contract holds after the edits.** One `## Progress` heading, last section, six phase
+  subsections matching the six phase headings word for word, 59 rows, every index unique, no checkbox
+  anywhere outside the section. The four rows added by this round (3.9, 3.10, 4.16, 4.17) are appended
+  at the end of their blocks rather than renumbering the existing rows, which is the same approach the
+  visual-redesign plan took for its row 4.24. Two rows each carry two body bullets: 3.4, which already
+  merged the `inputMode` and `pattern` greps before this round, and the new 4.16.
+- **The implementer notes were taken.** The `new Date(` gates now cover `src/client/` with the two
+  `format.ts` sites named; phase 4 gained the same gate; the phase bodies now head their criteria
+  `#### Automated verification:` and `#### Manual verification:`, matching
+  `context/archive/google-sign-in/plan.md:498,511`, with the `## Progress` subsection headings left as
+  `#### Automated` and `#### Manual`, which is also what the precedent does at `:840,854`; the
+  currency-code interpolation is stated; the frame questions are re-pointed at the delta; and the
+  single-batch assertion moved to a unit test against a `D1Database` stub.
+
+### Remaining items
+
+Neither is required and neither blocks phase 1.
+
+- **R1 - the re-read rule names only the first-month family.** plan.md:293-297 resolves
+  `meta.changes === 0` into 404 or "the ordinary 400 naming it", where "it" is a binding minimum. Now
+  that the currency lock's clauses sit in the same `where`, the re-read has to re-derive across both
+  families and decide which `field` it names when both bind. One clause would close it, ideally
+  giving `currency` precedence, since it is the coarser refusal and the one the client shows as a
+  disabled field.
+- **R2 - the lost-race path has no test.** It is not reachable from an integration test, because D1
+  executes statements sequentially and non-concurrently, but it is cheap at the unit level now that
+  phase 1 change 6 introduces a `D1Database` stub: have the stub report `meta.changes: 0` on the first
+  statement and assert the route answers 404 when the re-read is empty and 400 otherwise. Worth one
+  case in phase 1 change 6 rather than leaving the only branch that decides a refusal unexercised.
+
+### A note for the designer, informational
+
+The archived `context/archive/visual-redesign/design-spec.md:283` still uses "Start month must be in
+YYYY-MM format with a valid month" as the worked example of the 3.8 transform. The plan is right not
+to edit the archived specification, and the delta's design finding 3 names section 4.3 but not that
+example. One line in the delta would keep the standing amendment complete.
+
+`change.md` stays at `status: plan_reviewed`, which is the status the review skill assigns for a saved
+and approved report; the skill defines no later status, so the approval is carried by this section and
+dated by the commit that holds it.

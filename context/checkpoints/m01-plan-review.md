@@ -4,9 +4,10 @@
 - **Model:** Opus (subagent)
 - **Goal:** an independent review of the implementation plan for change
   `subscription-management-and-date-inputs`, roadmap S-08.
-- **Status:** complete. The designer's amendment was committed mechanically, the review was written
-  from that committed state, committed by explicit path and pushed. No finding was applied; fixes
-  belong to whoever triages them.
+- **Status:** complete, through re-verification. The designer's amendment was committed mechanically,
+  the review was written from that committed state, and after the designer's rulings and the planner's
+  resolutions landed the plan was re-verified and approved. No finding was applied by this task; the
+  fixes are the planner's.
 - **Independence:** this task did not write the brief, the research, the framing, the design delta,
   the plan brief or the plan.
 
@@ -36,7 +37,9 @@
 
 ## Verdict
 
-REVISE. Three critical, six warnings, two observations, plus five design findings returned to the
+First pass REVISE, re-verification **SOUND, approved for implementation**.
+
+REVISE, first pass. Three critical, six warnings, two observations, plus five design findings returned to the
 designer. Plan Completeness fails; End-State Alignment and Blind Spots warn; Lean Execution and
 Architectural Fitness pass. The approach and the architecture are right, so nothing calls for a
 rethink.
@@ -93,9 +96,44 @@ no nested delegation.
 - F5 is the one finding with two genuine options rather than a single fix, and the choice between
   closing the window in SQL and recording the residual is a judgement the plan's author should make.
 
+## Re-verification round
+
+The designer ruled all five design findings in `design-delta.md` at `d146993`, and the planner
+resolved all eleven review findings in `plan.md` and `plan-brief.md` at `4ea9618`. This task then
+re-read both plans and the amended delta in full against the code and appended a `## Re-verification`
+section to the report.
+
+**SOUND. Approved for implementation.** Every critical is closed in the plan text and in its test
+list, and the mechanical `## Progress` contract still holds: one heading, six matching phase
+subsections, 59 rows, every index unique, no checkbox outside the section, with the four new rows
+appended rather than renumbering the existing ones.
+
+Checked beyond the findings, at the lead's request:
+
+- The two additions the planner made beyond the review are sound. The currency lock's `not exists`
+  guard introduces no new status code and no 400-versus-409 ambiguity, and the gate on the owner
+  opening-range statement can only pass after a failed first statement when the new first month
+  equals the stored one, in which case the shift writes the range's existing value. There is no
+  silent no-op path: `meta.changes === 0` is resolved by a re-read into 404 or the ordinary 400.
+- The "First month" label change opens no gap. `Start month` survives in `src/` at exactly the two
+  places the plan changes, and no test or fixture asserts the string.
+- The ten-year floor breaks no existing creation path. The floor for the current year is `2016-01`,
+  the earliest start month in the tree is `2025-12`, and `src/server/routes/dev-seed.ts` creates
+  accounts only, never a subscription.
+- D4's paired `min` cannot hide a stored value, because the option-range rule always extends the range
+  to include the current value.
+
+Two non-required items remain, recorded as R1 and R2 in the report: the re-read rule names only the
+first-month family and should say which `field` it names when the currency clause is the one that
+binds; and the lost-race branch has no test, which is cheap to add against the `D1Database` stub that
+phase 1 change 6 already introduces. One informational note went to the designer about the archived
+specification's worked example at `design-spec.md:283`.
+
+`change.md` stays at `status: plan_reviewed`, the status the review skill assigns to a saved and
+approved report; the skill defines no later status.
+
 ## Next action
 
-Triage the eleven findings against the saved report by resuming the review skill with
-`context/changes/subscription-management-and-date-inputs/reviews/plan-review.md`, and send design
-findings D1 through D5 to the designer. F1 through F9 should close before the phase each names
-begins: F2, F3, F4 and F5 before phase 1; F1, F6 and F9 before phase 2; F7 and F8 before phase 4.
+Begin implementation. Phases 1 and 2 may start in parallel. Whoever takes phase 1 should fold R1 and
+R2 into change 2 and change 6 as they go, since both are one clause and one unit case rather than a
+plan edit that needs another review.
