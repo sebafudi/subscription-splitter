@@ -173,7 +173,7 @@ radius 4px, `--t-body` weight 600.
 | --- | --- | --- | --- | --- |
 | primary | fill `--ink`, text `--on-ink`, no border | fill `--green` | fill `--green`, translate none | transparent, 1px border `--border`, text `--ink-soft`, `aria-disabled` |
 | quiet | transparent, text `--ink`, 1px border `--border` | border `--ink` | ground `--paper` | text `--ink-faint`, border `--border` |
-| link | transparent, text `--ink`, underline 1px `--rule` offset 3px, no border, padding 0, min height 24px | underline `--ink` | same | text `--ink-faint` |
+| link | transparent, text `--ink`, underline 1px `--border` offset 3px, no border, padding 0, min height 24px | underline `--ink` | same | text `--ink-faint` |
 | destructive | transparent, text `--red`, 1px border `--red` | ground `--red-tint` | same | text `--ink-faint`, border `--border` |
 
 Disabled buttons stay focusable (`aria-disabled="true"`, click handler returns early) so the
@@ -714,6 +714,8 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 | 7 standing-order question | 3.10: consequence clause added |
 | 8 payments count under filter | 5.4: N is the rows listed under the current filter |
 | 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
+
+Re-verification round: the mockup and its three captures were regenerated to the four-cell ledger line and the count-free Participants heading; the link underline moved from `--rule` to `--border` (3.3).
 
 ## 13. Answer index to frame.md
 

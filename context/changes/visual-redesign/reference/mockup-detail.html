@@ -34,7 +34,7 @@ button{font:inherit;min-height:40px;padding:0 var(--s-4);border-radius:4px;curso
 .primary:hover{background:var(--green)}
 .quiet{background:transparent;color:var(--ink);border:1px solid var(--border)}
 .quiet:hover{border-color:var(--ink)}
-.link{background:none;border:0;padding:0;min-height:24px;color:var(--ink);text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px;font-weight:600}
+.link{background:none;border:0;padding:0;min-height:24px;color:var(--ink);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;font-weight:600}
 .destructive{background:transparent;color:var(--red);border:1px solid var(--red)}
 :focus-visible{outline:2px solid var(--green);outline-offset:2px}
 h1{font-size:27px;line-height:1.2;font-weight:600;margin:var(--s-2) 0 var(--s-1)}
@@ -44,7 +44,7 @@ h3{font-size:17px;line-height:1.35;font-weight:600;margin:0 0 var(--s-4)}
 .figure-label{margin-top:var(--s-6)}
 .figure{font-size:34px;line-height:1.1;font-weight:600}
 .red{color:var(--red)} .green{color:var(--green)}
-dl.line{display:flex;gap:var(--s-6);margin:var(--s-5) 0;padding:var(--s-3) 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+dl.line{display:flex;flex-wrap:wrap;gap:var(--s-4) var(--s-6);margin:var(--s-5) 0;padding:var(--s-3) 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
 dl.line div{margin:0} dl.line dt{font-size:13px;color:var(--ink-soft)} dl.line dd{margin:0;font-size:17px;font-weight:600}
 p.summary{max-width:64ch}
 nav.index{position:sticky;top:0;background:var(--ground);border-bottom:1px solid var(--rule);height:44px;display:flex;gap:var(--s-5);align-items:stretch;margin-top:var(--s-5);overflow-x:auto;scrollbar-width:none}
@@ -107,6 +107,7 @@ input.invalid{border-color:var(--red);background:var(--red-tint)}
     <div><dt>Per person this month</dt><dd>55,00 zł</dd></div>
     <div><dt>Your share this month</dt><dd>55,00 zł</dd></div>
     <div><dt>Collected this month</dt><dd>55,00 zł of 55,00 zł</dd></div>
+    <div><dt>Active participants</dt><dd>2</dd></div>
   </dl>
   <p class="summary tnum">Sep 2026 costs 110,00 zł. Your net cost since the plan started is 0,00 zł, against a plan total of 210,00 zł. You are on this plan as Organizer.</p>
 
@@ -115,7 +116,7 @@ input.invalid{border-color:var(--red);background:var(--red-tint)}
   </nav>
 
   <section>
-    <div class="open"><h2>Participants <span class="count">(2 active)</span></h2><span class="status">&#10003; Participant added</span></div>
+    <div class="open"><h2>Participants</h2><span class="status">&#10003; Participant added</span></div>
     <div class="panel">
       <h3>Add a participant</h3>
       <div class="grid">
