@@ -31,3 +31,11 @@ Automated tests must cover provider configuration and relevant failure paths, ac
 - Web OAuth client management: https://support.google.com/cloud/answer/15549257
 - Better Auth Google provider: https://www.better-auth.com/docs/authentication/google
 - Better Auth accounts/linking: https://better-auth.com/docs/concepts/users-accounts
+
+## Google OAuth — resume with saved credentials
+
+Google Console provisioning is complete. Do not recreate the project/client or ask the user to supply credentials again. The app's Git-ignored `.dev.vars` contains `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`; read them only into the process that needs them, never logs or generated documentation. Latest provisioning evidence: `context/checkpoints/g02-oauth-provision.md` in the app repository.
+
+The user assigns the remaining work to the Claude execution team. Resume S-07 from actual saved state: securely configure the existing Cloudflare Worker's Google secrets using the execution environment's authorized Cloudflare authentication; verify names only; reconcile G02; then finish the researched/reviewed implementation, regression checks, Fable design acceptance, deployment and real Google OAuth roundtrip. Preserve password login and cross-account isolation. The Google app remains External/Testing with the owner as test user; do not silently publish it or expand scopes.
+
+Provisioning session could not authenticate Wrangler, so do not assume remote secrets already exist. Inspect existing secret names and current implementation before acting to avoid duplicate work. Fable retains design authority; Opus/Sonnet perform implementation as specified by the existing contract. Checkpoint progress and update GOALS.md through the designated status writer. No upload to 10x without explicit confirmation.

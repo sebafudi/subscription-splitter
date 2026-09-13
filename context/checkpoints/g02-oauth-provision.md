@@ -99,3 +99,25 @@ a plain var, and adds both names to `env.d.ts`, which this task deliberately lef
 Partial. The dedicated project is provisioned and the callback contract is settled and recorded in
 `context/decisions/D-012-google-oauth-provisioning.md`. The OAuth client itself needs one authenticated
 console session. G02 is not complete.
+
+## Browser provisioning completed — current handoff
+
+Supersedes the earlier browser blocker. The built-in authenticated browser completed Google Auth Platform configuration in project `subscription-splitter-auth`.
+
+- Branding: Subscription Splitter; approved account used as support and developer contact. User explicitly approved the Google API Services User Data Policy.
+- Audience: External, Testing; signed-in owner appears in the test-user list. App was not published or submitted for verification.
+- Scopes saved: openid, userinfo.email and userinfo.profile only; sensitive/restricted lists empty.
+- Client created and verified in Clients list: Subscription Splitter Web, Web application.
+- All three origins and corresponding `/api/auth/callback/google` redirects from this checkpoint were entered: localhost ports 5173 and 8787, and the deployed workers.dev origin.
+- Client ID and secret saved as GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the app's existing `.dev.vars`, preserving its other entries. Permissions restricted to owner read/write; `git check-ignore .dev.vars` confirms exclusion. Do not print or commit values. No credential JSON download was necessary.
+- Cloudflare secret provisioning is NOT completed. Wrangler returned missing non-interactive Cloudflare authentication, and its default external log path was sandbox-restricted. No success was reported for either secret. Use the implementation environment's existing authorized Cloudflare credentials to securely pipe each value from `.dev.vars` into `wrangler secret put`, then verify secret names only.
+
+Next: finish Cloudflare secret provisioning, implement/review Google sign-in through S-07, and verify a real OAuth roundtrip. G02 remains partial until remote configuration is verified; G03–G05 are not certified by client creation. No app source modified, no course upload performed.
+
+## Cloudflare secret
+
+`GOOGLE_CLIENT_SECRET` was piped from `.dev.vars` into `npx wrangler secret put GOOGLE_CLIENT_SECRET` in an environment with authorized Wrangler credentials, without printing the value. `npx wrangler secret list` now shows `GOOGLE_CLIENT_SECRET` alongside the existing `APP_ORIGINS` and `BETTER_AUTH_SECRET` secrets.
+
+`GOOGLE_CLIENT_ID` was not set on Cloudflare. Although the client id is public, whether it should be a `wrangler secret` or a plain `vars` entry is an implementation decision left to the goal that adds the corresponding binding to `env.d.ts` and reads it in code.
+
+G02's remaining item is the verified remote configuration: no application code yet reads a Google client id or secret binding, so the Cloudflare-side values are provisioned but unexercised. G02 is not complete until an implementation goal reads these bindings and a real OAuth roundtrip is verified end to end.
