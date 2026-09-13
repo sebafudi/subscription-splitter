@@ -336,3 +336,78 @@ paragraph on each comment); the LICENSE decision; a re-check of both forms' dyna
 width immediately before filling (C10); and, as a cosmetic follow-up that does not block upload, the
 four authored dates in the Champion evidence title lines and the four mislabelled figures and paths
 named above.
+
+---
+
+# Delta audit at release 4
+
+Independent re-audit of what changed since the report above, which was written at repository HEAD
+`57065dc` and pins release 2 (`c842f64` / `84a95549`). Nothing above is rewritten. This section
+covers only the delta: the release identity at `bad3f28`, the gates at that commit, the retaken
+capture set, package coherence at release 4, a security spot check on the S-07 diff, and the
+date-free rule over files added since `866ae3a`.
+
+Audited at repository HEAD `995e2a81a14bd7175b841d9b74f3b3566a557c65` (`995e2a8`), working tree
+clean, branch `main` level with `origin/main`. Read-only apart from this section and the auditor's
+checkpoint. No login, no deploy, no upload, no secret value printed, no box checked.
+
+## Verdicts
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| 1. Release identity | PASS | `git rev-parse bad3f28` resolves to `bad3f2816611c00cd691b4ef67f1108d618bed60`. The code delta `c842f64..bad3f28` restricted to `src`, `tests`, `migrations`, `wrangler.jsonc`, `env.d.ts` and `.github` is exactly 14 files, all S-07: the Google sign-in server, client, styling and test files, and `wrangler.jsonc` gaining `"run_worker_first": ["/api/*"]` under `D-014`. Nothing under `migrations/` or `.github/` changed. The rest of the full diff is records: the `visual-redesign` archive move, the release 2 to 4 evidence, checkpoints, decisions and this report. `git log --oneline bad3f28..HEAD -- src tests wrangler.jsonc migrations` is empty; the only three commits after the release are `206dde4`, `7b1bef6` and `995e2a8`, all `docs(...)`. CI: `gh run list --commit bad3f28...` returns exactly one run, `34751198550`, workflow `CI`, completed, conclusion success, head SHA equal to the release SHA in full |
+| 1b. Live instance | PASS | Root 200, referencing `assets/index-CLEnPkyw.css` and `assets/index-CQZzLfmQ.js`. `GET /api/me` 401 `{"error":"unauthorized"}`. `GET /api/auth-config` 200, body byte-exact `{"google":true}`. `GET /api/health` 200 `{"ok":true}` |
+| 1c. Asset match from the auditor's own build | PASS | A throwaway clone at `bad3f28` with a fresh `npm ci`, `git status --porcelain` empty, emitted `index-CLEnPkyw.css` and `index-CQZzLfmQ.js`. Those are the two filenames the live root document references. The deployed bundle and the audited source are the same build |
+| 2. Gates at `bad3f28` | PASS | In that clone, with no `.dev.vars` present and no `GOOGLE_*` value in the environment: `npm run typecheck` exit 0; `npm run test:unit` 18 files / 214 tests, all passed; `npm run test:integration` 12 files / 119 tests, all passed; `npm run build` exit 0. Every figure matches `evidence/runs/release-4.md` and the package |
+| 3. Captures | PASS WITH NOTE | Nine of the ten `release-*.png` were last committed at `7b1bef6`, the release record itself. `release-01-login.png` was last committed at `0ae77a9`, which is earlier. See the note below; it is not a defect. All ten were opened as images. Each shows what its slot claims, the data is synthetic throughout (`owner@example.com`, `reviewer@example.com`, Blake, Casey R., Alex), and no password, token, session cookie or client secret is visible in any of them. `release-01-login.png` shows "Continue with Google" beside `Sign in` with both fields empty |
+| 3b. Passing-tests capture against the gates | PASS | `release-05-tests-passing.png` shows `bad3f2816611c00cd691b4ef67f1108d618bed60` printed at the top, an empty `git status --porcelain`, the typecheck command, `Test Files 18 passed (18)` / `Tests 214 passed (214)`, `Test Files 12 passed (12)` / `Tests 119 passed (119)`, and the release SHA echoed again under `--- release SHA again ---`. Identical to the counts the auditor obtained independently |
+| 4. Package coherence | PASS WITH NOTE | Every current-release mention in both documents names release 4, `bad3f28` in short or full form, Cloudflare version `1d0f71c1-6832-4bc1-aace-5feef621e715` and hosted CI run `34751198550`. Releases 1, 2 and 3 and their versions appear only in passages explicitly labelled history or superseded. The earlier V06 mislabel is now corrected in the package itself, which states that `103696850548` is a job id inside run `34747075507`. See the one stale row below |
+| 4b. Attachment sizes | PASS | All ten capture sizes in the section 10 manifest equal `ls -l` exactly, and their sum is the stated 1,000,524 bytes, with 494,080 across the five required rows. `architect-report.pdf` is 118,028 bytes as claimed. The three Champion captures total 1,052,467 bytes as claimed |
+| 4c. Form field coverage | PASS | Section 8.1 carries all 13 Builder fields and section 9.1 all 7 joint fields, in the sources' order. Six values are unfilled and every one is clearly marked an owner placeholder: course email on both forms, Builder promotion consent, joint badge selection, the reviewer credential channel, and the closing impressions paragraph on each comment. No required field is missing |
+| 4d. Reviewer access | PASS | The section 8 reviewer instructions say the account credentials are delivered separately through a channel the owner names and are deliberately absent from the repository. `README.md` says the same and points at `context/decisions/D-010-live-demo-data-and-reviewer-access.md`, which exists. Both name the gated seed route under `D-005` as how the account was made, and both state it is disabled on the live deployment, which the release 4 smoke re-confirms with a 404 |
+| 4e. S-07 caveat | PASS | Truthful. `docs/SUBMISSION-PACKAGE.md` mentions Google exactly twice, in slot 7 and the section 10 manifest, and both say only that the button is present in the login capture. Neither claims Google sign-in works. `docs/SUBMISSION-CHECK.md` states plainly that the live consent roundtrip is not a certification requirement, that neither form asks for a third-party sign-in flow, and that it remains owner work under `GOALS.md` G05 because the consent audience is External in Testing with the owner as its only test user |
+| 5. Security spot check on the S-07 diff | PASS WITH NOTE | `git grep -nE 'GOCSPX' $(git rev-list --all)` and `git grep -nE 'GOCSPX' HEAD` are not literally empty, but the only match in every revision is one prose line in `context/checkpoints/g02-finish.md` asserting the opposite: that the brief carries no `GOCSPX` prefix and no literal secret assignment. No secret value exists anywhere in the tree or the history. `.dev.vars` is untracked, confirmed with `git ls-files`; it exists on disk at mode 600 and is covered by `.gitignore` lines 4 to 6, with `.dev.vars.example` explicitly re-included and holding names with empty values only. `git check-ignore -v dist/subscription_splitter/.dev.vars` returns `.gitignore:2:dist/`, so the built copy the implementation review observed is ignored |
+| 6. Date-free rule since `866ae3a` | PASS | 26 markdown files under `context/` and `evidence/` changed. Every calendar-date hit falls in an already-allowed category, judged rather than counted: the Cloudflare navigation-request behaviour dates `2025-04-01` and this repository's compatibility date `2026-08-22` in the S-07 research, `D-014` and the `g05-callback-fix` checkpoint; promptfoo eval ids in the Champion evidence and `evidence/index.md`; walkthrough application data in `evidence/runs/release-4.md`; and invalid-date test fixtures plus application data in `evidence/work-log.md`. One authored date remains, in `context/STATUS.md`, and it is the single pre-existing hit the report above already records |
+
+## Notes behind the two PASS WITH NOTE verdicts on the delta itself
+
+**The login capture's commit is earlier than the release record, and that is explained rather than
+overlooked.** `release-01-login.png` was last written at `0ae77a9`, "retake the login capture against
+release 3". `git merge-base --is-ancestor 0ae77a9 bad3f28` exits 0, so it is an ancestor of the
+release. `evidence/runs/release-4.md` states in the open that the file was retaken this pass and came
+out byte-identical to release 3's, so git recorded no change. That claim is corroborated rather than
+taken on trust: release 4 is configuration only, the auditor's own build at `bad3f28` emits the same
+two client asset filenames the live root serves and that release 3 served, and the login screen is one
+of the screens the release does not touch. The capture depicts release 4 correctly and shows the
+Google button. No action.
+
+**One package row is made stale by this section.** `docs/SUBMISSION-CHECK.md` carries the row
+"`GOALS.md` F01 final audit | Done, and pinned to release 2", ending "It predates releases 3 and 4, so
+a delta audit for release 4 is the next step". That was accurate when written and is accurate up to
+the moment this section lands. The status writer should update that row to name this delta audit. It
+is a wording refresh, not a defect, and no goal box depends on it.
+
+**Two cosmetic observations, neither blocking.** `release-05-tests-passing.png` is a real Terminal
+window, so it shows a shell login banner carrying a calendar date and the scratchpad path of the
+release clone. Neither is a credential and the date-free rule covers authored markdown rather than
+what a terminal prints. Separately, three of the four Champion title-line dates the report above
+flagged have since been removed: `hosted-review-run.md`, `ai-review-live-call.md` and
+`release-3.md` now carry none, and `eval-results.md` retains only its promptfoo eval id.
+
+## What was deliberately not done
+
+No login. No deploy. No write to the database. No authenticated request against the live instance.
+Nothing uploaded or submitted and no course form touched. `GOALS.md`, `docs/SUBMISSION-PACKAGE.md`
+and `docs/SUBMISSION-CHECK.md` were read and not edited. No box was checked. Nothing under
+`evidence/private/` was opened. No nested delegation.
+
+## Readiness
+
+Package ready for the owner's upload confirmation at release 4: **yes**, pending items: the six
+owner-only form values (course email on both forms, Builder promotion consent, joint form badge
+selection, the reviewer credential channel plus the credential values themselves, and the closing
+impressions paragraph on each comment); the LICENSE decision; the C10 re-check of both forms' dynamic
+fields at desktop width immediately before filling; and, as follow-ups that do not block upload, the
+stale F01 row in `docs/SUBMISSION-CHECK.md`, the one authored date in `context/STATUS.md`, and the
+four mislabelled figures and paths the report above names, of which the package has already fixed the
+V06 one.
