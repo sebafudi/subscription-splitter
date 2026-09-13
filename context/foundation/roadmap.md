@@ -273,7 +273,7 @@ not recreate them.
 ## S-07: Google sign-in
 
 - **Change ID:** `google-sign-in`
-- **Status:** ready
+- **Status:** in-progress
 - **Prerequisites:** existing authentication; coordinate login UI with S-06 visual redesign.
 - **Source:** explicit user request; `context/foundation/google-sign-in-brief.md`.
 - **Outcome:** Google sign-in works on the deployed app while password login and private-account isolation remain intact.
