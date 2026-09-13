@@ -101,3 +101,72 @@ Two observations for the designer, neither a design question:
   examples assume an English locale.
 - Home shows its count while the list is still loading, so it reads "(0)" for the length of the
   request. Design-spec 4.3 specifies no loading state for Home and the shipped screen had none.
+
+## Design answers folded in after phase 3
+
+The designer answered plan design questions D7 and D8 by editing `design-spec.md` at `02b213e`:
+4.3 now keeps the screen on Home after a create, with the new row itself as the way into the detail
+screen, and 3.8 now defines one mechanical transform for a server field message. Both are
+implemented in the phase 4 commit, so Progress rows 3.11 and 3.12 close with phase 4's SHA rather
+than phase 3's.
+
+- The transform lives in `messageWithLabel` in `src/client/components/ui/fieldLabels.ts` and is
+  applied by all three redesigned forms. Measured: `start_month must be in YYYY-MM format with a
+  valid month` renders as "Start month must be in YYYY-MM format with a valid month" and
+  `name must not be empty` as "Name must not be empty". A message that opens with a token other than
+  the field's own wire name is shown verbatim, which the specification now states is acceptable.
+
+## Phase 4: the detail summary, the section index, Participants and Price history
+
+| Capture | What it shows |
+| --- | --- |
+| `phase-4-detail-owed-light-desktop.png` | the detail screen at 1280 in light with an amount owed: the leading figure in `--red` as the largest text on the page, over the four cell ledger line between its two hairlines, then the count-free Participants heading and its ledger rows |
+| `phase-4-detail-owed-dark-desktop.png` | the same in dark |
+| `phase-4-detail-light-desktop.png` | the second subscription, whose figure is zero and therefore `--ink` |
+| `phase-4-detail-loading-light-desktop.png` | first load: the figure, cell and sentence skeletons, every heading with its count blank and its subtitle present, every action disabled, two skeleton entries per list |
+| `phase-4-detail-error-light-desktop.png` | a failed load in the alert line with the quiet Try again |
+| `phase-4-participant-add-light-desktop.png` | the add panel with the Active months fieldset, two ranges, and Remove and Add another range as link-variant buttons |
+| `phase-4-participant-field-error-light-desktop.png` | a refused create: the red border and tint on the offending control with one sentence under it, carrying the mapped label |
+| `phase-4-participant-success-light-desktop.png` | a participant just added, with the balance in the figure column and the three labelled cells below |
+| `phase-4-participant-refused-delete-light-desktop.png` | a delete the server refused: the message verbatim in the section alert, the strip closed and the row standing |
+| `phase-4-participants-settled-archived-light-desktop.png` | the settled archived disclosure open, its row carrying "settled" in `--ink-faint` and every action |
+| `phase-4-prices-light-desktop.png` | Price history: the amount as the primary line in the recorded treatment, the effective month in the figure column |
+| `phase-4-price-delete-step-two-light-desktop.png` | the price delete strip on its second step, carrying the server's months and Delete anyway, focus back on Keep |
+| `phase-4-detail-light-mobile.png` | the detail screen at 390: the ledger line stacked with `dt` left and `dd` right, the figure column under the primary line, the three cells and the actions on their own lines, and the section index scrolling sideways with a faded edge |
+
+Measured during the same session rather than captured:
+
+- The sticky stack is exact. The app bar's bottom edge and the index's top edge are both at 56px, the
+  index's bottom at 100px, and a heading reached through the index lands at 116px, at 1280 and again
+  at 390. There is no gap between the bar and the index.
+- `aria-current` tracks all five sections while scrolling down and again while scrolling back up.
+  Because the two offsets differ by `--s-4`, a heading reached by clicking its index item sits 16px
+  below the line the observer watches, so the clicked item becomes current only after a further 16px
+  of scrolling. Both numbers are the specification's.
+- Focus never reached the document body on any path tested: Escape and Cancel on the add panel and on
+  an edit panel return to the control that opened them, Keep and Escape on a strip return to that
+  entry's Delete button, a refused delete returns there too because the row survives, and a completed
+  delete moves to the section's `h2`.
+- Opening a second edit panel closed the first and discarded what had been typed into it.
+- The archive action read "Archive" then "Unarchive" and produced "Participant archived" and
+  "Participant unarchived", the tag following the name in both directions.
+- The price delete ran both steps inside one strip: the first asked with the amount and the short
+  month, the server's 409 became the strip's own question followed by "Delete anyway?", the buttons
+  became Delete anyway and Keep, and focus returned to Keep.
+- The price create 409 rendered as the generic form error at the top of the panel with the panel's
+  3px red left rule and focus on the alert line, and the section alert stayed empty, so an error
+  raised inside a panel never reaches the section's own alert. The section alert cleared both on
+  Dismiss and on the next successful action in the section.
+- A reload after an archive kept the figure and all four cells on screen with no skeleton, and the
+  acting section showed its status line.
+- The build ships four woff2 files totalling 79,268 bytes and no `.woff`, `.ttf`, `.eot` or `.otf`.
+
+Three observations for the designer, none of them a design question:
+
+- The price delete's second step shows the server's message verbatim, as design-spec 5.2 requires,
+  and that message ends "Repeat the request with confirm=true to go ahead." before the specified
+  "Delete anyway?". The sentence is the server's and `src/server/` is out of scope.
+- "Show N settled archived participants" is rendered verbatim from design-spec 5.1, so with one such
+  participant it reads "Show 1 settled archived participants".
+- Months render through the subscription's `locale` throughout, so the seeded `pl-PL` subscriptions
+  read "from lip 2026" and "wrz 2026 costs 120,00 zł" rather than the English months the mockup shows.

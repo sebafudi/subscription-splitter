@@ -16,13 +16,18 @@ import {
   type Subscription,
   type Summary,
 } from '../api'
+import { formatMonth } from '../format'
 import { AppBar } from '../components/AppBar'
 import { BreakMonths } from '../components/BreakMonths'
-import { MemberForm } from '../components/MemberForm'
 import { MemberList } from '../components/MemberList'
 import { PaymentList } from '../components/PaymentList'
 import { PriceHistory } from '../components/PriceHistory'
 import { RecurringSection } from '../components/RecurringSection'
+import { DETAIL_SECTIONS, type SectionDescriptor } from '../components/sections'
+import { CONNECTION_FAILURE } from '../components/ui/FormAlert'
+import { SectionAlert } from '../components/ui/SectionAlert'
+import { SectionHeader } from '../components/ui/SectionHeader'
+import { SectionIndex } from '../components/ui/SectionIndex'
 
 type Props = {
   subscription: Subscription
@@ -50,7 +55,6 @@ type State =
 
 export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onSignedOut }: Props) {
   const [state, setState] = useState<State>({ status: 'loading' })
-  const [editing, setEditing] = useState<Member | null>(null)
 
   const load = useCallback(async () => {
     // A reload after an edit keeps the figures already on screen rather than
@@ -77,7 +81,7 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
       }
       setState({
         status: 'error',
-        message: error instanceof ApiError ? error.message : 'Could not load this subscription.',
+        message: error instanceof ApiError ? error.message : CONNECTION_FAILURE,
       })
     }
   }, [subscription.id, onSignedOut])
@@ -89,64 +93,68 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
   const bar = <AppBar email={email} onHome={onBack} onSignOut={onSignOut} />
 
   const header = (
-    <header className="detail-header">
-      <button type="button" onClick={onBack}>
-        Back to subscriptions
+    <header className="detail-head">
+      <button type="button" className="btn-link t-small" onClick={onBack}>
+        All subscriptions
       </button>
-      <h2>{subscription.name}</h2>
-      <p className="row-detail">
-        {subscription.currency}, {subscription.timeZone}, starting {subscription.startMonth}
+      <h1>{subscription.name}</h1>
+      <p className="t-small soft">
+        {subscription.currency}, {subscription.timeZone}, from{' '}
+        {formatMonth(subscription.startMonth, subscription.locale)}
       </p>
     </header>
   )
+
+  if (state.status === 'error' || state.status === 'no-owner') {
+    return (
+      <>
+        {bar}
+        <main className="column page">
+          {header}
+          <div className="detail-alert">
+            <SectionAlert
+              message={state.message}
+              onDismiss={state.status === 'error' ? () => void load() : onBack}
+              dismissLabel={state.status === 'error' ? 'Try again' : 'All subscriptions'}
+              dismissVariant={state.status === 'error' ? 'quiet' : 'link'}
+            />
+          </div>
+        </main>
+      </>
+    )
+  }
 
   if (state.status === 'loading') {
     return (
       <>
         {bar}
-        <main className="screen">
+        <main className="column page">
           {header}
-          <div className="card-row">
-            {['Owed to you now', 'Per person this month', 'Your share this month', 'Collected this month', 'Active participants'].map(
+
+          <p className="t-small soft summary-label">Owed to you now</p>
+          <div className="skeleton skeleton-figure" aria-hidden="true" />
+          <dl className="ledger-line">
+            {['Per person this month', 'Your share this month', 'Collected this month', 'Active participants'].map(
               (label) => (
-                <div className="card" key={label}>
-                  <span className="card-label">{label}</span>
-                  <span className="card-value">-</span>
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>
+                    <span className="skeleton skeleton-cell" aria-hidden="true" />
+                  </dd>
                 </div>
               ),
             )}
-          </div>
-          <p role="status">Loading this month's figures…</p>
-        </main>
-      </>
-    )
-  }
+          </dl>
+          <div className="skeleton skeleton-sentence" aria-hidden="true" />
 
-  if (state.status === 'error') {
-    return (
-      <>
-        {bar}
-        <main className="screen">
-          {header}
-          <p role="alert" className="field-error">
-            {state.message}
-          </p>
-          <button type="button" onClick={() => void load()}>
-            Try again
-          </button>
-        </main>
-      </>
-    )
-  }
+          <SectionIndex sections={DETAIL_SECTIONS} ready={false} />
 
-  if (state.status === 'no-owner') {
-    return (
-      <>
-        {bar}
-        <main className="screen">
-          {header}
-          <p role="alert" className="field-error">
-            {state.message}
+          {DETAIL_SECTIONS.map((section) => (
+            <SkeletonSection key={section.id} section={section} />
+          ))}
+
+          <p role="status" className="sr-only">
+            Loading this subscription
           </p>
         </main>
       </>
@@ -176,62 +184,50 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
   return (
     <>
       {bar}
-      <main className="screen">
+      <main className="column page">
         {header}
 
-        <div className="card-row">
-          <div className="card">
-            <span className="card-label">Owed to you now</span>
-            <span className="card-value">{money(summary.owedToYouNow)}</span>
-          </div>
-          <div className="card">
-            <span className="card-label">Per person this month</span>
-            <span className="card-value">{money(summary.currentPerPersonShare)}</span>
-          </div>
-          <div className="card">
-            <span className="card-label">Your share this month</span>
-            <span className="card-value">{money(summary.ownerShareThisMonth)}</span>
-          </div>
-          <div className="card">
-            <span className="card-label">Collected this month</span>
-            <span className="card-value">
-              {money(summary.collectedThisMonth)} of {money(summary.expectedThisMonth)}
-            </span>
-          </div>
-          <div className="card">
-            <span className="card-label">Active participants</span>
-            <span className="card-value">{summary.currentActiveCount}</span>
-          </div>
-        </div>
-
-        <p className="row-detail">
-          {summary.currentMonth} costs {money(summary.currentMonthly)}. Your net cost since the plan started is{' '}
-          <strong>{money(summary.ownerNetCost)}</strong>, against a plan total of {money(summary.totalPlanCost)}.
-          {owner && ` You are on this plan as ${owner.name}.`}
+        <p className="t-small soft summary-label">Owed to you now</p>
+        {/* Whether the amount is above zero is read off the figure already on screen; nothing is computed. */}
+        <p className={summary.owedToYouNow > 0 ? 't-figure tnum figure-owed' : 't-figure tnum'}>
+          {money(summary.owedToYouNow)}
         </p>
+
+        <dl className="ledger-line tnum">
+          <div>
+            <dt>Per person this month</dt>
+            <dd>{money(summary.currentPerPersonShare)}</dd>
+          </div>
+          <div>
+            <dt>Your share this month</dt>
+            <dd>{money(summary.ownerShareThisMonth)}</dd>
+          </div>
+          <div>
+            <dt>Collected this month</dt>
+            <dd>
+              {money(summary.collectedThisMonth)} of {money(summary.expectedThisMonth)}
+            </dd>
+          </div>
+          <div>
+            <dt>Active participants</dt>
+            <dd>{summary.currentActiveCount}</dd>
+          </div>
+        </dl>
+
+        <p className="summary-sentence tnum">
+          {formatMonth(summary.currentMonth, summary.locale)} costs {money(summary.currentMonthly)}. Your net
+          cost since the plan started is {money(summary.ownerNetCost)}, against a plan total of{' '}
+          {money(summary.totalPlanCost)}.{owner && ` You are on this plan as ${owner.name}.`}
+        </p>
+
+        <SectionIndex sections={DETAIL_SECTIONS} ready />
 
         <MemberList
           subscriptionId={subscription.id}
+          startMonth={subscription.startMonth}
           members={members}
           summary={summary}
-          onEdit={setEditing}
-          onChanged={() => {
-            setEditing(null)
-            void load()
-          }}
-          onSignedOut={onSignedOut}
-        />
-
-        <MemberForm
-          key={editing?.id ?? 'new'}
-          subscriptionId={subscription.id}
-          startMonth={subscription.startMonth}
-          editing={editing}
-          onSaved={() => {
-            setEditing(null)
-            void load()
-          }}
-          onCancelEdit={() => setEditing(null)}
+          onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
 
@@ -271,8 +267,41 @@ export function SubscriptionDetail({ subscription, email, onBack, onSignOut, onS
           locale={summary.locale}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
-          />
+        />
       </main>
     </>
+  )
+}
+
+/**
+ * A section on first load: its heading and subtitle are there, its count is
+ * blank because nothing has been counted yet, its action is disabled but still
+ * focusable, and two static bars stand in for the entries. Nothing shimmers and
+ * nothing is announced.
+ */
+function SkeletonSection({ section }: { section: SectionDescriptor }) {
+  return (
+    <section aria-labelledby={section.id}>
+      <SectionHeader
+        id={section.id}
+        title={section.title}
+        subtitle={section.subtitle}
+        action={
+          <button type="button" className="btn-primary" aria-disabled="true">
+            {section.action}
+          </button>
+        }
+      />
+      <ul className="entry-list">
+        {[0, 1].map((position) => (
+          <li key={position}>
+            <div className="entry" aria-hidden="true">
+              <span className="entry-primary skeleton skeleton-entry-primary" />
+              <span className="entry-secondary skeleton skeleton-entry-secondary" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

@@ -787,6 +787,194 @@ label {
   height: 27px;
 }
 
+/* The detail screen: the head, the leading figure and the ledger line */
+.detail-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+}
+
+.summary-label {
+  margin-top: var(--s-6);
+}
+
+.figure-owed {
+  color: var(--red);
+}
+
+.ledger-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4) var(--s-6);
+  margin: var(--s-5) 0;
+  padding: var(--s-3) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.ledger-line div {
+  margin: 0;
+}
+
+.ledger-line dt {
+  font-size: var(--t-small-size);
+  line-height: var(--t-small-leading);
+  color: var(--ink-soft);
+}
+
+.ledger-line dd {
+  margin: 0;
+  font-size: var(--t-entry-size);
+  line-height: var(--t-entry-leading);
+  font-weight: 600;
+}
+
+.detail-alert {
+  margin-top: var(--s-5);
+}
+
+/* The section index, sticky directly under the app bar. Both offsets come from
+   the two heights declared on :root, so they cannot drift apart. */
+.section-index {
+  position: sticky;
+  top: var(--bar-height);
+  z-index: 9;
+  height: var(--index-height);
+  margin-top: var(--s-5);
+  background: var(--ground);
+  border-bottom: 1px solid var(--rule);
+}
+
+.section-index ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: var(--s-5);
+}
+
+.section-index li {
+  display: flex;
+}
+
+.section-index button {
+  min-height: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.section-index button[aria-current] {
+  border-bottom-color: var(--ink);
+}
+
+/* Sections and their lists */
+main section {
+  margin-top: var(--s-7);
+}
+
+.section-index + section {
+  margin-top: var(--s-6);
+}
+
+.section-open h2,
+.section-anchor {
+  scroll-margin-top: var(--scroll-offset);
+}
+
+.entry-list {
+  list-style: none;
+  margin: var(--s-4) 0 0;
+  padding: 0;
+}
+
+.section-empty {
+  margin-top: var(--s-4);
+}
+
+/* A participant's three labelled cells: the label soft, the figure in ink. */
+.entry-cells {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  color: var(--ink-soft);
+}
+
+.entry-cells b {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.entry-tag {
+  font-weight: 400;
+}
+
+.settled-archived-toggle {
+  margin-top: var(--s-3);
+}
+
+/* The participant form's active-month ranges */
+.ranges {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.ranges legend {
+  padding: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4);
+}
+
+.range-remove {
+  grid-column: 1 / -1;
+}
+
+.ranges > .btn-link {
+  align-self: flex-start;
+}
+
+/* Skeletons for the detail screen's first load */
+.skeleton-figure {
+  width: 160px;
+  height: 34px;
+}
+
+.skeleton-cell {
+  display: block;
+  width: 96px;
+  height: 21px;
+}
+
+.skeleton-sentence {
+  width: 100%;
+  height: 15px;
+}
+
+.skeleton-entry-primary {
+  width: 45%;
+  height: 17px;
+}
+
+.skeleton-entry-secondary {
+  width: 30%;
+  height: 13px;
+}
+
 /* Home */
 .home-list {
   list-style: none;
@@ -854,8 +1042,43 @@ label {
     text-align: left;
   }
 
-  .panel-grid {
+  .panel-grid,
+  .range-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ledger-line {
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+
+  .ledger-line div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+  }
+
+  /* The index scrolls sideways below 640px, its edges faded rather than cut. */
+  .section-index {
+    overflow-x: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      #000 var(--s-2),
+      #000 calc(100% - var(--s-2)),
+      transparent
+    );
+  }
+
+  .section-index::-webkit-scrollbar {
+    display: none;
+  }
+
+  .section-index ul {
+    padding-inline: var(--s-2);
+    width: max-content;
   }
 
   .login {
@@ -881,85 +1104,19 @@ label {
 
 /* Transitional rules. These carry the screens phases 3 to 5 have not redesigned yet
    and are deleted with the markup that needs them. */
-.screen {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: var(--s-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-5);
-}
-
-.screen-narrow {
-  max-width: 24rem;
-}
-
 form {
   display: flex;
   flex-direction: column;
   gap: var(--s-2);
 }
 
-.screen form button {
-  align-self: flex-start;
-}
-
 .field-error {
   color: var(--red);
 }
 
-.subscription-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-}
-
-.subscription-form,
 .panel-form {
   border-top: 1px solid var(--rule);
   padding-top: var(--s-4);
-}
-
-.detail-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  align-items: flex-start;
-}
-
-.link-row {
-  align-self: stretch;
-  text-align: left;
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.card-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: var(--s-3);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: var(--s-3);
-}
-
-.card-label {
-  font-size: var(--t-small-size);
-  color: var(--ink-soft);
-}
-
-.card-value {
-  font-size: var(--t-entry-size);
-  font-weight: 600;
 }
 
 .row-list {
@@ -1017,20 +1174,6 @@ form {
 
 .inline-confirm p {
   margin: 0 0 var(--s-2);
-}
-
-.ranges {
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-}
-
-.range-row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
 }
 
 .filter-row {

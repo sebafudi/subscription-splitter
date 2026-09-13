@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError, SignedOutError, createSubscription, type Subscription } from '../api'
 import { Field } from '../components/ui/Field'
-import { subscriptionFieldLabels, labelFor } from '../components/ui/fieldLabels'
+import { subscriptionFieldLabels, labelFor, messageWithLabel } from '../components/ui/fieldLabels'
 import { CONNECTION_FAILURE, FormAlert } from '../components/ui/FormAlert'
 
 type Props = {
@@ -39,7 +39,7 @@ export function SubscriptionForm({ alert, onAlert, onCreated, onCancel, onSigned
 
   function refuse(field: string | undefined, message: string) {
     const named = field && labelFor(subscriptionFieldLabels, field) ? field : undefined
-    setFieldError(named ? { field: named, message } : null)
+    setFieldError(named ? { field: named, message: messageWithLabel(subscriptionFieldLabels, named, message) } : null)
     onAlert(named ? null : message)
     setRefusals((count) => count + 1)
   }

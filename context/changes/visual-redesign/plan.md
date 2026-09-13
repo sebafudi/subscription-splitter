@@ -1339,6 +1339,20 @@ behaviour, in which the created subscription is appended to the list and the scr
 Everything else in that clause is implemented, so the panel closes, the heading row reads
 "Subscription created" and the new row takes the highlight.
 
+**D9, raised in phase 4. Design-spec 5.2: `[Replace]` on the price 409 has no route behind it.**
+Design-spec 5.2 turns the server's "a price already recorded for that month" 409 into a two-button
+pattern inside the panel, "question from the server, `[Replace]` (primary) and `[Keep the existing
+price]` (quiet)", describing it as the existing inline confirmation converted. There is no existing
+inline confirmation on that path, and no route can replace a price: `POST
+/api/subscriptions/:id/prices` takes no `confirm` flag, there is no PUT or PATCH for a price entry,
+and the only other call is the delete, whose own 409 names the months that would lose their price.
+Replace would therefore be a new compound flow over two calls whose failure behaviour the
+specification does not describe, and `src/server/` is out of this change's scope. This blocks the
+last sentence of phase 4 change 4. Left in place for it: everything else the sentence fixes, so the
+409 renders as the generic form error inside the panel with the server's message, and the panel
+takes its red left rule. No Progress row covers the two buttons, so none is left unticked for it.
+The delete's own two-step strip, which design-spec 5.2 also describes, is implemented in full.
+
 **D8, raised in phase 3. Design-spec 3.8: the sentence a field error carries.**
 Design-spec 3.8 fixes the shape of a field error and forbids prefixing it with the wire name, and
 its display map turns the wire name into the field's label. The sentence itself still comes from the
@@ -1479,8 +1493,8 @@ certification screenshots are refreshed; both belong to that release step.
 - [x] 3.8 New subscription opens the disclosure under the heading with focus on the Name field — 00813fe
 - [x] 3.9 Escape, Cancel and a successful close all return focus to the heading-row button — 00813fe
 - [x] 3.10 Currency and Locale pair above 640px and stack below it while other fields span — 00813fe
-- [ ] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
-- [ ] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
+- [x] 3.11 A create closes the panel, shows "Subscription created", highlights the row and opens Detail
+- [x] 3.12 A refused create shows one sentence under its own field with the mapped label and moves focus
 - [x] 3.13 A load failure shows the section alert under the heading row with a quiet Try again — 00813fe
 - [x] 3.14 At 390 the New subscription button wraps under the heading with no horizontal scroll — 00813fe
 - [x] 3.15 The heading row shows the status line first and the button second, and no button while the panel is open — 00813fe
@@ -1489,33 +1503,33 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [ ] 4.1 Typecheck passes across all three projects
-- [ ] 4.2 The whole suite passes with no test file changed
-- [ ] 4.3 The production build succeeds
-- [ ] 4.4 Participants carries no count, Active participants is the fourth cell, and other counts equal rows rendered
-- [ ] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists
-- [ ] 4.6 The member, range and price payload keys are unchanged
-- [ ] 4.7 No router was added and App.tsx still holds the selection in one useState
-- [ ] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing
+- [x] 4.1 Typecheck passes across all three projects
+- [x] 4.2 The whole suite passes with no test file changed
+- [x] 4.3 The production build succeeds
+- [x] 4.4 Participants carries no count, Active participants is the fourth cell, and other counts equal rows rendered
+- [x] 4.5 Every money string on Detail comes from formatMoney and no NumberFormat exists
+- [x] 4.6 The member, range and price payload keys are unchanged
+- [x] 4.7 No router was added and App.tsx still holds the selection in one useState
+- [x] 4.24 No active count is derived in the client; grep activeRanges in MemberList returns nothing
 
 #### Manual
 
-- [ ] 4.8 The leading figure and the four cell ledger line match design-spec 4.4 at 1280 in light and dark
-- [ ] 4.9 The summary sentence keeps its content and order, with no bold spans and months through the formatter
-- [ ] 4.10 The index sticks under the bar, clicking scrolls a heading clear of both 116px, and aria-current changes at the visible top
-- [ ] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells
-- [ ] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls
-- [ ] 4.13 Editing opens in place and opening a second edit closes the first and discards its values
-- [ ] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert
-- [ ] 4.23 Keep returns focus to that entry's Delete and a completed delete focuses the section h2, never the body
-- [ ] 4.15 Price history entries show the recorded amount and the short effective month
-- [ ] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly
-- [ ] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list
-- [ ] 4.18 A reload after an edit keeps the figures on screen and shows the acting section's status line
-- [ ] 4.19 Archive reads Archive or Unarchive by state and produces its matching success sentence
-- [ ] 4.20 A refused price delete keeps one strip open across both steps with the server's months and Delete anyway
-- [ ] 4.21 The section alert clears on Dismiss and on the next success, and never carries a panel error
-- [ ] 4.22 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally
+- [x] 4.8 The leading figure and the four cell ledger line match design-spec 4.4 at 1280 in light and dark
+- [x] 4.9 The summary sentence keeps its content and order, with no bold spans and months through the formatter
+- [x] 4.10 The index sticks under the bar, clicking scrolls a heading clear of both 116px, and aria-current changes at the visible top
+- [x] 4.11 Participant entries show the tags, the coloured balance and the three labelled cells
+- [x] 4.12 Add participant opens with the Active months fieldset and its link-variant range controls
+- [x] 4.13 Editing opens in place and opening a second edit closes the first and discards its values
+- [x] 4.14 Deleting a participant opens the strip with focus on Keep, and a refusal goes to the section alert
+- [x] 4.23 Keep returns focus to that entry's Delete and a completed delete focuses the section h2, never the body
+- [x] 4.15 Price history entries show the recorded amount and the short effective month
+- [x] 4.16 The settled-archived toggle opens and closes with the disclosure motion and counts correctly
+- [x] 4.17 First load shows the figure and cell skeletons, present subtitles, disabled buttons and two skeleton entries per list
+- [x] 4.18 A reload after an edit keeps the figures on screen and shows the acting section's status line
+- [x] 4.19 Archive reads Archive or Unarchive by state and produces its matching success sentence
+- [x] 4.20 A refused price delete keeps one strip open across both steps with the server's months and Delete anyway
+- [x] 4.21 The section alert clears on Dismiss and on the next success, and never carries a panel error
+- [x] 4.22 At 390 the figure column moves under the text, actions wrap and the index scrolls horizontally
 
 ### Phase 5: Skipped months, Payments received and Standing orders
 

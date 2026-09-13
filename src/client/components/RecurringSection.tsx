@@ -13,6 +13,7 @@ import {
   type Schedule,
 } from '../api'
 import { ScheduleForm } from './ScheduleForm'
+import { STANDING_ORDERS } from './sections'
 
 type Props = {
   subscriptionId: string
@@ -79,7 +80,9 @@ export function RecurringSection({
 
   return (
     <section>
-      <h3>Standing orders</h3>
+      <h3 id={STANDING_ORDERS.id} className="section-anchor">
+        {STANDING_ORDERS.title}
+      </h3>
       <p className="row-detail">
         Money assumed received each month, without further entry. Nothing here is a recorded receipt.
       </p>

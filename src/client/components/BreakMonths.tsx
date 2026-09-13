@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ApiError, SignedOutError, createBreakMonth, deleteBreakMonth } from '../api'
+import { SKIPPED_MONTHS } from './sections'
 
 type Props = {
   subscriptionId: string
@@ -36,7 +37,9 @@ export function BreakMonths({ subscriptionId, breakMonths, onChanged, onSignedOu
 
   return (
     <section>
-      <h3>Skipped months</h3>
+      <h3 id={SKIPPED_MONTHS.id} className="section-anchor">
+        {SKIPPED_MONTHS.title}
+      </h3>
 
       {breakMonths.length === 0 ? (
         <p>No months skipped.</p>

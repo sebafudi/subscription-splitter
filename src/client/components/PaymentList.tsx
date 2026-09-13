@@ -9,6 +9,7 @@ import {
   type Payment,
 } from '../api'
 import { PaymentForm } from './PaymentForm'
+import { PAYMENTS_RECEIVED } from './sections'
 
 type Props = {
   subscriptionId: string
@@ -85,7 +86,9 @@ export function PaymentList({
 
   return (
     <section>
-      <h3>Payments received</h3>
+      <h3 id={PAYMENTS_RECEIVED.id} className="section-anchor">
+        {PAYMENTS_RECEIVED.title}
+      </h3>
       <p className="row-detail">Money you saw arrive. Every amount here is recorded, not assumed.</p>
 
       {error && (

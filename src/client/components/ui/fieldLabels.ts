@@ -58,3 +58,20 @@ export function labelFor(labels: FieldLabels, wireName: string): string | undefi
   const lastSegment = wireName.split('.').pop()
   return lastSegment ? labels[lastSegment] : undefined
 }
+
+/**
+ * The one transform allowed on a server field message. The server owns the
+ * sentence and its rules open with the wire name, so when the message starts
+ * with that name the leading token becomes the field's label and the rest is
+ * untouched. Anything else is shown exactly as the server wrote it: no per-rule
+ * copy lives in the client.
+ */
+export function messageWithLabel(labels: FieldLabels, wireName: string, message: string): string {
+  const label = labelFor(labels, wireName)
+  if (!label) return message
+  const lastSegment = wireName.split('.').pop()
+  for (const token of lastSegment && lastSegment !== wireName ? [wireName, lastSegment] : [wireName]) {
+    if (message.startsWith(`${token} `)) return `${label}${message.slice(token.length)}`
+  }
+  return message
+}
