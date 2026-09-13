@@ -5,8 +5,8 @@ and reports what each owes. TypeScript throughout: a Hono API and a React client
 Worker over D1. Four ledger slices shipped the product behaviour: sessions over two seeded accounts,
 subscriptions, participants with inclusive active ranges, effective-dated prices, break months,
 payments, standing orders with per-month exceptions, and the summary that derives every balance from
-them. The roadmap ledger `F-01` to `S-06` is archived under `context/archive/`, and `S-07`
-`google-sign-in` is the active change.
+them. The roadmap ledger `F-01` through `S-07` is archived under `context/archive/`, `S-07`
+`google-sign-in` having added Google sign-in beside the password login. No roadmap item is open.
 
 ## Hard rules
 

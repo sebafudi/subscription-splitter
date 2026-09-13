@@ -8,7 +8,7 @@ Project context lives in `context/` (foundation documents, changes, decisions). 
 
 ## Stack
 
-TypeScript throughout. A Hono API and a React client build into one Cloudflare Worker: the Vite plugin builds the client to static assets that the same Worker serves, with client-side routing falling back to the app shell. Storage is D1 through the `DB` binding. Sign-in is Better Auth on that same binding (decision D-001).
+TypeScript throughout. A Hono API and a React client build into one Cloudflare Worker: the Vite plugin builds the client to static assets that the same Worker serves, with client-side routing falling back to the app shell. Storage is D1 through the `DB` binding. Sign-in is Better Auth on that same binding (decision D-001). Google sign-in is available on the deployed app alongside the password form, and a first Google login creates its own separate account with an empty subscription space rather than joining an existing password account (decision D-013).
 
 ## Setup
 
