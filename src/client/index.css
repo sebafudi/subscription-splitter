@@ -333,6 +333,22 @@ select {
   background-position: right var(--s-3) center;
 }
 
+/*
+ * Date and month inputs draw their own picker indicator inside the box, so the
+ * right padding tightens to leave room for it. The glyph keeps the browser's
+ * own art and follows `color-scheme` for the dark theme; only the cursor says
+ * it is a target.
+ */
+input[type='date'],
+input[type='month'] {
+  padding-right: var(--s-2);
+}
+
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='month']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
 label {
   font-size: var(--t-small-size);
   line-height: var(--t-small-leading);

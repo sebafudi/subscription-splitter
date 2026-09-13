@@ -11,7 +11,8 @@ type Props = {
   /** Also the control's id, so the label points at it. */
   id: string
   label: string
-  /** Sits under the control and stays visible; the ISO form of a month or date belongs here. */
+  /** Sits under the control and stays visible; it carries meaning a label cannot, never the
+   * format of a value, which the calendar controls themselves show. */
   hint?: string
   /** One sentence, never prefixed with the wire name. */
   error?: string
