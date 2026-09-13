@@ -39,3 +39,21 @@ All claims cross-checked against files and Git rather than accepted from the han
 ## Next action
 
 Whoever takes Phase 1 or Phase 2 should write their own checkpoints under `context/checkpoints/`; the next status sync should read those before updating STATUS.md, GOALS.md, evidence/index.md and evidence/work-log.md again.
+
+## Second pass: Phases 1 to 3 landed
+
+- **Task id:** status-sync-11 (continued)
+- **Status:** complete
+
+Verified against Git and the checkpoints before writing: `context/checkpoints/m02-phase1-server.md` (Phase 1, commits `4978603`/`62783e8`/`7b2e56f`, gates in an isolated worktree because the shared tree carried phase 2's in-flight edits) and `context/checkpoints/m04-phase2-controls.md`, which was extended in place to also cover Phase 3 (commits `e47b427`/`54b6d8c` for phase 2, `75906dd`/`db48c29`/`0fa860b`/`006c5b3` for phase 3). The checkpoint's own combined-tree gate run at `006c5b3` is authoritative: typecheck pass, unit 20 files / 243 tests, integration 13 files / 131 tests, build pass, matching the figures given in the handoff exactly. Confirmed `context/checkpoints/m03-server-review.md` does not exist, so M02/M03 were left unchecked in `GOALS.md` and marked "review pending" in `evidence/index.md`. Confirmed the designer's uncommitted `design-delta.md` change and left it untouched (stashed it only to allow the pull, then restored it unstaged).
+
+Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, Next executable action item 12), `evidence/index.md` (M02/M03/M04 rows replacing the earlier placeholders), `evidence/work-log.md` (one entry), and the parent `GOALS.md` M02/M03/M04 notes (still unchecked, now citing landed commits instead of "in progress").
+
+### Changed paths
+
+- `context/STATUS.md`, `evidence/index.md`, `evidence/work-log.md`, `context/checkpoints/status-sync-11.md`
+- `/Users/sebastian.f/Projects/10xDevs/GOALS.md` (outside Git)
+
+### Next action
+
+Whoever picks up the Phase 1 review or Phase 4 writes their own checkpoint; the next status sync reads those before touching these files again.
