@@ -69,3 +69,17 @@ Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, item 12),
 ### Next action
 
 Phase 5 (browser verification) and Phase 6 (foundation docs) are in progress; the next status sync reads their checkpoints before touching these four files again.
+
+## Fourth pass: Phase 5 and Phase 6 landed, designer rulings committed
+
+- **Status:** complete
+
+Step 0: committed the designer's uncommitted "Rulings on implementation questions from phases 4 and 5" amendment to `design-delta.md` alone, as instructed, at `89b537a`, and pushed before touching anything else.
+
+Verified against `context/checkpoints/m05-phase5-browser.md`, `m06-phase6-docs.md`, `evidence/runs/s08-browser-verification.md`, `evidence/runs/s08-gates.txt`, the 33 `s08-*.png` captures (counted, not assumed), and `plan.md`'s Progress rows 5.1-5.11 and 6.1-6.5. Confirmed row 6.1 is deliberately left open by the phase 6 agent and satisfied by Phase 5's gate run instead. Confirmed the m05 checkpoint's note about `AGENTS.md` regressing was stale: the current file on disk correctly names S-08 as the active change. Confirmed no `m05-impl-review.md` or acceptance checkpoint exists yet.
+
+Updated `context/STATUS.md` (Current SHA, Active change/phase, Checks, item 12), `evidence/index.md` (M02/M03/M04 rows, plus a separate M04 foundation-docs row), `evidence/work-log.md` (one entry), and `GOALS.md` M02-M04 (worded per instruction: M02/M03 "browser verification done; implementation review pending", M04 "implemented and browser-verified in Chrome and Safari; implementation review pending").
+
+### Next action
+
+The independent implementation review of the whole change and the designer's visual acceptance are next; the next status sync reads `context/checkpoints/m05-impl-review.md` and the acceptance checkpoint before touching these files again.
