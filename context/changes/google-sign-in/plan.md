@@ -923,16 +923,16 @@ under "Callback fix" in `evidence/runs/google-sign-in-gates.txt`.
 
 #### Automated
 
-- [ ] 5.1 Typecheck passes across all three projects
-- [ ] 5.2 The unit suite passes, unchanged at 18 files and 214 cases
-- [ ] 5.3 The integration suite passes, unchanged at 12 files and 119 cases
-- [ ] 5.4 The production build succeeds and emits the same two client asset names
-- [ ] 5.5 Nothing under `src`, `migrations` or `tests` has changed
+- [x] 5.1 Typecheck passes across all three projects — 4893a64
+- [x] 5.2 The unit suite passes, unchanged at 18 files and 214 cases — 4893a64
+- [x] 5.3 The integration suite passes, unchanged at 12 files and 119 cases — 4893a64
+- [x] 5.4 The production build succeeds and emits the same two client asset names — 4893a64
+- [x] 5.5 Nothing under `src`, `migrations` or `tests` has changed — 4893a64
 
 #### Manual
 
-- [ ] 5.6 The defect reproduces against the built configuration under `wrangler dev` before the edit
-- [ ] 5.7 After the edit a navigation to `/api/auth/callback/google` with a fabricated state reaches the Worker and redirects to the app root carrying the error code
-- [ ] 5.8 After the edit a navigation to a client route and to the root still serves `index.html`, and every static asset is still served
-- [ ] 5.9 After the edit `/api/me` is still 401 with no cookie, whether the request is a navigation or a fetch, and an unmatched `/api` path still answers the Worker's JSON 404
-- [ ] 5.10 Whether the Workers test pool can reproduce the asset layer is settled by a probe rather than assumed, and the answer is recorded
+- [x] 5.6 The defect reproduces against the built configuration under `wrangler dev` before the edit — 4893a64
+- [x] 5.7 After the edit a navigation to `/api/auth/callback/google` with a fabricated state reaches the Worker and redirects to the app root carrying the error code — 4893a64
+- [x] 5.8 After the edit a navigation to a client route and to the root still serves `index.html`, and every static asset is still served — 4893a64
+- [x] 5.9 After the edit `/api/me` is still 401 with no cookie, whether the request is a navigation or a fetch, and an unmatched `/api` path still answers the Worker's JSON 404 — 4893a64
+- [x] 5.10 Whether the Workers test pool can reproduce the asset layer is settled by a probe rather than assumed, and the answer is recorded — 4893a64
