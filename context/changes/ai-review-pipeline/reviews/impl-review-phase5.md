@@ -379,3 +379,73 @@ outcome" step was correctly skipped, since the reviewer exited 0 rather than 2. 
 workflow passed alongside it. Merged with a rebase as `d37417e`. That run is also the second real
 exercise of the pipeline, which incidentally makes the reviewer's own behaviour reproducible across
 two independent pull requests.
+
+## Re-verification
+
+Independent re-check, 2026-09-13, from a fresh worktree on `origin/main` at `926960d`, by the same
+reviewer that raised the findings. Every claim below was checked against the files and the live
+GitHub state rather than against the Resolution narrative.
+
+- **Verdict: APPROVED.** All five warnings and all four observations are resolved. Nothing required
+  remains. Three optional residuals are listed at the end; none blocks archiving.
+
+| Finding | Claimed | Re-verified |
+|---|---|---|
+| F1 | Correction written onto the superseded matrix | Confirmed. `evidence/champion/eval-results-8000-superseded.md:1-16` carries a SUPERSEDED header stating the 8000 value was uncommitted, that `d4e755f` touches no file under `src/` and still read 2000, and that `7b3a7b7` went from 2000 straight to 16000. A tree-wide grep finds no surviving claim that 8000 was ever committed or test-pinned |
+| F2 | Re-run at 16000; `D-011` rewritten | Confirmed, and resolved more strongly than the recommended Fix A. `evidence/champion/eval-results.md` records eval `eval-dfe-2026-09-13T00:53:56` at the shipped budget. `D-011:6` explicitly withdraws the clean-control pillar and confirms the injection pillar |
+| F3 | Supersession banner on the runbook | Confirmed. `phase-5-runbook.md:3-16` names every false fact in the document and points at the five current ones |
+| F4 | Six sites swept, latency range corrected | Confirmed. `promptfooconfig.yaml:10` now reads 16000 and `:39` reads "38s to 522s"; `tools/reviewer/README.md`, `research.md` and `plan.md:839` all resolve to 16,000, the two historical passages carrying a supersession sentence rather than being rewritten |
+| F5 | Five rows closed against existing evidence | Confirmed. Rows 2.10, 2.11, 3.6, 3.7 and 3.9 (`plan.md:900,901,916,917,918`) are each closed with a specific, checkable reason rather than an excuse, and `change.md` no longer undercounts |
+| F6 | One spend figure with the arithmetic shown | Confirmed. `eval-results.md:111-128` reconciles 0.114841, 0.133683 and 0.171179 as successive readings of one running total. `0.1337` survives nowhere outside this review's own F6 text |
+| F7 | `::warning::` on exit code 2 | Confirmed at `.github/workflows/ai-review.yml:152-154` |
+| F8 | `timeout-minutes: 15` | Confirmed at `.github/workflows/ai-review.yml:36-39`, with the reason in a comment |
+| F9 | Five `uses:` pinned exactly | Confirmed: `actions/github-script@v9.0.0` three times, `actions/checkout@v7.0.1`, `actions/setup-node@v7.0.0` |
+
+**The new matrix.** Every total in both `eval-results.md` and `eval-results-8000-superseded.md` was
+recomputed from the per-fixture cells and matches: the per-model cost sums, the deterministic and
+rubric pass counts, and the mean, median and slowest latencies. The spend chain reconciles, with
+0.171179 minus 0.133683 equalling the stated 0.037496 for the re-run and 0.024119 of that being the
+fourteen reviewer calls. The reversal the re-run produced is the part worth trusting least on a
+first reading, so it was read closely: the alternative now passes the clean control and still fails
+the injection probe with a schema-valid object, which is a harder result for the author than the one
+it replaces, and `D-011` and `eval-results.md:62-98` both say so plainly rather than presenting the
+outcome as a vindication. Withdrawing a pillar that favoured the chosen model is the opposite of
+motivated reasoning.
+
+**Row 5.2's tick is defensible as written.** The row states in its own text that the process still
+exits 100 and why, then argues the criterion's published gloss, every fixture assertion passing for
+at least the chosen model, is now literally satisfied at 7 of 7. No reader can take the tick for a
+zero exit code, because the row says otherwise in the same sentence. A comparison that contains a
+losing candidate cannot exit 0, so the gloss is the only reading the criterion can carry here.
+
+**Independently confirmed on GitHub.** Pull request 2 is merged carrying one `ai-cr:passed` label;
+run `34730251520` succeeded in 1m 54s with the fork-notice job skipped and posted a `passed` comment
+authored by `github-actions`. The workflow hardening was therefore exercised by the pipeline itself
+rather than only reviewed as YAML.
+
+**Gates re-run in this worktree.** `npm test` in `tools/reviewer`: 68 tests in 10 files, all passing.
+`npm run typecheck` at the root: clean across all three projects. `npm run test:unit`: 185 tests in
+15 files, all passing. A fresh secret scan of the working tree and of `git log -p --all -S` for
+`sk-or-`, `sk-ant-`, `ghp_` and `github_pat_` finds no key material; every hit is the `sk-or-v1-test`
+placeholder or the negative assertion that guards it.
+
+### Residuals, all optional
+
+- **R1 - `context/STATUS.md:103` still quotes the pre-re-run spend.** A paragraph marked
+  "Status: satisfied" says "Spend stayed bounded at 0.1148 dollars" while `STATUS.md:19` gives
+  0.171179 for the same whole-phase quantity. Neither is near the 2 dollar ceiling, so nothing is at
+  risk; it is the same class of defect F6 fixed, in the one file this re-verification was instructed
+  not to edit. Worth a one-word correction by whoever owns that file.
+- **R2 - `plan-brief.md` is stale with no supersession marker.** It still presents three evaluation
+  models, the superseded candidate table of `deepseek/deepseek-v3.2`, `openai/gpt-5-mini` and
+  `anthropic/claude-sonnet-4.6`, and a 2,000 token output cap (lines 28, 47, 54, 102). Every sibling
+  planning document received a banner; this one was missed. It is a summary rather than a procedure,
+  so it cannot mislead an operator the way the runbook could, but it is the last document in the
+  folder that reads as current while being wrong, and the folder is about to freeze.
+- **R3 - The roadmap's S-05 `Blockers` line and Open Roadmap Question 4 still describe the
+  credential as an unavailable external dependency.** The archive procedure changes only the Status
+  field, and S-04's archive left the equivalent rows untouched, so this follows the repository's
+  precedent rather than departing from it. Noted so the next roadmap edit can clear it deliberately.
+
+One bookkeeping nit, not a finding: the five Progress rows closed under F5 carry the SHA `90527f5`,
+which is this review rather than `ee20cde`, where the closing work landed.
