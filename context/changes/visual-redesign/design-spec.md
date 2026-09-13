@@ -194,7 +194,8 @@ Invalid: border `--red`, ground `--red-tint`, `aria-invalid="true"`. Disabled: t
 ground `--ground`.
 
 Label above the input at `--t-small` weight 600 colour `--ink`, 4px gap. Optional hint under the
-label at `--t-small` colour `--ink-soft`, associated with `aria-describedby`. Month fields keep a
+control (label, control, then hint or error, per 3.7) at `--t-small` colour `--ink-soft`, associated
+with `aria-describedby`. Month fields keep a
 text input with `inputMode="numeric"`, `pattern="\d{4}-\d{2}"`, `autoComplete="off"`, and the hint
 "Month as YYYY-MM, like 2026-01". Date fields keep a text input with the hint "Date as YYYY-MM-DD".
 Amount fields use `inputMode="decimal"` and the hint "Amount, like 100.00".
