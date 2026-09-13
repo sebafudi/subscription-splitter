@@ -618,6 +618,11 @@ text-input attributes and adding `min` where a bound exists. Depends on phase 2.
 `src/client/components/ScheduleForm.tsx` (`:172` and `:193`),
 `src/client/components/PaymentForm.tsx` (`:156`)
 
+**Files, addendum**: the subscription's `time_zone` and `start_month` reach none of these forms today,
+because `Summary` carries only `currentMonth`, `currency` and `locale`, so this phase also threads both
+values down through `src/client/screens/SubscriptionDetail.tsx` (prop lines in the five section JSX
+blocks only), `src/client/components/MemberList.tsx`, `PaymentList.tsx` and `RecurringSection.tsx`.
+
 **Purpose**: give every calendar value a real control while keeping every wire value, every state
 shape and every server rule exactly as they are.
 
