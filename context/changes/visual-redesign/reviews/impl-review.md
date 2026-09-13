@@ -420,6 +420,11 @@ defect. It is the same class as F5. **Required action**: retake those four at th
 themes, or correct the four rows to say what each file actually holds, before the change is archived.
 No code change is required.
 
+**R1 closed at `6b30d5b`.** All four files retaken at the set's dimensions and themes, verified with
+`sips` and by reading each one: desktop pair at 2560 by 1800 showing Payments received current, mobile
+pair at 750 by 1624 showing Standing orders current, light and dark genuinely distinct in both pairs.
+Detail in `evidence/runs/visual-redesign-index-current-item.md`.
+
 ### Updated verdicts
 
 | Dimension | Verdict |
