@@ -166,8 +166,11 @@ order) at every width. Content aligned to the 720px column.
 
 ### 3.3 Buttons
 
-Four variants, all native `button`, min height 40px (44px below 640px), padding `0 var(--s-4)`,
-radius 4px, `--t-body` weight 600.
+Four variants, all native `button`, radius 4px, `--t-body` weight 600. Primary, quiet and
+destructive: min height 40px (44px below 640px), padding `0 var(--s-4)`. The link variant is an
+inline text control: min height 24px at every width, no padding, exempt from the 44px rule (24px
+meets the WCAG 2.2 minimum target size; row actions are separated by `--s-3` so targets do not
+touch).
 
 | Variant | Rest | Hover | Active | Disabled |
 | --- | --- | --- | --- | --- |
@@ -344,7 +347,8 @@ sentence at `--t-small` colour `--ink-soft` directly under the heading, referenc
 - Months: a display formatter turns `YYYY-MM` into a short month name and year using the
   subscription's `locale` with `Intl.DateTimeFormat(locale, { month: "short", year: "numeric" })`
   on `new Date(Date.UTC(y, m - 1, 1))`; dates `YYYY-MM-DD` use `{ day: "numeric", month: "short",
-  year: "numeric" }`. Formatting is presentation only; every value the client sends stays
+  year: "numeric" }`. Both formatters pass `timeZone: "UTC"` so the UTC-constructed date renders
+  the same month everywhere. Formatting is presentation only; every value the client sends stays
   `YYYY-MM` or `YYYY-MM-DD`. Inputs and hints keep the ISO form.
 
 ## 4. Screens
@@ -621,8 +625,9 @@ Two-column pairs inside panels (everything else spans):
 
 One breakpoint at 640px. Above it: the 720px column, two-column field pairs, ledger figure column
 on the right, section index items all visible. At or below it: 16px page padding, one-column
-fields, figure column under the text, actions on their own line, 44px controls, hidden email in the
-app bar, horizontally scrolling section index. Nothing depends on hover. The page never scrolls
+fields, figure column under the text, actions on their own line, 44px controls (primary, quiet,
+destructive buttons, inputs and selects; link-variant buttons stay 24px per 3.3), hidden email in
+the app bar, horizontally scrolling section index. Nothing depends on hover. The page never scrolls
 horizontally; tiles use the two-column grid.
 
 ## 9. Copy changes
@@ -714,6 +719,10 @@ Plan review design findings 1 to 9 (`reviews/plan-review.md`), resolved:
 | 7 standing-order question | 3.10: consequence clause added |
 | 8 payments count under filter | 5.4: N is the rows listed under the current filter |
 | 9 focus after a strip closes | 3.7, 3.10 and 7: explicit destinations for Keep, Escape, successful delete and panel close on success |
+
+Implementation round, after Phases 1 and 2: the link variant is fixed at 24px at every width and
+exempt from the 44px mobile rule (3.3, 8); the month and date formatters pass `timeZone: "UTC"`
+(3.12). Row 6.13 of the plan should be read with that exemption.
 
 Re-verification round: the mockup and its three captures were regenerated to the four-cell ledger line and the count-free Participants heading; the link underline moved from `--rule` to `--border` (3.3).
 
