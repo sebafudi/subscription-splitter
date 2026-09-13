@@ -1423,21 +1423,21 @@ certification screenshots are refreshed; both belong to that release step.
 
 #### Automated
 
-- [x] 2.1 Typecheck passes across all three projects
-- [x] 2.2 The whole suite passes with no test file changed
-- [x] 2.3 The production build succeeds
-- [x] 2.4 No wire name reaches a rendered string in the files this phase touches
-- [x] 2.5 DateTimeFormat appears only in src/client/format.ts
-- [x] 2.6 No NumberFormat appears anywhere under src/client
+- [x] 2.1 Typecheck passes across all three projects — b8db05f
+- [x] 2.2 The whole suite passes with no test file changed — b8db05f
+- [x] 2.3 The production build succeeds — b8db05f
+- [x] 2.4 No wire name reaches a rendered string in the files this phase touches — b8db05f
+- [x] 2.5 DateTimeFormat appears only in src/client/format.ts — b8db05f
+- [x] 2.6 No NumberFormat appears anywhere under src/client — b8db05f
 
 #### Manual
 
-- [x] 2.7 Login matches design-spec 4.1 at 1280 in light and in dark
-- [x] 2.8 A refused sign-in shows the generic error line and focus moves to the email field
-- [x] 2.9 Submitting keeps the label, disables the fields, sets aria-busy and aria-disabled, and refuses a second submit
-- [x] 2.10 Session loading shows the wordmark-only bar, a static skeleton and the status announcement
-- [x] 2.11 At 390 the Login block fills the width with a full-width button and 44px controls
-- [x] 2.12 Tab order is email, password, Sign in, each with the green focus ring and no trap
+- [x] 2.7 Login matches design-spec 4.1 at 1280 in light and in dark — b8db05f
+- [x] 2.8 A refused sign-in shows the generic error line and focus moves to the email field — b8db05f
+- [x] 2.9 Submitting keeps the label, disables the fields, sets aria-busy and aria-disabled, and refuses a second submit — b8db05f
+- [x] 2.10 Session loading shows the wordmark-only bar, a static skeleton and the status announcement — b8db05f
+- [x] 2.11 At 390 the Login block fills the width with a full-width button and 44px controls — b8db05f
+- [x] 2.12 Tab order is email, password, Sign in, each with the green focus ring and no trap — b8db05f
 
 ### Phase 3: Home
 
