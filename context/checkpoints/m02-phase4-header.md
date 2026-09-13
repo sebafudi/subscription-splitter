@@ -106,3 +106,59 @@ Neither blocks; both are implemented as recommended and can be reversed by a rul
 Phase 5: browser verification and the acceptance pass. The ten manual rows of phase 4 (4.7 to 4.15
 and 4.17) are unticked and are verified there, together with phase 5's own rows. Deletion is
 exercised only on a synthetic disposable subscription created for the purpose.
+
+---
+
+## Addendum: resolving the independent implementation review
+
+- **Task**: resolve `context/changes/subscription-management-and-date-inputs/reviews/impl-review.md`
+  (`d8ba66d`), verdict APPROVED with two warnings and six observations
+- **Model**: Opus
+- **Status**: complete; both warnings and five observations fixed, the sixth accepted with its reason
+  recorded in the review's own `## Resolution`
+
+### Actions
+
+- **F1** `src/client/format.ts:3`: dropped the clause claiming every input and hint keeps the ISO
+  form, which this change falsified. The wire-format half stays.
+- **F2** `src/client/components/ui/Field.tsx:14-15`: narrowed to "never the format of a calendar
+  value", which leaves the three money format hints legitimate.
+- **O1** `tests/integration/subscription-deletion.test.ts`: the atomicity case asserts every count is
+  above zero before the rejected batch, reusing the main deletion case's loop.
+- **O2** plan row 6.1 ticked against `e40acbf`, the commit owning `evidence/runs/s08-gates.txt`. The
+  plan is now 57 of 57.
+- **O3** `MonthField.tsx`: `autoComplete="off"` added to the fallback `select`.
+- **O4** `change.md` moved from `plan_reviewed` to `implemented`, which is the implement step's own
+  transition; `archived_at` stays for the archive step. No date was written.
+- **O5** `README.md`: the `COOKIE_SECURE` remedy now says the refusal is silent and the sign-in form
+  returns to the login screen with no error.
+- **O6** accepted as is. The empty `field` is produced where the route serialises the issue path, not
+  by the `.refine`, and an object-level refusal has no field to name; giving the refine a `path`
+  would invent one. Fixing it in the route means either one inconsistent handler or a sweep across
+  six route files, which a cosmetic issue on a branch the client cannot reach does not warrant. The
+  behaviour is already right at both ends.
+
+Nothing under `context/STATUS.md`, `GOALS.md`, `evidence/index.md` or `evidence/work-log.md` was
+touched.
+
+### Commits
+
+- `abf8790` fix(s-08): resolve implementation review comment corrections
+- the review's `## Resolution` section, committed separately so it can cite `abf8790`
+
+### Verification
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | clean, all three projects |
+| `npm run test:unit` | 22 files, 262 tests, all passing |
+| `npm run test:integration` | 13 files, 131 tests, all passing |
+| `npm run build` | succeeded |
+
+Identical to the counts in `evidence/runs/s08-gates.txt` and to the review's own re-run. O1
+strengthens an existing case rather than adding one, so no count moved.
+
+### Exact next action
+
+The change is `implemented` with every Progress row ticked. The head of this work is the release 5
+candidate; the archive step owns `archived_at` and the roadmap flip to `done`.

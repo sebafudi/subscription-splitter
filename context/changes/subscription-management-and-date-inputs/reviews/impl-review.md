@@ -321,3 +321,75 @@ items are passed along for awareness only, both already visible in the evidence:
 - This review re-ran the gates and read the code, but did not itself drive a browser; the browser
   claims are accepted on the strength of the evidence file's method, which names the property behind
   each value.
+
+## Resolution
+
+Author's response. Both warnings and five of the six observations are resolved; O6 is accepted as
+is, with the reason below. Every finding was re-checked against the file it names before being acted
+on, and the two required corrections are comment-only, as the verdict said they would be.
+
+| Finding | Severity | Outcome | Commit |
+|---|---|---|---|
+| F1 | warning | Fixed. The falsified clause is gone from `src/client/format.ts:3`; the module header now claims only the wire format, which is still true | `abf8790` |
+| F2 | warning | Fixed. `Field.tsx`'s hint comment reads "never the format of a calendar value", which leaves the three money hints legitimate | `abf8790` |
+| O1 | observation | Fixed. The atomicity case asserts every count is above zero before the rejection, reusing the main case's loop | `abf8790` |
+| O2 | observation | Fixed. Plan row 6.1 ticked against `e40acbf`, the commit that owns the phase 5 gate run | `abf8790` |
+| O3 | observation | Fixed. `autoComplete="off"` now sits on the fallback `select` as well as the month input | `abf8790` |
+| O4 | observation | Fixed. `change.md` moved from `plan_reviewed` to `implemented`, which is the implement step's own transition, not the archive step's | `abf8790` |
+| O5 | observation | Fixed. The `README.md` remedy now says the refusal is silent and the form returns to the login screen with no error | `abf8790` |
+| O6 | observation | Accepted as is. There is no one-line fix inside the refusal; see below | none |
+
+**F1.** The clause "and every input and hint keeps the ISO form" described exactly what this change
+removed, so it went. What survives is the half the change exists to protect: every value the client
+sends stays `YYYY-MM` or `YYYY-MM-DD`. The finding is right that the phase 1 sweep was scoped to
+`src/server/` and that `format.ts` was never in the diff, which is why nothing caught it earlier.
+
+**F2.** Narrowed to the finding's own wording. The three call sites it names, `PaymentForm.tsx:173`,
+`PriceHistory.tsx:335` and `ScheduleForm.tsx:156`, pass a money format hint and are unchanged and
+unaffected; the comment no longer forbids what the component is used for one field away.
+
+**O1.** The loop is the main case's, verbatim in shape, with its own message naming the failed batch.
+The test still proves what it proved before; it now also fails loudly if the fixture stops creating
+rows, rather than passing on two empty states.
+
+**O2.** Ticked against `e40acbf` rather than against this resolution, because that commit owns the
+run the row cites: `evidence/runs/s08-gates.txt` records typecheck, 22 unit files with 262 cases, 13
+integration files with 131 cases, and the build, on a tree with no `src/`, `tests/` or `migrations/`
+difference from the code being judged. This review re-ran all three independently with the same
+counts, and they were re-run again for this resolution, unchanged. The plan is now 57 of 57.
+
+**O3.** A literal gap against the amended 3.4 rather than a defect, as the finding says, and closed
+literally: both branches now carry the same attribute set.
+
+**O4.** Moved here rather than left for the archive step. The reviewer was instructed not to touch
+it, but `status: implemented` is the implement step's transition and `archived_at` is the archive
+step's; leaving the front matter at `plan_reviewed` after every phase landed would misreport the
+change. No date field exists in this front matter, so nothing dated was written.
+
+**O5.** One clause, where the finding put it. The remedy was already documented twice; the symptom
+was not, and the silence is what made the cause hard to guess.
+
+**O6, accepted as is.** The fix the finding describes does not exist inside the refusal. The empty
+`field` is produced where the route serialises `parsed.error.issues[0]?.path.join('.')`, not by the
+`.refine` itself, and an object-level refusal has no field to name: giving the refine a `path` would
+invent a field name that no request sent. Fixing it in the route would mean either changing one
+handler and leaving the other five route files inconsistent, or a sweep across all of them, which is
+a larger change than a cosmetic issue on a branch the client cannot reach warrants. The behaviour is
+already correct at both ends: the route answers 400 with the right sentence, and the client's
+`refuse` treats the empty string as no field and shows the whole-form error. Recorded for whoever
+next touches that serialisation across the route files.
+
+**Nothing was deferred.** The verdict's two required corrections are in, five observations are fixed
+and the sixth is accepted with its reason stated. Re-review is a separate pass and not this author's.
+
+### Gates at this resolution
+
+| Gate | Result |
+|---|---|
+| `npm run typecheck` | clean, all three projects |
+| `npm run test:unit` | 22 files / 262 tests passed |
+| `npm run test:integration` | 13 files / 131 tests passed |
+| `npm run build` | succeeded |
+
+Identical to the counts this review recorded and to `evidence/runs/s08-gates.txt`. No test was added
+or removed: O1 strengthens an existing case rather than adding one.
