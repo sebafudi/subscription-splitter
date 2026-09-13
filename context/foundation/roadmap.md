@@ -205,8 +205,8 @@ not recreate them.
 - **Source refs:** MS-01
 - **Prerequisites:** F-01
 - **Parallel with:** S-02, S-03, S-04
-- **Blockers:** Model API access for the review route is not available in this environment; the
-  account owner has to provide it as a repository secret.
+- **Blockers:** None. Resolved: model API access was provided as the `OPENROUTER_API_KEY` repository
+  secret and the model selection is recorded in decision `D-011`.
 - **Unknowns:**
   - Which model and prompt shape the reviewer uses - Owner: decision D-003. Block: yes until the
     evaluation suite can run against a model.
@@ -234,9 +234,8 @@ not recreate them.
    nothing; default is hidden from the current-month view, still reachable in history.
 3. **How a charged month with no active participants is presented** - Owner: the organizer. Blocks:
    nothing; default is an ordinary line whose whole cost falls on the organizer.
-4. **Model API access for the review route** - Owner: the account owner. Blocks: S-05. This is the
-   one remaining external dependency, and it is why the main blocker is external rather than an
-   unresolved decision.
+4. **Model API access for the review route** - Resolved. The `OPENROUTER_API_KEY` repository secret
+   is set, and the reviewer model is selected and recorded in decision `D-011`. Blocks: nothing.
 
 (Which sign-in mechanism the seeded accounts use was resolved by decision D-001.)
 
