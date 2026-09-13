@@ -76,9 +76,9 @@ as it really is.
 on it:
 
 ```
-You are logged in with an OAuth Token, associated with the email sebastianfudalej@gmail.com.
-Account Name: Sebastianfudalej@gmail.com's Account
-Account ID:   b0c75f1b95e2170ef88369a765d57703
+You are logged in with an OAuth Token, associated with the email <owner-email redacted>.
+Account Name: <owner-email redacted>'s Account
+Account ID:   <account-id redacted>
 Token Permissions:
 - user (read)
 - offline_access
