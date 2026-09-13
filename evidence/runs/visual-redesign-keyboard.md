@@ -112,3 +112,23 @@ Alice and Bob, two prices, the break month 2026-07, two payments and its two sta
 session started in.
 
 No console error or warning was logged during the whole phase 6 session.
+
+## One piece of drift that predates this pass
+
+The phase 5 agent reported afterwards that the synthetic participant "Ada" on "Family plan" had been
+deleted and recreated during one of its own delete tests, so that row carries a new id and has lost
+whatever payment history it held before. That drift is older than this pass and nothing here restored
+it, because "Family plan" was never built by the seed route: `npm run seed:local` creates accounts
+only, and the two subscriptions and their contents were built by hand in earlier sessions, so there
+is no fixture to reseed from.
+
+Checked against the local D1 rather than assumed. No participant on "Family plan" holds any payment
+or any standing order: Organizer, Bo, Cleo and Ada all count zero of each. Every "Family plan"
+capture therefore shows "Paid 0,00 zł" on every row, which agrees with the summary figures rendered
+in the same frame, so no capture shows an inconsistent screen.
+
+No capture depends on the lost history. The one state that needs a participant the server refuses to
+delete is row 17 `section-generic-error`, and it was taken on "Payments walkthrough" against Alice,
+who still holds one payment and one standing order; the 409 in that capture is the server's real
+refusal, not a forced one. The other seeded subscription is untouched: Alice and Bob hold one payment
+each, both prices, the break month and both standing orders.
