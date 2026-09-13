@@ -280,3 +280,12 @@ not recreate them.
 - **Source:** explicit user request; `context/foundation/google-sign-in-brief.md`.
 - **Outcome:** Google sign-in works on the deployed app while password login and private-account isolation remain intact.
 - **Done when:** course change flow, complete Fable design delta, independent reviews, secure project/OAuth provisioning, regression checks and actual live Google sign-in all complete.
+
+## S-08: Subscription management and native calendar inputs
+
+- **Change ID:** `subscription-management-and-date-inputs`
+- **Status:** ready
+- **Prerequisites:** shipped ledger and accepted visual design.
+- **Source:** explicit user request; `context/foundation/subscription-management-brief.md`.
+- **Outcome:** edit/delete the subscription itself and use real browser calendar controls throughout.
+- **Done when:** course change flow, Fable design acceptance, ownership/atomicity tests, browser checks, deployment and refreshed release evidence complete.
