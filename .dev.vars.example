@@ -9,6 +9,8 @@ SEED_OWNER_EMAIL=
 SEED_OWNER_PASSWORD=
 SEED_REVIEWER_EMAIL=
 SEED_REVIEWER_PASSWORD=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # COOKIE_SECURE is left unset in every deployed environment, so the session
 # cookie always carries Secure. Set it to "false" only in local development,
@@ -19,3 +21,8 @@ SEED_REVIEWER_PASSWORD=
 # origin. The Worker refuses to construct its auth instance, in every
 # environment, if it is left blank - leaving it empty is not a way to widen
 # or disable the origin check.
+
+# GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET back "Continue with Google". The
+# deployment carries them as Worker secrets set with `wrangler secret put`.
+# Leaving them unset is supported: the Worker then registers no Google provider
+# and the login screen renders no Google button.

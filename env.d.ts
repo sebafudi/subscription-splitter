@@ -12,6 +12,13 @@ declare namespace Cloudflare {
     COOKIE_SECURE: string
     SEED_ENABLED: string
     SEED_TOKEN: string
+    /**
+     * Google sign-in credentials. Optional: a deployment carrying neither
+     * registers no Google provider and renders no Google button, which is a
+     * supported state and the one continuous integration runs in.
+     */
+    GOOGLE_CLIENT_ID?: string
+    GOOGLE_CLIENT_SECRET?: string
   }
 }
 

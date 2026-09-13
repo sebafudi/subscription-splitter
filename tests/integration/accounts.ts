@@ -13,8 +13,9 @@ import { betterAuth } from 'better-auth'
  * `10.0.0.x` auth.test.ts, `10.1.0.x` subscriptions.test.ts,
  * `10.2.0.x` dev-seed.test.ts, `10.3.0.x` members.test.ts,
  * `10.4.0.x` prices.test.ts, `10.5.0.x` summary.test.ts,
- * `10.6.0.x` payments.test.ts, `10.7.0.x` recurring.test.ts. Two files take no
- * prefix because neither signs in through a route: router-isolation.test.ts
+ * `10.6.0.x` payments.test.ts, `10.7.0.x` recurring.test.ts,
+ * `10.8.0.x` google-auth.test.ts. Two files take no prefix because neither
+ * signs in through a route: router-isolation.test.ts
  * asks each router directly, and member-removal.test.ts seeds its account with
  * `seedUser` and calls the repository.
  */

@@ -44,4 +44,17 @@ app.get('/api/me', async (c) => {
   }
 })
 
+/**
+ * The one thing the login screen needs before it has a session: whether this
+ * deployment can offer Google at all. `/api/me` answers 401 signed out and
+ * `/api/health` carries nothing, so neither can say it, and reading the 404
+ * from the social call would only tell the user after they had clicked.
+ *
+ * The body is exactly one boolean. The client id never leaves the Worker, and
+ * the answer reveals nothing the rendered login screen does not already show.
+ */
+app.get('/api/auth-config', (c) => {
+  return c.json({ google: Boolean(c.env.GOOGLE_CLIENT_ID && c.env.GOOGLE_CLIENT_SECRET) })
+})
+
 export default app
