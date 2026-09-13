@@ -260,3 +260,69 @@ in the code rather than only in the plan, and R1 and R2 are both covered by test
 right reason. The one warning is a residual race the plan claimed to have closed everywhere; it costs
 a 500 rather than a wrong write, so it does not block phase 2, and the fix is four lines in the
 statement that already exists.
+
+## Resolution
+
+Implementer's response. The warning is fixed in code, three observations are fixed in code and two
+are recorded. Each finding was re-checked against the source before being acted on, and the one place
+where re-checking changed the answer is written out under W1 rather than folded into the table.
+
+| Finding | Severity | Outcome | Commit |
+|---|---|---|---|
+| W1 | warning | Fixed. The owner leave month travels as a sixth `exists` clause in the settings update, and the lost-race branch re-reads the owner ranges so it names the month the clause saw | `688757a` |
+| O1 | observation | Fixed. The atomicity case now asserts the sibling subscription's eight counts are unchanged as well as the target's | `688757a` |
+| O2 | observation | Fixed. A successful `update` returns the row read back from the database rather than an object assembled from the patch | `688757a` |
+| O3 | observation | Fixed. Both accepted-move cases re-read through `GET` and assert the stored first month | `688757a` |
+| O4 | observation | Recorded. The floor binding before the minimums is the intended precedence; reasoning below | `688757a` |
+| O5 | observation | Recorded. The ruling landed as `7d5b588`; the code already matches it and nothing is outstanding | `688757a` |
+
+**W1.** The fix is the one the finding proposes. The settings update gains
+`exists (select 1 from active_ranges where id = ? and (left_month is null or left_month >= ?))`,
+bound with the shifted range's id and the new first month, added only when a shift applies and the
+month moves later, because an earlier move cannot pass a leave month that the stored set already
+places at or after the old first month. The `meta.changes === 0` branch now re-reads the owner ranges
+and re-derives the shifted row from the re-read subscription, so a race stopped by this clause is
+answered with the delta's "your own first active range ends then" sentence naming the leave month the
+clause actually saw, rather than with the stale row's `null`. Two unit cases against the `D1Database`
+stub cover it in R2's style: one where the range closes between the two owner-range reads and the
+answer is the owner sentence, and one asserting the clause and its binding are in the statement at
+all.
+
+Re-checking changed one thing, and it is worth stating rather than leaving implied. The 500 the
+finding describes is not reachable through today's participant route. `update` in
+`src/server/db/members.ts:201-208` replaces a member's whole range set, deleting every row and
+inserting new ones with fresh ids, so a concurrent participant PATCH does not leave a closed range at
+the id captured before the batch; it leaves no row at that id at all. The shift statement then matches
+nothing, the `CHECK` is never reached, and the participant minimum clause refuses the move anyway
+because the replacement's opening range sits at the old first month. So the finding's severity is
+right and its mechanism is one step off. The clause is still the correct fix: it stops the rule
+depending on an implementation detail of another module, namely that ranges are replaced rather than
+updated in place, and it is the only one of the six bounds that was not travelling in the write, which
+is the invariant F5's decision established.
+
+**O4.** The floor is checked before the minimums and refuses first when both could bind. That
+precedence is deliberate. The floor is a static rule about a single submitted value, decided against
+nothing but the subscription's own time zone, while a minimum is a statement about other records. A
+month below the floor is refused whatever the dependent records say, and a month below the floor can
+never satisfy a minimum either, since every minimum is at or after the stored first month and the
+stored first month is at or after the floor on every subscription this code creates. So the two
+orderings differ only for a subscription stored below today's floor, which needs a row older than ten
+years, and there the floor sentence is the more useful of the two: it names the bound the person has
+to clear before any other rule can matter. No code change.
+
+**O5.** Nothing to do. The ruling is committed at `7d5b588`, the fallback sentence at
+`src/server/db/subscriptions.ts` matches it, and the observation records a sequencing fact about the
+review rather than a defect.
+
+### Gates after the fix
+
+Run on the shared working tree, which typechecks and builds clean; the Phase 4 agent's client work was
+committed by the time these ran, so no detached worktree was needed. The suites cover the whole
+repository, so the unit counts include that agent's files as well as this phase's.
+
+| Gate | Result |
+|------|--------|
+| `npm run typecheck` | pass, all three projects |
+| `npm run test:unit` | pass, 22 files, 262 tests |
+| `npm run test:integration` | pass, 13 files, 131 tests |
+| `npm run build` | pass |

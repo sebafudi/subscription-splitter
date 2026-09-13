@@ -2,7 +2,7 @@
 
 - **Task:** phase 1 of change `subscription-management-and-date-inputs` (roadmap S-08), the server half
 - **Model:** Opus
-- **Status:** implemented, all gates green, awaiting review
+- **Status:** implemented, independently reviewed and approved, review findings resolved
 
 ## Actions
 
@@ -94,3 +94,37 @@ None inside phase 1.
 
 Phase 1 is complete. The next action belongs to another phase: phase 4 consumes the two routes from
 the client, and phase 6 updates the foundation documents.
+
+
+## Review round
+
+`reviews/phase1-server-review.md` (commits `f625f92`, `1c7f2ac`) approved the phase with one warning
+and five observations. All six are resolved in `688757a` and recorded in that file's `## Resolution`
+section.
+
+- **W1, fixed.** The owner's leave month now travels as a sixth `exists` clause in the settings
+  update rather than being pre-checked alone, and the `meta.changes === 0` branch re-reads the owner
+  ranges instead of reusing the row captured before the batch, so a race stopped by that clause is
+  answered with the delta's sentence naming the leave month rather than by a constraint violation.
+  Two unit cases against the `D1Database` stub cover it.
+- **W1, one correction to the finding.** The 500 it describes is not reachable through today's
+  participant route, which replaces a member's whole range set with fresh ids rather than updating a
+  row in place, so the id captured before the batch holds no closed range but no row at all. The
+  clause is still the right fix: it stops this rule depending on that detail of another module, and
+  it was the only one of the six bounds not travelling in the write.
+- **O1, O2 and O3, fixed.** The atomicity case asserts the sibling's counts too, a successful update
+  returns the row read back from the database, and both accepted-move cases re-read through `GET`.
+- **O4 and O5, recorded.** The floor deliberately outranks the minimums, for the reasons written into
+  the Resolution section. O5 needed no action: the ruling it names is committed at `7d5b588`.
+
+### Gates after the review fix
+
+Run on the shared working tree, which typechecked and built clean, so no detached worktree was
+needed. The unit counts include the Phase 4 agent's files, which had landed by then.
+
+| Gate | Command | Result |
+| --- | --- | --- |
+| Types, three projects | `npm run typecheck` | passes, no output |
+| Unit | `npm run test:unit` | 22 files, 262 tests, all passing |
+| Integration | `npm run test:integration` | 13 files, 131 tests, all passing |
+| Build | `npm run build` | succeeds |
