@@ -419,3 +419,25 @@ Answers to the five design findings in `reviews/plan-review.md`, folded into §5
    because the selected year is its own visible text.
 5. The strip (`role="grid"`) accessible name is "`<Name>`, `<year>` month by month", for example
    "Alice, 2026 month by month", so a screen-reader user hears which year the twelve cells belong to.
+
+## 18. Designer rulings from the first visual acceptance pass
+
+Findings from the real captures in `evidence/screenshots/s09/`, each a required correction.
+
+1. **Future-year fragments cover only years after the current year.** §3's "a year later than the
+   selected one" is amended: the range sentence appends one "`<year>` holds N payment(s)." fragment
+   per year that is *after the current month's year* in the plan's time zone and holds a payment,
+   ascending, each separated from the previous sentence by a single space. Past years are reached
+   with the year control and need no fragment. From 2019 in the fixture the sentence therefore
+   reads "Showing Jan to Dec 2019. 2027 holds 1 payment."
+2. **A participant with no active range never reads "settled".** When the participant has no
+   membership range at all and the balance is zero, the balance slot shows "no membership range"
+   in `--red` at `.t-entry` weight 600 in place of the balance word. With a non-zero balance the
+   usual word-plus-figure stands (a credit is a real credit). The red sentence under the lifetime
+   cells stays.
+3. **Lifetime completeness sentence.** When any elapsed month the participant was charged for
+   (plan start to current month, after break and membership exclusions) is `unpriced`, one
+   `.t-small` `--red` sentence follows the lifetime cells: "N month(s) have no price, so owed and
+   the balance are incomplete." The selected-year fragment in the year cells stays as well. The
+   count comes from the domain's charge reason, not from a zero amount.
+4. **`×N` sits directly after the recorded disc**, before the assumed ring: "● ×2 ◌", as §5 states.

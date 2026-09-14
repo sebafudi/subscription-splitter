@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { balanceForMember, computeSummary, recurringReceived } from '../../domain/calc'
 import { enumerateMonths } from '../../domain/months'
+import { memberMonthStatus } from '../../domain/month-status'
 import type { Member, MonthStr, Payment, SubscriptionState } from '../../domain/types'
 import type { Schedule } from '../api'
 import {
   buildSubscriptionState,
   calendarYearRange,
   futureYearPayments,
+  lifetimeUnpricedMonths,
   monthsOfYear,
   projectPersonYear,
   projectYear,
@@ -407,17 +409,47 @@ describe('calendarYearRange', () => {
 })
 
 describe('futureYearPayments', () => {
-  it('names only the years after the selected one that hold a receipt, ascending, with counts', () => {
+  it('names only the years after the current one that hold a receipt, ascending, with counts', () => {
     const state = ledger()
 
-    expect(futureYearPayments(state, 2026)).toEqual([{ year: 2027, count: 1 }])
-    expect(futureYearPayments(state, 2019)).toEqual([
-      { year: 2020, count: 1 },
-      { year: 2023, count: 1 },
-      { year: 2026, count: 3 },
-      { year: 2027, count: 1 },
-    ])
-    expect(futureYearPayments(state, 2027)).toEqual([])
+    expect(futureYearPayments(state, CURRENT)).toEqual([{ year: 2027, count: 1 }])
+  })
+
+  it('names nothing once the current year is the last one holding a receipt', () => {
+    expect(futureYearPayments(ledger(), '2027-12')).toEqual([])
+  })
+
+  it('counts every receipt in a year ahead, whatever year is on screen', () => {
+    const state = ledger()
+    state.payments.push({ id: 'pay-later', memberId: 'alice', date: '2027-02-01', amount: 500, note: '', kind: 'manual' })
+
+    expect(futureYearPayments(state, CURRENT)).toEqual([{ year: 2027, count: 2 }])
+  })
+})
+
+describe('lifetimeUnpricedMonths', () => {
+  it('counts the elapsed months the domain could not price, over the whole membership', () => {
+    const state = ledger()
+
+    for (const person of PARTICIPANTS) {
+      const byYear = everyYear(state, person).reduce((total, year) => total + year.unpricedMonths, 0)
+      expect(lifetimeUnpricedMonths(state, person, CURRENT)).toBe(byYear)
+    }
+  })
+
+  it('never counts a month a wider condition already excluded', () => {
+    const state = ledger()
+    // Every priced month becomes unpriced, so only the months the domain still
+    // charges for can be counted; a break month and a gap are not among them.
+    state.priceHistory = []
+
+    for (const person of PARTICIPANTS) {
+      const months = enumerateMonths(START, CURRENT)
+      const eligible = months.filter(
+        (month) => memberMonthStatus(state, person, month, CURRENT).counts,
+      ).length
+      expect(lifetimeUnpricedMonths(state, person, CURRENT)).toBe(eligible)
+    }
   })
 })
 

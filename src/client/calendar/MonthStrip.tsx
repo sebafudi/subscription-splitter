@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react'
+import { Fragment, type KeyboardEvent } from 'react'
 import type { Member, MonthStr } from '../../domain/types'
 import { formatMonthName } from '../format'
 import { CellMark, type CellMarkName } from './CellMark'
@@ -121,8 +121,9 @@ export function MonthStrip({
           const state = stateMark(cell)
           if (state) marks.push(state)
 
-          // The count shares the recorded disc's slot, so it is dropped from
-          // the cell when all three marks are present and stays in the
+          // The count shares the recorded disc's slot: it is drawn directly
+          // after the disc and before the assumed ring, and it is dropped from
+          // the cell when all three marks are present, staying in the
           // accessible name and in the inspector's "Recorded (N)".
           const count = cell.manualReceipts.length
           const showCount = count >= 2 && marks.length <= 2
@@ -145,9 +146,13 @@ export function MonthStrip({
               <span className="calendar-cell-month t-small">{formatMonthName(cell.month, locale)}</span>
               <span className="calendar-cell-marks" aria-hidden="true">
                 {marks.map((name) => (
-                  <CellMark key={name} name={name} />
+                  <Fragment key={name}>
+                    <CellMark name={name} />
+                    {name === 'recorded' && showCount && (
+                      <span className="calendar-cell-count t-small tnum">×{count}</span>
+                    )}
+                  </Fragment>
                 ))}
-                {showCount && <span className="calendar-cell-count t-small tnum">×{count}</span>}
               </span>
             </button>
           )

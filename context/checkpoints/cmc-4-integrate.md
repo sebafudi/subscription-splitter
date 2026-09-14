@@ -42,6 +42,7 @@ only.
 - `d5952a9` fix(calendar): resolve implementation review findings
 - `1cef767` fix(calendar): strip name carries the year
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
+- `5924e1a` fix(calendar): acceptance corrections for range, completeness and count order
 
 ## Verification
 
@@ -233,6 +234,22 @@ signed in as the fixture account:
 
 The fixtures were rebuilt afterwards with `evidence/runs/s09-scripts/calendar-ledger.mjs`, so the
 verifier's ledgers are back to the state its evidence describes.
+
+## First visual-acceptance corrections
+
+`design-spec.md` §18 and `reviews/design-acceptance.md` carry four required corrections from the
+designer's first pass over the real captures. All four are applied.
+
+| Ruling | What changed | Confirmed |
+| --- | --- | --- |
+| §18.1 future-year fragments cover only years after the current year | `futureYearPayments` takes the current month rather than the selected year and counts receipts in years after the plan's own present. Its unit tests are rewritten: only 2027 from the fixture whatever year is on screen, nothing once the current year is the last one holding a receipt, and a second 2027 receipt raising the count. | In the browser at year 2019 the sentence reads exactly `Showing Jan to Dec 2019. 2027 holds 1 payment.`, one space between the sentences. |
+| §18.2 no membership range never reads "settled" | `PersonBlock` renders `no membership range` in the balance slot, `calendar-red` at `.t-entry`, which the shipped token already sets to weight 600, when the participant has no range at all and the balance is zero. A non-zero balance keeps the word-plus-figure treatment, and the red sentence under the year cells is unchanged. | Not exercisable in the browser: the server refuses an empty range set (`src/server/validation/members.ts:22` requires at least one), so no fixture can hold this state. The non-zero half was seen: the fixture's off-plan participants keep `ahead £168.40` and the rest their usual figures. |
+| §18.3 lifetime completeness sentence | `projection.ts` gains `lifetimeUnpricedMonths(state, member, current)`, which counts elapsed months whose `chargedMonthStatus.reason` is `unpriced` over the whole plan window, never a zero amount; two unit tests pin it, one against the sum of the per-year counts and one proving a month a wider condition already excluded is never counted. `MemberCalendar` computes it once per member per load, since it does not move with the selected year, and `PersonBlock` renders the sentence under the lifetime cells. | In the browser every LONG-fixture participant shows `2 months have no price, so owed and the balance are incomplete.` |
+| §18.4 `×N` directly after the recorded disc | The mark row draws the count inside the recorded mark's own slot rather than after the row, so the order is disc, count, ring. | The March cell's mark row reads `mark-recorded`, `calendar-cell-count`, `mark-assumed` in that DOM order. |
+
+One inflection choice: §18.3's string is written "N month(s) have no price". At one month the
+sentence renders "1 month has no price, so owed and the balance are incomplete.", inflecting the verb
+with the noun rather than printing "1 month have". Say if the invariant wording is wanted instead.
 
 ## Questions for the designer
 

@@ -11,6 +11,7 @@
 
 import { shareForMember } from '../../domain/calc'
 import { chargedMonthStatus, memberMonthStatus } from '../../domain/month-status'
+import { enumerateMonths } from '../../domain/months'
 import { isMonthInSchedule, scheduleMonthStatuses } from '../../domain/recurring'
 import type { MonthStatus } from '../../domain/month-status'
 import type {
@@ -227,22 +228,43 @@ export function calendarYearRange(
 }
 
 /**
- * Years strictly after `selectedYear` that hold at least one manual receipt,
- * ascending, with counts. This is how a future-dated receipt stays
- * discoverable from the default year.
+ * Years after the current month's year that hold at least one manual receipt,
+ * ascending, with counts. This is how a future-dated receipt stays discoverable
+ * whatever year is on screen (`design-spec.md` §18.1). A past year holds no
+ * surprise, because the year control reaches it, so only years ahead of the
+ * plan's own present are named.
  */
 export function futureYearPayments(
   state: SubscriptionState,
-  selectedYear: number,
+  current: MonthStr,
 ): { year: number; count: number }[] {
+  const currentYear = yearOf(current)
   const counts = new Map<number, number>()
 
   for (const payment of state.payments) {
     const year = yearOf(payment.date)
-    if (year > selectedYear) counts.set(year, (counts.get(year) ?? 0) + 1)
+    if (year > currentYear) counts.set(year, (counts.get(year) ?? 0) + 1)
   }
 
   return [...counts.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([year, count]) => ({ year, count }))
+}
+
+/**
+ * How many elapsed months of this member's whole membership the domain could
+ * not price. It is the lifetime counterpart of `PersonYear.unpricedMonths`, and
+ * it reads the same field: `chargedMonthStatus` asks the price question after
+ * every wider condition, so a month excluded by a break or a membership gap
+ * carries that reason instead and is never counted here. An amount of zero is
+ * never read as an answer.
+ */
+export function lifetimeUnpricedMonths(
+  state: SubscriptionState,
+  member: Member,
+  current: MonthStr,
+): number {
+  return enumerateMonths(state.settings.startMonth, current).filter(
+    (month) => chargedMonthStatus(state, member, month, current).reason === 'unpriced',
+  ).length
 }

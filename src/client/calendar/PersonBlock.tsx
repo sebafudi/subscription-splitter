@@ -19,6 +19,8 @@ type Props = {
   currentMonth: MonthStr
   /** The month whose inspector is open for this person, or null. */
   selectedMonth: MonthStr | null
+  /** Elapsed months of the whole membership the domain could not price. */
+  lifetimeUnpricedMonths: number
   highlighted: boolean
   highlightedMonth: MonthStr | null
   pendingDelete: boolean
@@ -88,6 +90,7 @@ export function PersonBlock({
   currency,
   currentMonth,
   selectedMonth,
+  lifetimeUnpricedMonths,
   highlighted,
   highlightedMonth,
   pendingDelete,
@@ -118,10 +121,17 @@ export function PersonBlock({
           </>
         }
         figure={
-          <Balance
-            state={balanceState(row.balance)}
-            value={money(row.balance < 0 ? -row.balance : row.balance)}
-          />
+          // A participant with no membership range is not settled, whatever the
+          // figures say, so the slot names the reason instead of the word. A
+          // non-zero balance is a real balance and keeps its usual treatment.
+          personYear !== null && !personYear.hasActiveRange && row.balance === 0 ? (
+            <span className="calendar-red t-entry">no membership range</span>
+          ) : (
+            <Balance
+              state={balanceState(row.balance)}
+              value={money(row.balance < 0 ? -row.balance : row.balance)}
+            />
+          )
         }
       >
         <div className="entry-cells t-small tnum">
@@ -135,6 +145,13 @@ export function PersonBlock({
             This month <b>{money(row.currentShare)}</b>
           </span>
         </div>
+
+        {lifetimeUnpricedMonths > 0 && (
+          <p className="calendar-red t-small">
+            {lifetimeUnpricedMonths} month{lifetimeUnpricedMonths === 1 ? ' has' : 's have'} no price,
+            so owed and the balance are incomplete.
+          </p>
+        )}
 
         {personYear !== null &&
           (personYear.hasActiveRange ? (

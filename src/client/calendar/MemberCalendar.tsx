@@ -13,7 +13,13 @@ import { highlightFor, orderedIds, type Highlight } from './interaction'
 import { MonthInspector } from './MonthInspector'
 import { cellId } from './MonthStrip'
 import { PersonBlock } from './PersonBlock'
-import { calendarYearRange, futureYearPayments, projectPersonYear, type PersonYear } from './projection'
+import {
+  calendarYearRange,
+  futureYearPayments,
+  lifetimeUnpricedMonths,
+  projectPersonYear,
+  type PersonYear,
+} from './projection'
 import { readSelection, resolveSelection, writeSelection } from './selection'
 import { YearControl } from './YearControl'
 
@@ -156,6 +162,17 @@ export function MemberCalendar({
     }
     return projected
   }, [state, members, year, currentMonth])
+
+  // Lifetime completeness does not move with the selected year, so it is
+  // counted once per member per load rather than inside the year projection.
+  const unpricedByMember = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const member of members) {
+      if (member.isOwner) continue
+      counts.set(member.id, lifetimeUnpricedMonths(state, member, currentMonth))
+    }
+    return counts
+  }, [state, members, currentMonth])
 
   const shownHighlight = status.message === null ? null : highlight
 
@@ -323,6 +340,7 @@ export function MemberCalendar({
         currency={summary.currency}
         currentMonth={currentMonth}
         selectedMonth={open?.month ?? null}
+        lifetimeUnpricedMonths={unpricedByMember.get(row.memberId) ?? 0}
         highlighted={shownHighlight?.memberId === row.memberId}
         highlightedMonth={shownHighlight?.memberId === row.memberId ? shownHighlight.month : null}
         pendingDelete={pendingDelete === row.memberId}
@@ -443,7 +461,7 @@ export function MemberCalendar({
             year={year}
             range={range}
             locale={summary.locale}
-            futureYears={futureYearPayments(state, year)}
+            futureYears={futureYearPayments(state, currentMonth)}
             onSelectYear={selectYear}
           />
           <div className="calendar-blocks">{listed.map(blockFor)}</div>
