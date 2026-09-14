@@ -38,7 +38,7 @@ only.
 - `34eb1dc` feat(calendar): month strip, person block, inspector and section
 - `7ada1c7` feat(calendar): render the calendar in place of the member list
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
-- `77d40db` fix(calendar): zero-receipt heading and not-assumed sentence
+- `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
 
 ## Verification
 
