@@ -32,7 +32,7 @@ Top to bottom, unchanged unless noted:
 1. App bar, back link, plan `h1`, plan line, Edit and Delete subscription. Unchanged.
 2. Headline figure and four-cell ledger line, summary sentence. Unchanged.
 3. Section index. **Unchanged, five items, same labels.** It still bounds a shorter page.
-4. **Participants** — the calendar. Section opening (rule, `h2` with `(count)`, subtitle, status line,
+4. **Participants** — the calendar. Section opening (rule, `h2` without a count, subtitle, status line,
    "Add participant" primary). Body: year control, legend, one *person block* per participant, the
    existing "Show N settled archived participants" disclosure, and the existing empty state.
 5. **Price history.** Unchanged.
@@ -46,13 +46,13 @@ Top to bottom, unchanged unless noted:
    month vocabulary moves into the calendar cells and the month inspector. The section subtitle gains
    one sentence: "Each month's assumed receipt shows in the participant's calendar."
 
-Subtitle for Participants (replaces the current one): "One row per person for the selected year.
+Subtitle for Participants (an addition; the section has none today): "One row per person for the selected year.
 Select a month to see what was recorded, what is assumed and what was charged."
 
 ## 3. Year control and legend
 
 ```
-┌ Participants (6) ─────────────────────────────── ✓ Payment recorded.   [Add participant] ┐
+┌ Participants ───────────────────────────────────── ✓ Payment recorded   [Add participant] ┐
   One row per person for the selected year. Select a month to see …
 
   [‹]  [ 2026 ▾ ]  [›]        Showing Jan to Dec 2026. 2027 holds 1 payment.
@@ -69,8 +69,9 @@ Select a month to see what was recorded, what is assumed and what was charged."
   range is `aria-disabled`, focusable, and does nothing.
 - **Range sentence** right of the controls, `.t-small .soft`: "Showing Jan to Dec 2026." When any
   payment is dated in a year later than the selected one, append "2027 holds 1 payment." (plural
-  "payments") as a `.btn-link` that selects that year. This is how a future-dated receipt stays
-  discoverable from the default year. Below 640px the sentence wraps under the controls.
+  "payments") as a `.btn-link` that selects that year; when several later years hold payments, one
+  such fragment per year in ascending order. This is how a future-dated receipt stays discoverable
+  from the default year. Below 640px the sentence wraps under the controls.
 - **Legend**: one wrapping line, `.t-small .soft`, each item a mark followed by its phrase, gap
   `--s-4`. The marks are the same SVG marks as in the cells (§5). Not all caps, no heading above it.
 - **Default year**: the current month's year in the subscription's time zone. **Retention**: the
@@ -111,11 +112,12 @@ Select a month to see what was recorded, what is assumed and what was charged."
   person block (header, cells, strip) with `MemberForm` in place, exactly as the row is replaced
   today; closing restores the block and focuses Edit. Delete swaps the action row for the existing
   confirm strip with the existing wording; focus lands on Keep.
-- **Owner's block**: header line and lifetime cells as for anyone else, then instead of year cells
-  and strip one `.t-small .soft` sentence: "Nothing is collected from the owner, so there is no
-  calendar for this row." No actions change.
-- **Strip**: a `role="grid"` of twelve `role="gridcell"` buttons for the year, in calendar order
-  Jan to Dec regardless of locale (labels are the locale's short month names). Desktop
+- **Owner**: no block. The owner is not a participant row today (`computeSummary` excludes them) and
+  the summary block above already shows the owner's share. The mockup's owner row is withdrawn.
+- **Strip**: a `role="grid"` containing one `role="row"` that holds twelve `role="gridcell"`
+  buttons for the year, in calendar order Jan to Dec regardless of locale (labels are the locale's
+  short month names). The strip is one ARIA row at every width; the two visual rows below 640px are
+  a CSS wrap only. Desktop
   `grid-template-columns: repeat(12, 1fr)`, gap `--s-1`, cell height 44px. Below 640px
   `repeat(6, 1fr)`, two rows, cell height 48px, gap `--s-1`. Cells never shrink below 44px wide.
 - **Block separator**: the existing 1px `--rule` hairline, margin `--s-4` above and below.
@@ -138,7 +140,10 @@ selected cell it is `--on-ink`.
 
 Marks are inline SVG, 12×12 viewBox, `aria-hidden="true"`, stroke or fill `currentColor`, drawn by
 one `CellMark` component keyed by name. They sit in a row, gap 3px, centred. **At most three marks
-show**: receipt marks first, then the state mark.
+show**, in this order: `recorded`, `assumed`, then one state mark. The `×N` count is not a mark; it
+is attached to the disc and shares its slot. When a cell carries all three marks the count is
+dropped from the cell and stays in the accessible name and in the inspector's "Recorded (N)"; the
+count is drawn whenever the cell holds at most two marks.
 
 | Name | Drawing | Colour | Meaning |
 | --- | --- | --- | --- |
@@ -147,7 +152,7 @@ show**: receipt marks first, then the state mark.
 | `assumed` | circle r=4.5, stroke 1.5, `stroke-dasharray 2 2` | `--ink-soft` | one counted standing-order receipt |
 | `excepted` | circle r=4.5 stroke 1.5 with a 45° line through it | `--red` | standing-order month marked not received |
 | `paused` | two vertical bars 2×10 at x=3 and x=7 | `--ink-faint` | `break-month` |
-| `unpriced` | text `?` at `.t-small` weight 600 | `--red` | no price entry reaches this month |
+| `unpriced` | text `?` at `.t-small` weight 600 | `--red` | the domain's charge status for the month is `unpriced` |
 | `off-plan` | no glyph; cell ground is the hatch | — | `outside-active-range` or empty membership |
 | future / before start | no glyph; label `--ink-faint`; border 1px dashed `--rule` | — | `not-yet-elapsed`, `before-start-month` |
 | charged, no receipt | no glyph; label `--ink` | — | an elapsed, priced, active month with nothing recorded and nothing assumed |
@@ -161,8 +166,12 @@ or dashed cell that still holds a recorded receipt shows the `recorded` disc on 
 money outside a known range is a fact the reader must see. A future month never shows `assumed`.
 
 Precedence for the state mark is the domain's: the outermost failing condition is the one drawn
-(`before-start-month`, `not-yet-elapsed`, `owner-member`, `outside-active-range`, `break-month`,
-`unpriced`, `excepted`). A month excluded by a break or a range gap is never drawn as `excepted`.
+(`before-start-month`, `not-yet-elapsed`, `outside-active-range`, `break-month`, `unpriced`,
+`excepted`). `owner-member` exists in the domain but no cell belongs to the owner, so it never
+reaches a cell. A month excluded by a break or a range gap is never drawn as `excepted`. The cell
+calls the domain for the reason and never restates a rule; the same reason feeds the `?` mark, the
+inspector's charge sentence and the year cells' "N months without a price" count, so there is one
+source of truth and no separate price-coverage flag.
 The `unpriced` mark also appears on a month that carries receipts, because the charge is unknown
 regardless of what arrived. A month is drawn "charged, no receipt" only when the domain says it was
 charged; the cell never implies the month is unpaid or paid, only that nothing was recorded then.
@@ -176,9 +185,12 @@ charged; the cell never implies the month is unpaid or paid, only that nothing w
 
 ## 6. Month inspector
 
-Opens **directly under the person's strip**, full width of the block, as a disclosure panel with the
-existing open/close animation (grid-template-rows 0fr→1fr, 180ms open, 140ms close, the one easing;
-0ms under reduced motion). Only one inspector is open on the page; opening another closes the first.
+Opens **directly under the person's strip**, full width of the block, with the existing disclosure
+*motion* (grid-template-rows 0fr→1fr, 180ms open, 140ms close, the one easing; 0ms under reduced
+motion) reproduced by the inspector's own markup. It does **not** reuse the `DisclosurePanel`
+component, which moves focus to its first control on open; here focus stays on the cell (§8). The
+inspector heading carries an id and `tabIndex={-1}` so it can be a focus target, and each cell
+carries a stable id so focus can return to it. Only one inspector is open on the page; opening another closes the first.
 Other person blocks do not move (order frozen, §4). The inspector is the person's own detail, so it
 never appears in a modal, drawer or side column.
 
@@ -260,7 +272,7 @@ never appears in a modal, drawer or side column.
 - Tab order inside a person block: Edit, Archive, Delete, then **one** tab stop for the strip (roving
   `tabindex`: the selected cell if this person's inspector is open, else the current month if it is in
   the visible year, else January), then the inspector's controls when open, then the next block.
-- Inside the strip: Left/Right move by month and wrap within the row; Up/Down move to the same month
+- Inside the strip: Left/Right move by month and wrap December to January and back; Up/Down move to the same month
   in the previous/next person block that has a strip; Home/End go to Jan/Dec. Enter or Space opens
   the inspector for the focused cell (and closes any other). Focus stays on the cell on open.
 - Inspector: Escape anywhere inside closes it and returns focus to its cell. Close does the same.
@@ -294,9 +306,10 @@ never appears in a modal, drawer or side column.
   membership ranges as the hatched strip plus the red sentence in §4. Neither ever reads "settled".
 - **Failed save/refresh**: the inspector or section alert carries the server's words; the previous
   records stay on screen; nothing is optimistically drawn.
-- **Success**: the existing status sentence in the Participants heading ("Payment recorded.",
-  "Payment updated.", "Payment deleted.", "Standing order updated.", "Marked as not received.",
-  "Marked as received.") with the 4000ms lifetime, plus the changed cell's and block's tint.
+- **Success**: the shipped status strings, verbatim and unpunctuated, in the Participants heading:
+  "Payment recorded" (record), "Changes saved" (payment or schedule edit), "Payment deleted",
+  "Standing order deleted", "Marked not received", "Marked received", and the existing participant
+  strings; 4000ms lifetime, plus the changed cell's and block's tint. No new status string.
 - **Destructive confirmation**: the existing confirm strip, in place, focus on Keep.
 - **Signed out**: unchanged; a 401 anywhere hands off to `onSignedOut`.
 - **Reduced motion**: every duration resolves to 0ms through the existing tokens. The inspector
@@ -306,7 +319,7 @@ never appears in a modal, drawer or side column.
 ## 10. Copy
 
 Sentence case, plain verbs, no middle dots, no em dashes, no all-caps. Actions keep their name through
-the flow: "Record a payment for March 2026" → status "Payment recorded." Empty and failure text says
+the flow: "Record a payment for March 2026" → status "Payment recorded". Empty and failure text says
 what happened and what to do next. New strings introduced by this change are listed in §3, §4, §6,
 §7 and §9; implementers add none.
 
@@ -324,7 +337,7 @@ what happened and what to do next. New strings introduced by this change are lis
 | Focus restoration | §8 list |
 | Future-dated receipt discoverability | Year range extends to the latest record; range sentence links to it (§3) |
 | First selected year and retention | Current year; `sessionStorage` per subscription (§3) |
-| Owner row | Header and lifetime cells, no strip, one sentence (§4) |
+| Owner row | None; the summary already carries the owner's share (§4) |
 | Empty membership ranges | Hatched strip, red sentence, receipts still drawn (§4, §5) |
 | Missing price | `?` mark, red fragment in year cells, red charge sentence (§4, §5, §6) |
 | Loading, empty, error, success, confirm, reduced motion | §9 |
@@ -337,8 +350,38 @@ what happened and what to do next. New strings introduced by this change are lis
 ## 12. Mockup
 
 `mockup/compact-calendar.html` renders one Participants section with the tokens above: year
-control, legend, three person blocks (open inspector, empty membership with the changed tint, owner)
-and every mark. Designer captures reviewed against this text: `mockup/desktop-light.png`,
+control, legend, two person blocks (open inspector, empty membership with the changed tint) and
+every mark. Designer captures reviewed against this text: `mockup/desktop-light.png`,
 `mockup/desktop-dark.png` (760px window), `mockup/phone-light.png`, `mockup/phone-dark.png` (390px
 frame). It is the visual reference; where the mockup and this text disagree, this text wins and the
 disagreement is a checkpointed question for the designer.
+
+## 13. Designer rulings after plan finalization
+
+Answers to the eight questions in `context/checkpoints/cmc-2.2-plan.md`, folded into the sections
+above. The plan follows these, not its earlier assumptions where they differ.
+
+1. Participants heading carries **no count**; the code's reason (the active count includes the
+   organizer) still holds.
+2. **No owner block.** Withdrawn from §4 and the mockup. Nothing is invented for a row that does not
+   exist.
+3. **Shipped status strings verbatim**, no trailing stop, no new strings (§9 lists the mapping).
+4. `role="grid"` gets one `role="row"` wrapper (§4).
+5. One ARIA row of twelve at every width; Left/Right wrap December to January (§4, §8).
+6. One "`<year>` holds N payment(s)." fragment per later year, ascending (§3).
+7. The Participants subtitle is an addition (§2).
+8. "Recorded in `<year>`" is a receipt-date sum and includes a receipt dated later in that year.
+
+## 14. Designer rulings on the plan review
+
+Answers to the five design findings in `reviews/plan-review.md`, folded into §5 and §6.
+
+1. §6 names the motion, not the component. The inspector is new markup that animates the same way,
+   never moves focus on open, and exposes a focusable heading.
+2. `×N` shares the disc's slot and is dropped when all three marks are present (§5).
+3. The domain's `unpriced` charge reason is the single source of truth for the mark, the sentence
+   and the year count; the projection carries no separate price-coverage flag (§5).
+4. The year control and legend stay inside the Participants section. Compactness is measured on
+   person blocks and rendered cells; one `option` per year in range is expected and bounded by
+   years, not by payments. The plan's measurement wording is a plan fix.
+5. `owner-member` is removed from the cell precedence list with a clause saying why (§5).

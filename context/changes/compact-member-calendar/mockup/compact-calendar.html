@@ -84,7 +84,6 @@ select { font: inherit; color: var(--ink); background: var(--paper); border: 1px
 .entry .fig { text-align: right; }
 .entry .acts { grid-column: 1 / -1; display: flex; gap: var(--s-4); }
 .inspector .record { margin-top: var(--s-4); }
-.owner-note { margin: var(--s-2) 0 0; }
 
 @media (max-width: 640px) {
   main { padding: var(--s-4); }
@@ -109,11 +108,11 @@ select { font: inherit; color: var(--ink); background: var(--paper); border: 1px
 <section>
   <div class="section-head">
     <div>
-      <h2 class="t-section">Participants <span class="soft" style="font-weight:400">(6)</span></h2>
+      <h2 class="t-section">Participants</h2>
       <p class="subtitle t-small soft">One row per person for the selected year. Select a month to see what was recorded, what is assumed and what was charged.</p>
     </div>
     <div style="display:flex;gap:var(--s-4);align-items:center">
-      <span class="status t-small">✓ Payment recorded.</span>
+      <span class="status t-small">✓ Payment recorded</span>
       <button class="btn-primary">Add participant</button>
     </div>
   </div>
@@ -142,7 +141,7 @@ select { font: inherit; color: var(--ink); background: var(--paper); border: 1px
     <div class="cells t-small soft"><span>Owed<b class="tnum">£1,204.00</b></span><span>Paid<b class="tnum">£1,150.00</b></span><span>This month<b class="tnum">£12.50</b></span></div>
     <div class="cells t-small soft"><span>Recorded in 2026<b class="tnum recorded">£150.00</b></span><span>Assumed in 2026<b class="tnum assumed">£120.00</b></span><span>Charged in 2026<b class="tnum">£150.00</b><span class="red">, 1 month without a price</span></span></div>
     <div class="actions t-small"><button class="btn-link">Edit</button><button class="btn-link">Archive</button><button class="btn-link">Delete</button></div>
-    <ul class="strip" role="grid">
+    <ul class="strip" role="grid"><li role="row" style="display:contents">
       <li><button class="cell" role="gridcell"><span class="m">Jan</span><span class="marks"><svg class="mark mk-recorded"><use href="#recorded"/></svg></span></button></li>
       <li><button class="cell" role="gridcell"><span class="m">Feb</span><span class="marks"><svg class="mark mk-recorded"><use href="#recorded"/></svg></span></button></li>
       <li><button class="cell sel" role="gridcell" aria-selected="true"><span class="m">Mar</span><span class="marks"><svg class="mark mk-recorded"><use href="#recorded"/></svg><span class="tnum" style="font-size:11px">×2</span><svg class="mark mk-assumed"><use href="#assumed"/></svg></span></button></li>
@@ -187,7 +186,7 @@ select { font: inherit; color: var(--ink); background: var(--paper); border: 1px
     <div class="cells t-small soft"><span>Owed<b class="tnum">£0.00</b></span><span>Paid<b class="tnum">£20.00</b></span><span>This month<b class="tnum">£0.00</b></span></div>
     <p class="t-small red" style="margin:var(--s-1) 0 0">No membership range recorded, so nothing was charged. Recorded payments still show.</p>
     <div class="actions t-small"><button class="btn-link">Edit</button><button class="btn-link">Unarchive</button><button class="btn-link">Delete</button></div>
-    <ul class="strip" role="grid">
+    <ul class="strip" role="grid"><li role="row" style="display:contents">
       <li><button class="cell off"><span class="m">Jan</span><span class="marks"></span></button></li>
       <li><button class="cell off"><span class="m">Feb</span><span class="marks"><svg class="mark mk-recorded"><use href="#recorded"/></svg></span></button></li>
       <li><button class="cell off"><span class="m">Mar</span><span class="marks"></span></button></li>
@@ -203,16 +202,6 @@ select { font: inherit; color: var(--ink); background: var(--paper); border: 1px
     </ul>
   </article>
 
-  <!-- Owner -->
-  <article class="person">
-    <div class="head">
-      <div class="name"><span class="t-entry">You</span><span class="tag">owner</span></div>
-      <span class="t-entry settled">settled</span>
-    </div>
-    <div class="cells t-small soft"><span>Owed<b class="tnum">£0.00</b></span><span>Paid<b class="tnum">£0.00</b></span><span>This month<b class="tnum">£12.50</b></span></div>
-    <p class="owner-note t-small soft">Nothing is collected from the owner, so there is no calendar for this row.</p>
-    <div class="actions t-small"><button class="btn-link">Edit</button></div>
-  </article>
 
   <p class="t-small" style="margin-top:var(--s-4)"><button class="btn-link">Show 2 settled archived participants</button></p>
 </section>
