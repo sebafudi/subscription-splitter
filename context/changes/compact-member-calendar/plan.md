@@ -855,8 +855,8 @@ new token, and all five design findings carry a designer ruling in `design-spec.
 
 #### Automated
 
-- [ ] 3.1 Implement read-only monthly projection with canonical accounting helpers
-- [ ] 3.2 Verify completeness states and edge-case reconciliation with synthetic fixtures
+- [x] 3.1 Implement read-only monthly projection with canonical accounting helpers — bbed196
+- [x] 3.2 Verify completeness states and edge-case reconciliation with synthetic fixtures — bbed196
 
 ### Phase 4: Compact UI and retained actions
 
