@@ -44,7 +44,7 @@ only.
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
 - `a671ca0` fix(calendar): acceptance corrections for range, completeness and count order
 - `eba7e43` fix(detail): keep records on a failed refresh after a write
-- `8d09f1d` fix(detail): refresh failure sentence
+- `83c010d` fix(detail): refresh failure sentence
 
 ## Verification
 
