@@ -5,7 +5,7 @@
  * while a panel is open. Pure, so the node unit environment reaches all of it.
  */
 
-import type { MonthStr, Payment } from '../../domain/types'
+import type { MonthStr } from '../../domain/types'
 import { monthsOfYear } from './projection'
 
 export type StripKeyAction =
@@ -52,31 +52,18 @@ export function stripKeyAction(key: string, month: MonthStr): StripKeyAction | n
 export type Highlight = { memberId: string; month: MonthStr | null }
 
 /**
- * `useSectionStatus` holds one highlighted id and every shipped call site sets
- * it to the id of the record that changed. Resolving it against the reloaded
- * records is what lets one confirmation tint both the person's block and the
- * cell the change landed in: a payment names its member and its receipt month,
- * a schedule and a participant name a member and no single month.
+ * The tint a finished action lands on, decided where the action happens rather
+ * than looked up afterwards. `useSectionStatus` carries one id, and a deleted
+ * record has none, so a delete could never name the cell it emptied; the person
+ * and the month are both known at the moment the request is made, before the
+ * reload, and they stay true whatever the reload returns.
  *
- * An id no record claims resolves to the member of that id, which is how the
- * participant strings ("Participant added", "Changes saved" from a member form)
- * still tint a block.
+ * `monthOrDate` takes a receipt's date as readily as a month, because a receipt
+ * tints the cell its date names. Null tints the person's block alone, which is
+ * what a participant or a standing order changes.
  */
-export function resolveHighlight(
-  highlightedId: string | null,
-  payments: Payment[],
-  schedules: { id: string; memberId: string }[],
-  memberIds: string[],
-): Highlight | null {
-  if (highlightedId === null) return null
-
-  const payment = payments.find((candidate) => candidate.id === highlightedId)
-  if (payment) return { memberId: payment.memberId, month: payment.date.slice(0, 7) }
-
-  const schedule = schedules.find((candidate) => candidate.id === highlightedId)
-  if (schedule) return { memberId: schedule.memberId, month: null }
-
-  return memberIds.includes(highlightedId) ? { memberId: highlightedId, month: null } : null
+export function highlightFor(memberId: string, monthOrDate: string | null = null): Highlight {
+  return { memberId, month: monthOrDate === null ? null : monthOrDate.slice(0, 7) }
 }
 
 /**

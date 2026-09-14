@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { MonthStr, Payment, SubscriptionState, Summary } from '../../domain/types'
+import type { MonthStr, SubscriptionState, Summary } from '../../domain/types'
 import { ApiError, SignedOutError, deleteMember, updateMember, type Member, type Schedule } from '../api'
 import { MemberForm } from '../components/MemberForm'
 import { PARTICIPANTS } from '../components/sections'
@@ -9,7 +9,7 @@ import { SectionAlert } from '../components/ui/SectionAlert'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { StatusLine } from '../components/ui/StatusLine'
 import { useSectionStatus } from '../components/ui/useSectionStatus'
-import { orderedIds, resolveHighlight } from './interaction'
+import { highlightFor, orderedIds, type Highlight } from './interaction'
 import { MonthInspector } from './MonthInspector'
 import { cellId } from './MonthStrip'
 import { PersonBlock } from './PersonBlock'
@@ -28,7 +28,6 @@ type Props = {
   timeZone: string
   /** The domain's own state, assembled once by the screen from the records it holds. */
   state: SubscriptionState
-  payments: Payment[]
   schedules: Schedule[]
   onChanged: () => void
   onSignedOut: () => void
@@ -59,7 +58,6 @@ export function MemberCalendar({
   summary,
   timeZone,
   state,
-  payments,
   schedules,
   onChanged,
   onSignedOut,
@@ -83,6 +81,10 @@ export function MemberCalendar({
   // re-render and keeps its position when the year changes.
   const [activeIndex, setActiveIndex] = useState<Record<string, number>>({})
   const [frozenIds, setFrozenIds] = useState<string[] | null>(null)
+  // The person and month a finished action changed, decided where the action
+  // happened. `useSectionStatus` still owns the sentence and its one timer, so
+  // the tint stands for exactly as long as the sentence and leaves with it.
+  const [highlight, setHighlight] = useState<Highlight | null>(null)
   const status = useSectionStatus()
 
   const range = useMemo(() => calendarYearRange(state, currentMonth), [state, currentMonth])
@@ -155,12 +157,18 @@ export function MemberCalendar({
     return projected
   }, [state, members, year, currentMonth])
 
-  const highlight = resolveHighlight(
-    status.highlightedId,
-    payments,
-    schedules,
-    members.map((member) => member.id),
-  )
+  const shownHighlight = status.message === null ? null : highlight
+
+  /** One confirmation: the section's sentence, and the tint the caller resolved. */
+  function confirm(message: string, tint: Highlight | null) {
+    setHighlight(tint)
+    status.confirm(message, null)
+  }
+
+  function clearStatus() {
+    setHighlight(null)
+    status.clear()
+  }
 
   function activeMonthFor(memberId: string): MonthStr {
     const stored = activeIndex[memberId]
@@ -198,7 +206,7 @@ export function MemberCalendar({
   }
 
   function openMonth(memberId: string, month: MonthStr) {
-    status.clear()
+    clearStatus()
     setActiveMonth(memberId, month)
     setOpenInspector({ memberId, month })
   }
@@ -233,11 +241,11 @@ export function MemberCalendar({
   }
 
   /** Every action outside a panel lands its refusal in the section alert. */
-  async function run(action: () => Promise<unknown>, confirmation: string, highlightedId: string | null) {
+  async function run(action: () => Promise<unknown>, confirmation: string, tint: Highlight | null) {
     try {
       await action()
       setSectionError(null)
-      status.confirm(confirmation, highlightedId)
+      confirm(confirmation, tint)
       onChanged()
     } catch (err) {
       if (err instanceof SignedOutError) {
@@ -255,7 +263,7 @@ export function MemberCalendar({
       setSectionError(null)
       if (openInspector?.memberId === memberId) setOpenInspector(null)
       setFocusTarget(PARTICIPANTS.id)
-      status.confirm('Participant deleted', null)
+      confirm('Participant deleted', null)
       onChanged()
     } catch (err) {
       if (err instanceof SignedOutError) {
@@ -289,7 +297,7 @@ export function MemberCalendar({
               onSaved={(saved) => {
                 closeEdit(saved.id)
                 setSectionError(null)
-                status.confirm('Changes saved', saved.id)
+                confirm('Changes saved', highlightFor(saved.id))
                 onChanged()
               }}
               onCancel={() => closeEdit(member.id)}
@@ -315,8 +323,8 @@ export function MemberCalendar({
         currency={summary.currency}
         currentMonth={currentMonth}
         selectedMonth={open?.month ?? null}
-        highlighted={highlight?.memberId === row.memberId}
-        highlightedMonth={highlight?.memberId === row.memberId ? highlight.month : null}
+        highlighted={shownHighlight?.memberId === row.memberId}
+        highlightedMonth={shownHighlight?.memberId === row.memberId ? shownHighlight.month : null}
         pendingDelete={pendingDelete === row.memberId}
         activeMonth={activeMonthFor(row.memberId)}
         onSelectMonth={(month) => openMonth(row.memberId, month)}
@@ -324,7 +332,7 @@ export function MemberCalendar({
         onLeaveVertically={(direction, month) => leaveVertically(row.memberId, direction, month)}
         onCloseInspector={closeInspector}
         onEdit={() => {
-          status.clear()
+          clearStatus()
           setEditAlert(null)
           setEditingId(row.memberId)
         }}
@@ -333,11 +341,11 @@ export function MemberCalendar({
           void run(
             () => updateMember(subscriptionId, member.id, { archived: !member.archived }),
             member.archived ? 'Participant unarchived' : 'Participant archived',
-            member.id,
+            highlightFor(member.id),
           )
         }}
         onRequestDelete={() => {
-          status.clear()
+          clearStatus()
           setPendingDelete(row.memberId)
         }}
         onConfirmDelete={() => void confirmDelete(row.memberId)}
@@ -361,8 +369,8 @@ export function MemberCalendar({
             startMonth={startMonth}
             timeZone={timeZone}
             currentMonth={currentMonth}
-            onConfirm={status.confirm}
-            onClearStatus={status.clear}
+            onConfirm={confirm}
+            onClearStatus={clearStatus}
             onChanged={onChanged}
             onSignedOut={onSignedOut}
             onClose={closeInspector}
@@ -388,7 +396,7 @@ export function MemberCalendar({
               aria-expanded={addOpen}
               aria-controls={ADD_PANEL_ID}
               onClick={() => {
-                status.clear()
+                clearStatus()
                 setAddOpen(true)
               }}
             >
@@ -419,7 +427,7 @@ export function MemberCalendar({
           onSaved={(member) => {
             closeAdd()
             setSectionError(null)
-            status.confirm('Participant added', member.id)
+            confirm('Participant added', highlightFor(member.id))
             onChanged()
           }}
           onCancel={closeAdd}

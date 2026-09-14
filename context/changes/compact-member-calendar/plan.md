@@ -661,8 +661,13 @@ and the rendered cells rather than on the whole section:
   the two fixtures by no more than the number of extra `option` elements plus the range sentence's
   fragment count. One `option` per year in the range is expected and grows with years, not with
   payments, so the long fixture's eight years legitimately carry seven more than the short one's.
-- The whole page's `scrollHeight` differs between them by under five per cent, the remaining
-  difference being the same `option` count and the range sentence, consistent with the bound above.
+- The Participants section's own `scrollHeight` is identical for both fixtures.
+- The whole page's `scrollHeight` may differ, but every pixel of the difference is attributable to a
+  section whose size is bounded by the count of skipped months, standing orders or price entries,
+  plus the year select's `option` count and the range sentence. No part of it may be attributable to
+  the number of months elapsed or the number of receipts, which are the two quantities this change
+  exists to stop the page growing with. A fixture that carries more skipped months or more schedules
+  than the other legitimately draws a taller page; a fixture that carries more history must not.
 
 The same figures are captured on the pre-change build with the same two fixtures, so the reduction is
 a measurement rather than a claim. `#year-select` is the id `YearControl` gives its select, so the
@@ -805,6 +810,16 @@ before these edits were made, and those rulings are applied here, not re-decided
 | Design 3 `unpriced` source of truth | **Designer-ruled** (§14.3) | Applied by deleting `MonthCell.priced`: the domain's `chargeStatus.reason` feeds the mark, the sentence and the year count, with a Phase 3 grep criterion pinning that no flag returns. |
 | Design 4 year control inside the section | **Designer-ruled** (§14.4) | Applied in the Phase 5 measurement; see F7. |
 | Design 5 `owner-member` unreachable | **Designer-ruled** (§14.5) | Applied in `cellText.ts`: the map keeps the key for exhaustiveness over `MonthExclusion`, but no cell can reach it, `CellMark` has no glyph for it and the precedence list omits it. |
+
+Dispositions for the four defects the Phase 5 browser verification raised
+(`evidence/runs/s09-browser-verification.md`, `s09-compactness.md`, at `78e620b`).
+
+| Finding | Disposition | Where it changed |
+| --- | --- | --- |
+| V1 whole-page height 6.70% against a five per cent bound | **Plan amended** | The Phase 5 acceptance clause now requires identity on `.calendar-blocks` `scrollHeight`, the gridcell count and the Participants section's own `scrollHeight`, and requires every pixel of a whole-page difference to be attributable to a section bounded by the count of skipped months, schedules or prices, never by months elapsed or receipts. The measurement stands as taken: the two fixtures differ by a second skipped month (80px) and a second standing order (103px), and every calendar-owned figure is identical (72 cells, `.calendar-blocks` 1114px, Participants 1335px, payments closed 114px, on both). |
+| V2 "Show N more" | **Designer-ruled** (`design-spec.md` §17.2) | No code change; the shipped string is what §7 now specifies. |
+| V3 no tint after a receipt delete | **Fixed** | The tint is decided where the action happens rather than looked up afterwards: `interaction.ts`'s `highlightFor(memberId, monthOrDate)` builds a `{ memberId, month }` before the reload, `MemberCalendar` holds it beside `useSectionStatus`'s sentence and clears it with the same timer, and a receipt delete names the month that lost the record. Participant and standing-order actions still tint the block alone. |
+| V4 focus lost to `document.body` when a receipt is edited out of the month | **Fixed** | `closePaymentEdit` takes the month the receipt landed in and targets the inspector heading when it is not this cell's, which is the branch `design-spec.md` §8 reserves the heading for. The stayed-in-month branch still targets that entry's Edit. |
 
 Re-verification checklist items 1 to 10 are addressed by the fixes above. Items 11, 12 and 13 are
 unchanged properties: the `## Progress` contract still passes with step titles untouched and indices

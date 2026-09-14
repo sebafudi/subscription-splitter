@@ -20,6 +20,7 @@ import { Money } from '../components/ui/Money'
 import { SectionAlert } from '../components/ui/SectionAlert'
 import { formatDate, formatLongMonth, formatMonth } from '../format'
 import { chargeSentence, exclusionPhrase } from './cellText'
+import { highlightFor, type Highlight } from './interaction'
 import type { MonthCell } from './projection'
 
 const KIND_LABEL: Record<Payment['kind'], string> = {
@@ -41,7 +42,7 @@ type Props = {
   timeZone: string
   currentMonth: MonthStr
   /** The section's own status line: the confirmation is shown in the Participants heading. */
-  onConfirm: (message: string, highlightedId: string | null) => void
+  onConfirm: (message: string, tint: Highlight | null) => void
   onClearStatus: () => void
   onChanged: () => void
   onSignedOut: () => void
@@ -172,10 +173,16 @@ export function MonthInspector({
     onClose()
   }
 
-  function closePaymentEdit(paymentId: string) {
+  /**
+   * `landedIn` is the month the receipt now belongs to. A receipt that stayed
+   * returns focus to its own Edit button; one that was edited into another
+   * month has no entry here to return to, so focus goes to the inspector
+   * heading, which is what `design-spec.md` §8 reserves it for.
+   */
+  function closePaymentEdit(paymentId: string, landedIn: MonthStr = cell.month) {
     setEditingPaymentId(null)
     setEditAlert(null)
-    setFocusTarget(paymentEditId(paymentId))
+    setFocusTarget(landedIn === cell.month ? paymentEditId(paymentId) : headingId)
   }
 
   function closeRecord() {
@@ -192,11 +199,11 @@ export function MonthInspector({
   }
 
   /** Every action outside a panel lands its refusal in the inspector's own alert. */
-  async function run(action: () => Promise<unknown>, confirmation: string, highlightedId: string | null) {
+  async function run(action: () => Promise<unknown>, confirmation: string, tint: Highlight | null) {
     try {
       await action()
       setAlert(null)
-      onConfirm(confirmation, highlightedId)
+      onConfirm(confirmation, tint)
       onChanged()
     } catch (err) {
       if (err instanceof SignedOutError) {
@@ -218,7 +225,7 @@ export function MonthInspector({
       await deletePayment(subscriptionId, payment.id)
       setAlert(null)
       setFocusTarget(headingId)
-      onConfirm('Payment deleted', null)
+      onConfirm('Payment deleted', highlightFor(member.id, cell.month))
       onChanged()
     } catch (err) {
       if (err instanceof SignedOutError) {
@@ -236,7 +243,7 @@ export function MonthInspector({
       await deleteSchedule(subscriptionId, scheduleId)
       setAlert(null)
       setFocusTarget(headingId)
-      onConfirm('Standing order deleted', null)
+      onConfirm('Standing order deleted', highlightFor(member.id))
       onChanged()
     } catch (err) {
       if (err instanceof SignedOutError) {
@@ -267,9 +274,9 @@ export function MonthInspector({
               alert={editAlert}
               onAlert={setEditAlert}
               onSaved={(saved) => {
-                closePaymentEdit(saved.id)
+                closePaymentEdit(saved.id, saved.date.slice(0, 7))
                 setAlert(null)
-                onConfirm('Changes saved', saved.id)
+                onConfirm('Changes saved', highlightFor(member.id, saved.date))
                 onChanged()
               }}
               onCancel={() => closePaymentEdit(payment.id)}
@@ -373,7 +380,7 @@ export function MonthInspector({
                       ? markMonthNotReceived(subscriptionId, schedule.id, cell.month)
                       : clearMonthNotReceived(subscriptionId, schedule.id, cell.month),
                   counted ? 'Marked not received' : 'Marked received',
-                  schedule.id,
+                  highlightFor(member.id, cell.month),
                 )
               }
             >
@@ -399,10 +406,10 @@ export function MonthInspector({
               editing={schedule}
               alert={scheduleAlert}
               onAlert={setScheduleAlert}
-              onSaved={(saved) => {
+              onSaved={() => {
                 closeScheduleEdit()
                 setAlert(null)
-                onConfirm('Changes saved', saved.id)
+                onConfirm('Changes saved', highlightFor(member.id))
                 onChanged()
               }}
               onCancel={closeScheduleEdit}
@@ -515,7 +522,7 @@ export function MonthInspector({
             setRecordAlert(null)
             setRecordKey((key) => key + 1)
             setAlert(null)
-            onConfirm('Payment recorded', saved.id)
+            onConfirm('Payment recorded', highlightFor(member.id, saved.date))
             onChanged()
             setFocusTarget(paymentEditId(saved.id))
           }}

@@ -436,7 +436,6 @@ export function SubscriptionDetail({
           summary={summary}
           timeZone={subscription.timeZone}
           state={calendarState}
-          payments={payments}
           schedules={schedules}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}

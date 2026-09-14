@@ -1,12 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Payment } from '../../domain/types'
-import { orderedIds, resolveHighlight, stripKeyAction } from './interaction'
-
-const SCHEDULES = [{ id: 'sch-1', memberId: 'alice' }]
-
-function payment(over: Partial<Payment> = {}): Payment {
-  return { id: 'pay-1', memberId: 'alice', date: '2026-03-14', amount: 2500, note: '', kind: 'manual', ...over }
-}
+import { highlightFor, orderedIds, stripKeyAction } from './interaction'
 
 describe('stripKeyAction', () => {
   it('moves by one month in each direction', () => {
@@ -37,32 +30,21 @@ describe('stripKeyAction', () => {
   })
 })
 
-describe('resolveHighlight', () => {
-  it('resolves a payment id to its member and its receipt month', () => {
-    expect(resolveHighlight('pay-1', [payment()], SCHEDULES, ['alice'])).toEqual({
-      memberId: 'alice',
-      month: '2026-03',
-    })
+describe('highlightFor', () => {
+  it('reads the month out of a receipt date', () => {
+    expect(highlightFor('alice', '2026-03-14')).toEqual({ memberId: 'alice', month: '2026-03' })
   })
 
   it('follows a receipt edited into another month', () => {
-    expect(resolveHighlight('pay-1', [payment({ date: '2027-09-02' })], SCHEDULES, ['alice'])).toEqual({
-      memberId: 'alice',
-      month: '2027-09',
-    })
+    expect(highlightFor('alice', '2027-09-02')).toEqual({ memberId: 'alice', month: '2027-09' })
   })
 
-  it('resolves a schedule id to its member and no single month', () => {
-    expect(resolveHighlight('sch-1', [], SCHEDULES, ['alice'])).toEqual({ memberId: 'alice', month: null })
+  it('takes a month unchanged, which is what a delete names', () => {
+    expect(highlightFor('alice', '2026-03')).toEqual({ memberId: 'alice', month: '2026-03' })
   })
 
-  it('resolves a participant id to that participant', () => {
-    expect(resolveHighlight('alice', [], [], ['alice'])).toEqual({ memberId: 'alice', month: null })
-  })
-
-  it('is null for no confirmation and for an id no record claims', () => {
-    expect(resolveHighlight(null, [payment()], SCHEDULES, ['alice'])).toBeNull()
-    expect(resolveHighlight('gone', [payment()], SCHEDULES, ['alice'])).toBeNull()
+  it('tints the block alone when no single month changed', () => {
+    expect(highlightFor('alice')).toEqual({ memberId: 'alice', month: null })
   })
 })
 

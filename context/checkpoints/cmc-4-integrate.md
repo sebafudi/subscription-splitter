@@ -41,6 +41,7 @@ only.
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
 - `d5952a9` fix(calendar): resolve implementation review findings
 - `1cef767` fix(calendar): strip name carries the year
+- `6e018e6` fix(calendar): delete tint, cross-month edit focus, compactness clause
 
 ## Verification
 
@@ -204,6 +205,34 @@ findings are answered by the designer in `design-spec.md` §17 and are applied h
 
 Gates after the fixes: `npm run typecheck` exit 0; `npm run test:unit` 26 files and 351 tests passed;
 `npm run build` exit 0, `index-DAE3nnSA.js` 306.61 kB and `index-ByHeNjZo.css` 20.10 kB.
+
+## Phase 5 verification dispositions
+
+The Phase 5 browser verification (`evidence/runs/s09-browser-verification.md`,
+`s09-compactness.md`, at `78e620b`) raised four findings. V2 is closed by `design-spec.md` §17.2.
+
+| Finding | Disposition | What changed |
+| --- | --- | --- |
+| V1 whole-page height 6.70% against a five per cent bound | **Plan amended** | The Phase 5 acceptance clause in `plan.md` now requires identity on `.calendar-blocks` `scrollHeight`, the gridcell count and the Participants section's own `scrollHeight`, and requires every pixel of a whole-page difference to be attributable to a section bounded by the count of skipped months, schedules or prices rather than by months elapsed or receipts. The measured difference is exactly that: a second skipped month and a second standing order. Recorded as V1 under `## Review resolution`. |
+| V2 "Show N more" | **Designer-ruled** | §17.2 makes the shipped string the specified one. No code change. |
+| V3 no tint after a receipt delete | **Fixed** | The tint is decided where the action happens rather than looked up after the reload. `interaction.ts` exports `highlightFor(memberId, monthOrDate)`, which reads a month out of a receipt date and is unit-tested; `MemberCalendar` holds the resulting `{ memberId, month }` beside `useSectionStatus`'s sentence and shows it only while that sentence stands, so the two still share one timer and the shared hook is unmodified. A receipt delete names the month that lost the record, a save names the month the receipt landed in, and a participant or standing-order action tints the block alone. `MemberCalendar`'s `payments` prop is gone with the old resolution, since nothing else read it. |
+| V4 focus lost to `document.body` on a cross-month edit | **Fixed** | `closePaymentEdit` takes the month the receipt landed in and targets the inspector heading when that is not this cell's month. |
+
+Re-verified in the browser at 1280px against the verifier's own dev server and the LONG fixture,
+signed in as the fixture account:
+
+- Editing a receipt from February to 7 July 2026 left focus on
+  `inspector-heading-<member>-2026-02` immediately rather than on the document body, the inspector
+  stayed on "Bo, February 2026" reading "Nothing recorded for February 2026.", and the tint landed on
+  the July cell.
+- Deleting a receipt showed "Payment deleted", tinted the cell the record left
+  (`calendar-cell-<member>-2026-07`) and that person's block, and left focus on the inspector
+  heading.
+- Archiving a participant showed "Participant archived" and tinted the block alone, with no cell
+  tinted, so the participant-level behaviour is unchanged.
+
+The fixtures were rebuilt afterwards with `evidence/runs/s09-scripts/calendar-ledger.mjs`, so the
+verifier's ledgers are back to the state its evidence describes.
 
 ## Questions for the designer
 
