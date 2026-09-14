@@ -35,7 +35,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { SectionIndex } from '../components/ui/SectionIndex'
 import { StatusLine } from '../components/ui/StatusLine'
 import { useSectionStatus } from '../components/ui/useSectionStatus'
-import { currencyLocked, headerActions } from './subscriptionEdits'
+import { currencyLocked, headerActions, loadFailure } from './subscriptionEdits'
 
 const EDIT_PANEL_ID = 'subscription-settings-panel'
 const EDIT_BUTTON_ID = 'subscription-edit'
@@ -93,10 +93,17 @@ export function SubscriptionDetail({
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [headerError, setHeaderError] = useState<HeaderError | null>(null)
+  // A refresh that failed while records were already on screen. Those records
+  // stay; this is the alert beside them, never a replacement for them.
+  const [refreshError, setRefreshError] = useState<string | null>(null)
   const [focusTarget, setFocusTarget] = useState<string | null>(null)
   const [focusAlert, setFocusAlert] = useState(false)
   const status = useSectionStatus()
   const alertLine = useRef<HTMLParagraphElement>(null)
+  // Whether a load has ever succeeded. A ref rather than state, because it is
+  // read inside `load`'s own catch, where a state variable would be the one
+  // that render closed over rather than the current one.
+  const loaded = useRef(false)
 
   const load = useCallback(async () => {
     // A reload after an edit keeps the figures already on screen rather than
@@ -111,20 +118,35 @@ export function SubscriptionDetail({
         listPayments(subscription.id),
         listSchedules(subscription.id),
       ])
+      setRefreshError(null)
+      loaded.current = true
       setState({ status: 'ready', data: { summary, members, prices, breakMonths, payments, schedules } })
     } catch (error) {
-      if (error instanceof SignedOutError) {
+      const failure = loadFailure(
+        {
+          signedOut: error instanceof SignedOutError,
+          status: error instanceof ApiError ? error.status : null,
+          message: error instanceof ApiError ? error.message : null,
+        },
+        loaded.current,
+        CONNECTION_FAILURE,
+      )
+
+      if (failure.kind === 'signed-out') {
         onSignedOut()
         return
       }
-      if (error instanceof ApiError && error.status === 409) {
-        setState({ status: 'no-owner', message: error.message })
+      if (failure.kind === 'no-owner') {
+        setState({ status: 'no-owner', message: failure.message })
         return
       }
-      setState({
-        status: 'error',
-        message: error instanceof ApiError ? error.message : CONNECTION_FAILURE,
-      })
+      // A write may already have landed, so what is on screen is kept and the
+      // failure is reported beside it rather than replacing it.
+      if (failure.kind === 'keep') {
+        setRefreshError(failure.message)
+        return
+      }
+      setState({ status: 'error', message: failure.message })
     }
   }, [subscription.id, onSignedOut])
 
@@ -257,8 +279,8 @@ export function SubscriptionDetail({
 
       <SectionAlert
         ref={alertLine}
-        message={headerError?.message ?? null}
-        onDismiss={() => setHeaderError(null)}
+        message={headerError?.message ?? refreshError}
+        onDismiss={() => (headerError ? setHeaderError(null) : setRefreshError(null))}
         action={
           headerError?.gone ? (
             <button type="button" className="btn-link t-small" onClick={onBack}>

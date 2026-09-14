@@ -43,6 +43,7 @@ only.
 - `1cef767` fix(calendar): strip name carries the year
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
 - `a671ca0` fix(calendar): acceptance corrections for range, completeness and count order
+- `696ee46` fix(detail): keep records on a failed refresh after a write
 
 ## Verification
 
@@ -250,6 +251,41 @@ designer's first pass over the real captures. All four are applied.
 One inflection choice: §18.3's string is written "N month(s) have no price". At one month the
 sentence renders "1 month has no price, so owed and the balance are incomplete.", inflecting the verb
 with the noun rather than printing "1 month have". Say if the invariant wording is wanted instead.
+
+## V5, a failed refresh after a successful write
+
+The verifier's re-run found that a write that succeeds followed by six reload GETs that fail dropped
+`SubscriptionDetail` into its `status: 'error'` branch, emptying the whole screen and blaming the
+save for a failure that was the read's. The branch predates this change; the calendar depends on it.
+
+`subscriptionEdits.ts` gains `loadFailure(error, hasRecords, connectionFailure)`, a pure function
+that decides what a failed load does with the screen, with four unit tests: a signed-out failure is
+handed on whatever is on screen, a 409 still reaches the no-owner screen, a first load with nothing
+to keep is replaced along with its "Try again", and a refresh after a successful load keeps its
+records and reports the failure beside them. `SubscriptionDetail` calls it, tracks whether a load has
+ever succeeded in a ref (the catch would otherwise read the state its own render closed over), and
+renders a refresh failure in the detail header's existing `role="alert"` region with a Dismiss.
+"Try again" is now reachable only from an initial-load failure. Nothing is drawn optimistically: what
+stays is the last set the server actually returned, and the next successful load clears the alert.
+
+Re-verified in the browser against the verifier's own dev server, wrapping `window.fetch` so writes
+pass and every GET rejects, then recording a payment from an open inspector:
+
+| Before | After the failed refresh |
+| --- | --- |
+| 84 cells, 7 person blocks | 84 cells, 7 person blocks |
+| Participants section present | present |
+| inspector open on `Cleo, January 2026` | still open on `Cleo, January 2026` |
+| no alert | `Could not save. Check your connection and try again.` with Dismiss |
+
+Restoring `fetch` and letting the next refresh run cleared the alert and showed
+`Payments received (33)`, up from 32: the write that had landed appeared once, not twice. The
+fixtures were rebuilt afterwards with `evidence/runs/s09-scripts/calendar-ledger.mjs`.
+
+One wording item for the designer: the sentence a transport failure shows is the shipped
+`CONNECTION_FAILURE`, "Could not save. Check your connection and try again.", which still says
+"save" where only the read failed. A read-specific sentence would be a new string, which §10 reserves
+to the designer, so the shipped one stands until ruled on. A server-worded failure renders verbatim.
 
 ## Questions for the designer
 

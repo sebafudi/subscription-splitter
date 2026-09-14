@@ -5,6 +5,7 @@ import {
   currencyLocked,
   firstMonthFloor,
   headerActions,
+  loadFailure,
   storedValues,
   subscriptionChanges,
 } from './subscriptionEdits'
@@ -91,5 +92,48 @@ describe('firstMonthFloor', () => {
   it('is January of the tenth year back, as a plain month string', () => {
     const floor = firstMonthFloor('Europe/Warsaw')
     expect(floor).toMatch(/^\d{4}-01$/)
+  })
+})
+
+describe('loadFailure', () => {
+  const CONNECTION = 'Could not save. Check your connection and try again.'
+  const transport = { signedOut: false, status: null, message: null }
+  const refused = { signedOut: false, status: 403, message: 'this subscription is not yours' }
+
+  it('hands a signed-out failure on whatever is on screen', () => {
+    expect(loadFailure({ signedOut: true, status: 401, message: null }, false, CONNECTION)).toEqual({
+      kind: 'signed-out',
+    })
+    expect(loadFailure({ signedOut: true, status: 401, message: null }, true, CONNECTION)).toEqual({
+      kind: 'signed-out',
+    })
+  })
+
+  it('replaces the screen when the first load fails, because there is nothing to keep', () => {
+    expect(loadFailure(transport, false, CONNECTION)).toEqual({ kind: 'replace', message: CONNECTION })
+    expect(loadFailure(refused, false, CONNECTION)).toEqual({
+      kind: 'replace',
+      message: 'this subscription is not yours',
+    })
+  })
+
+  it('keeps the records when a refresh fails after a successful load', () => {
+    expect(loadFailure(transport, true, CONNECTION)).toEqual({ kind: 'keep', message: CONNECTION })
+    expect(loadFailure(refused, true, CONNECTION)).toEqual({
+      kind: 'keep',
+      message: 'this subscription is not yours',
+    })
+  })
+
+  it('still reaches the no-owner screen, which is a state rather than a failure', () => {
+    const noOwner = { signedOut: false, status: 409, message: 'this subscription has no owner row' }
+    expect(loadFailure(noOwner, false, CONNECTION)).toEqual({
+      kind: 'no-owner',
+      message: 'this subscription has no owner row',
+    })
+    expect(loadFailure(noOwner, true, CONNECTION)).toEqual({
+      kind: 'no-owner',
+      message: 'this subscription has no owner row',
+    })
   })
 })

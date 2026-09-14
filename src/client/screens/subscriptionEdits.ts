@@ -96,3 +96,30 @@ export function currencyLocked(lists: {
 export function currencyLockHint(currency: string): string {
   return `Locked while prices, payments or standing orders are recorded. Every amount is stored in ${currency}.`
 }
+
+/**
+ * What a failed load should do with the screen. A first load has nothing to
+ * keep, so its failure replaces the screen with the error and its "Try again".
+ * A refresh after a successful load does have something to keep: a write may
+ * already have landed, so the records that are on screen stay there and the
+ * failure is an alert beside them rather than an empty page that blames the
+ * save (`design-spec.md` §9). Nothing is ever drawn optimistically either way:
+ * what stays is the last set the server actually returned.
+ */
+export type LoadFailure =
+  | { kind: 'signed-out' }
+  | { kind: 'no-owner'; message: string }
+  | { kind: 'replace'; message: string }
+  | { kind: 'keep'; message: string }
+
+export function loadFailure(
+  error: { signedOut: boolean; status: number | null; message: string | null },
+  hasRecords: boolean,
+  connectionFailure: string,
+): LoadFailure {
+  if (error.signedOut) return { kind: 'signed-out' }
+
+  const message = error.message ?? connectionFailure
+  if (error.status === 409) return { kind: 'no-owner', message }
+  return hasRecords ? { kind: 'keep', message } : { kind: 'replace', message }
+}
