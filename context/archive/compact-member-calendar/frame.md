@@ -162,9 +162,9 @@ brief makes the designer sole authority on all of them. `research.md` carries th
 
 ## References
 
-- Research: `context/changes/compact-member-calendar/research.md`
-- Designer briefing: `context/changes/compact-member-calendar/design-inputs.md`
-- Request and plan: `context/changes/compact-member-calendar/change.md`, `plan.md`
+- Research: `context/archive/compact-member-calendar/research.md`
+- Designer briefing: `context/archive/compact-member-calendar/design-inputs.md`
+- Request and plan: `context/archive/compact-member-calendar/change.md`, `plan.md`
 - Client: `src/client/screens/SubscriptionDetail.tsx:100-128`, `:408-462`;
   `src/client/components/MemberList.tsx:67-70`, `:314`;
   `src/client/components/PaymentList.tsx:67-84`, `:214`;

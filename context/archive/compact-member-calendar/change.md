@@ -1,7 +1,7 @@
 ---
 change_id: compact-member-calendar
 title: Compact member calendars with complete payment details
-status: impl_reviewed
+status: archived
 ---
 
 ## Notes
@@ -84,3 +84,28 @@ extended twice to the release candidate `650a14d` (`reviews/impl-review.md`), an
 acceptance recorded as accepted at `650a14d` (`reviews/design-acceptance.md`). Release is pending:
 Phase 6 (hosted checks, deploy, live verification, foundation/status/evidence synchronization and
 archive) has not started.
+
+## Closing note
+
+Phase 6 completed and the change is archived. Released as release 6: release commit
+`64eb0d3b096eef53a6d264ee483e1d9c7e1dc17a` (`64eb0d3`), Cloudflare version
+`a80d2e12-d77e-4b88-b318-aa992eb60d50`, superseding release 5's `751a8bfd-e62a-4c9a-beb2-1953eb6a7656`,
+which is recorded as the rollback reference. Hosted CI run `34881238556` green at that SHA; fresh-clone
+gates typecheck exit 0, unit 26 files / 359 tests, integration 13 files / 131 tests, build exit 0. Live
+smoke: forty-six of forty-six checks pass on a disposable subscription exercising every named
+completeness state, no defect found (`evidence/runs/release-6.md`,
+`evidence/runs/release-6-live-smoke.txt`, checkpoint `context/checkpoints/release-6.md`). The
+certification captures release 6 affects were retaken (seven of ten slots; checkpoint
+`context/checkpoints/release-6-captures.md`), the manifest now weighing 1,340,978 bytes across the ten
+files, 780,543 in the five required slots and 560,435 in the five optional ones. Fable's visual
+acceptance is recorded accepted through three passes plus a fourth pass inspecting the live release
+itself (`reviews/design-acceptance.md`, Pass 4).
+
+The honest limits, carried forward rather than smoothed over: browser verification stayed Chrome-only
+throughout (headless desktop and a 390px frame for the implementation pass, real Chrome 152 for the
+release); Safari, Firefox, mobile browsers and real touch were never driven. The empty-`activeRanges`
+branch (no membership range at all) is unreachable through the product's own routes and stays a
+unit-test case only, never exercised live. Reduced motion was verified through the existing
+zero-duration tokens rather than a live emulation. Separately and outside this change, the workspace
+`GOALS.md` F01 final audit still stands at release 4 and has not been re-run against release 5 or
+release 6.

@@ -1,7 +1,7 @@
 <!-- IMPL-REVIEW-REPORT -->
 # Implementation Review: Compact member calendar implementation plan
 
-- **Plan**: `context/changes/compact-member-calendar/plan.md`
+- **Plan**: `context/archive/compact-member-calendar/plan.md`
 - **Scope**: Phases 3 and 4 of 6 (the application-code phases; Phases 1 and 2 are documents already
   reviewed by `reviews/plan-review.md`)
 - **Commits reviewed**: `9ee9d04` through `91a80ca`, against the pre-change baseline `c10d54f`.

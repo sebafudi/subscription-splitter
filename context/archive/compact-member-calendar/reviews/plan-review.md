@@ -1,7 +1,7 @@
 <!-- PLAN-REVIEW-REPORT -->
 # Plan review: Compact member calendar implementation plan
 
-- **Plan**: `context/changes/compact-member-calendar/plan.md`
+- **Plan**: `context/archive/compact-member-calendar/plan.md`
 - **Mode**: Deep
 - **Repository state**: the working tree as handed over, with `plan.md`, `design-spec.md` including its
   §13 rulings, `research.md` and `frame.md` on disk and no application code of this change written.

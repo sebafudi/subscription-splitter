@@ -625,5 +625,5 @@ move are the wire field names the forms submit and the domain functions the clie
 
 - `context/archive/visual-redesign/research.md`
 - `context/archive/subscription-management-and-date-inputs/research.md`
-- `context/changes/compact-member-calendar/frame.md`
-- `context/changes/compact-member-calendar/design-inputs.md`
+- `context/archive/compact-member-calendar/frame.md`
+- `context/archive/compact-member-calendar/design-inputs.md`
