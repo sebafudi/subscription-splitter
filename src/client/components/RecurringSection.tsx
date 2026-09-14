@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react'
 import { formatMoney } from '../../domain/money'
-import type { MemberMonthInputs, MonthExclusion } from '../../domain/month-status'
+import type { MemberMonthInputs } from '../../domain/month-status'
 import { scheduleMonthStatuses } from '../../domain/recurring'
-import {
-  ApiError,
-  SignedOutError,
-  clearMonthNotReceived,
-  deleteSchedule,
-  markMonthNotReceived,
-  type Member,
-  type MonthStr,
-  type Schedule,
-} from '../api'
+import { ApiError, SignedOutError, deleteSchedule, type Member, type MonthStr, type Schedule } from '../api'
 import { formatMonth } from '../format'
 import { ScheduleForm } from './ScheduleForm'
 import { STANDING_ORDERS } from './sections'
@@ -42,32 +33,6 @@ type Props = {
   timeZone: string
   onChanged: () => void
   onSignedOut: () => void
-}
-
-/**
- * One phrase per condition, total over the union so the compiler keeps it that
- * way. Only three can reach a row here: the row set stops at the current month,
- * a start month below the plan's first month is refused, and an arrangement
- * naming the owner is refused at both write paths. The other phrases exist so
- * the mapping needs no fallback branch, not because a row can carry them.
- *
- * A row that does not count always carries a reason, so the phrase is looked
- * up only when there is one. Defaulting a missing reason to a named condition
- * would turn an absence into a specific claim about the organizer's own
- * action.
- *
- * The tile that shows a phrase is already dashed, which is what the old
- * "not counted, " prefix said in words, so the prefix is simply not reproduced.
- * The phrases themselves are untouched.
- */
-const REASON_PHRASE: Record<MonthExclusion, string> = {
-  'break-month': 'the plan was paused that month',
-  'outside-active-range': 'the participant was not on the plan that month',
-  excepted: 'marked as not received',
-  'not-yet-elapsed': 'that month has not arrived yet',
-  'before-start-month': 'that month is before the plan started',
-  'owner-member': 'the owner is never paid from',
-  unpriced: 'that month had no price',
 }
 
 export function RecurringSection({
@@ -113,22 +78,6 @@ export function RecurringSection({
     setEditingId(null)
     setEditAlert(null)
     setFocusTarget(`schedule-edit-${scheduleId}`)
-  }
-
-  /** A tile toggle happens outside every panel, so its refusal belongs to the section alert. */
-  async function toggleMonth(action: () => Promise<unknown>, confirmation: string, scheduleId: string) {
-    try {
-      await action()
-      setSectionError(null)
-      status.confirm(confirmation, scheduleId)
-      onChanged()
-    } catch (err) {
-      if (err instanceof SignedOutError) {
-        onSignedOut()
-        return
-      }
-      setSectionError(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
-    }
   }
 
   async function confirmDelete(schedule: Schedule) {
@@ -329,53 +278,7 @@ export function RecurringSection({
                       </button>
                     </>
                   }
-                >
-                  {statuses.length > 0 && (
-                    <ul className="tiles">
-                      {statuses.map((monthStatus) => {
-                        const notReceived = !monthStatus.counts && monthStatus.reason === 'excepted'
-                        const tileClass = monthStatus.counts
-                          ? 'tile tile-counted'
-                          : notReceived
-                            ? 'tile tile-not-received'
-                            : 'tile tile-excluded'
-                        return (
-                          <li key={monthStatus.month} className={tileClass}>
-                            <span className="tile-month t-small">{formatMonth(monthStatus.month, locale)}</span>
-                            {monthStatus.counts && (
-                              <span className="t-small tnum">
-                                <Money value={money(schedule.amount)} treatment="assumed" /> assumed received
-                              </span>
-                            )}
-                            {!monthStatus.counts && monthStatus.reason && (
-                              <span className={notReceived ? 't-small tile-reason-red' : 't-small soft'}>
-                                {REASON_PHRASE[monthStatus.reason]}
-                              </span>
-                            )}
-                            {(monthStatus.counts || notReceived) && (
-                              <button
-                                type="button"
-                                className="btn-link t-small"
-                                onClick={() =>
-                                  void toggleMonth(
-                                    () =>
-                                      monthStatus.counts
-                                        ? markMonthNotReceived(subscriptionId, schedule.id, monthStatus.month)
-                                        : clearMonthNotReceived(subscriptionId, schedule.id, monthStatus.month),
-                                    monthStatus.counts ? 'Marked not received' : 'Marked received',
-                                    schedule.id,
-                                  )
-                                }
-                              >
-                                {monthStatus.counts ? 'Mark not received' : 'Mark received'}
-                              </button>
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
-                </LedgerEntry>
+                />
               </li>
             )
           })}
