@@ -862,9 +862,9 @@ new token, and all five design findings carry a designer ruling in `design-spec.
 
 #### Automated
 
-- [ ] 4.1 Implement the approved compact overview and month inspector
-- [ ] 4.2 Preserve all management actions and bounded full-history access
-- [ ] 4.3 Verify mutation refresh and selection behavior
+- [x] 4.1 Implement the approved compact overview and month inspector — 34eb1dc, 7ada1c7, b445216
+- [x] 4.2 Preserve all management actions and bounded full-history access — 34eb1dc, 7ada1c7
+- [x] 4.3 Verify mutation refresh and selection behavior — 7ca2844
 
 ### Phase 5: Verification and acceptance
 
