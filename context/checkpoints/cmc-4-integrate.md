@@ -42,7 +42,7 @@ only.
 - `d5952a9` fix(calendar): resolve implementation review findings
 - `1cef767` fix(calendar): strip name carries the year
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
-- `5924e1a` fix(calendar): acceptance corrections for range, completeness and count order
+- `a671ca0` fix(calendar): acceptance corrections for range, completeness and count order
 
 ## Verification
 
