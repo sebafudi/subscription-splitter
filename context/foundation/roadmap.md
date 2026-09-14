@@ -63,6 +63,7 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | done |
 
 | S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | done |
+| S-09 | compact-member-calendar | read a compact per-person calendar of monthly balances, payments and standing orders without an unbounded list | S-08 | FR-015 to FR-026, US-02 | in-progress |
 
 ## S-06: Visual redesign
 
@@ -290,3 +291,12 @@ not recreate them.
 - **Source:** explicit user request; `context/foundation/subscription-management-brief.md`.
 - **Outcome:** edit/delete the subscription itself and use real browser calendar controls throughout.
 - **Done when:** course change flow, Fable design acceptance, ownership/atomicity tests, browser checks, deployment and refreshed release evidence complete.
+
+## S-09: Compact member calendars
+
+- **Change ID:** `compact-member-calendar` (`context/changes/compact-member-calendar/`)
+- **Status:** in-progress
+- **Prerequisites:** S-08
+- **Source:** explicit user request; `context/changes/compact-member-calendar/change.md`.
+- **Outcome:** a compact per-person calendar or graph view of monthly balances, payments and standing orders replaces the unbounded per-person history list, with every existing detail and management action still reachable.
+- **Done when:** course change flow, Fable design specification and acceptance, independent plan and implementation reviews, browser/accessibility verification, deployment and refreshed release evidence complete.

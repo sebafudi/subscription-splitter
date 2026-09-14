@@ -8,8 +8,9 @@ payments, standing orders with per-month exceptions, and the summary that derive
 them. The roadmap ledger `F-01` through `S-08` is archived under `context/archive/`, `S-07`
 `google-sign-in` having added Google sign-in beside the password login and `S-08`
 `subscription-management-and-date-inputs` having added editing and deleting the subscription itself
-and native browser calendar controls in place of the plain-text month and date fields. No roadmap
-item is open.
+and native browser calendar controls in place of the plain-text month and date fields. `S-09`
+`compact-member-calendar` is the active change: a compact per-person calendar or graph view of
+monthly balances, payments and standing orders in place of the unbounded per-person history list.
 
 ## Hard rules
 
