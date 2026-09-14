@@ -333,7 +333,9 @@ export function MonthInspector({
             <span className="calendar-red">Marked as not received for {longMonth}.</span>
           )}
           {!counted && !excepted && (
-            <span className="soft">{exclusionPhrase(cell.assumedStatus?.reason ?? 'outside-active-range')}</span>
+            <span className="soft">
+              Not assumed: {exclusionPhrase(cell.assumedStatus?.reason ?? 'outside-active-range')}.
+            </span>
           )}
           {(counted || excepted) && (
             <button
@@ -438,7 +440,7 @@ export function MonthInspector({
       <p className={charge.tone === 'red' ? 't-body calendar-red' : 't-body'}>{charge.text}</p>
 
       <h4 className="calendar-group-heading t-small soft">
-        Recorded ({recordedCount})
+        {recordedCount === 0 ? 'Recorded' : `Recorded (${recordedCount})`}
       </h4>
       {recordedCount === 0 ? (
         <p className="t-body soft">Nothing recorded for {longMonth}.</p>

@@ -385,3 +385,23 @@ Answers to the five design findings in `reviews/plan-review.md`, folded into §5
    person blocks and rendered cells; one `option` per year in range is expected and bounded by
    years, not by payments. The plan's measurement wording is a plan fix.
 5. `owner-member` is removed from the cell precedence list with a clause saying why (§5).
+
+## 15. Designer rulings during Phase 3
+
+1. Month names: the inspector heading, the inspector sentences and every cell's accessible name use
+   the long month form ("March 2026"), because a screen reader reads "Mar" as a word. This needs one
+   additional formatter beside the existing short one, in the same formatting module, in the plan's
+   locale. Cell labels, the legend, the range sentence, schedule windows and every existing string
+   keep the short form.
+2. "Marked as not received" belongs to the assumed part of the accessible name and to the Assumed
+   group of the inspector, never to the charge sentence; the domain never returns that reason for a
+   charge.
+
+## 16. Designer rulings during Phase 4
+
+1. Recorded group at zero: the `h4` reads "Recorded" with no count, and the sentence "Nothing
+   recorded for March 2026." sits beneath it, so the group structure never shifts. "Recorded (0)" is
+   not shown.
+2. Assumed group for a month excluded by a wider condition: one sentence in sentence case,
+   "Not assumed: the plan was paused that month." (the exclusion phrase after "Not assumed: "),
+   mirroring the charge sentence's "Not charged: " form. No toggle is offered.

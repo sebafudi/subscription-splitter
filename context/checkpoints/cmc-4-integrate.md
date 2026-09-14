@@ -38,6 +38,7 @@ only.
 - `34eb1dc` feat(calendar): month strip, person block, inspector and section
 - `7ada1c7` feat(calendar): render the calendar in place of the member list
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
+- `77d40db` fix(calendar): zero-receipt heading and not-assumed sentence
 
 ## Verification
 
@@ -182,14 +183,14 @@ inherit from `.entry` and `.entry-cells`.
 
 ## Questions for the designer
 
-1. §6 gives the Recorded heading as "Recorded (N)" and, for N = 0, the sentence "Nothing recorded for
-   March 2026." It does not say whether the heading itself disappears at zero. The implementation
-   keeps "Recorded (0)" above the sentence, so no new string is invented and the count never
-   disagrees with what is under it. Say if the heading should be dropped at zero instead.
-2. §6 says that when a wider condition excludes the month, the Assumed group's sentence "is the
-   exclusion phrase and no toggle is offered (as today's tiles)". The implementation renders the bare
-   phrase, exactly as the tiles did, rather than wrapping it in a new sentence. Confirm that is the
-   wanted reading.
+Both are answered in `design-spec.md` §16 and applied:
+
+1. The Recorded heading reads "Recorded" with no count when the month holds no receipt, with
+   "Nothing recorded for `Month Year`." beneath it. "Recorded (0)" is no longer rendered.
+2. A month excluded by a wider condition reads "Not assumed: `<exclusion phrase>`." in the Assumed
+   group, mirroring the charge sentence's "Not charged: " form, with no toggle.
+
+Nothing is outstanding with the designer.
 
 ## Unresolved issues
 
