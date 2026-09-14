@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatMoney } from '../../domain/money'
 import {
   ApiError,
@@ -18,14 +18,15 @@ import {
   type Summary,
 } from '../api'
 import { formatMonth } from '../format'
+import { MemberCalendar } from '../calendar/MemberCalendar'
+import { buildSubscriptionState } from '../calendar/projection'
 import { AppBar } from '../components/AppBar'
 import { BreakMonths } from '../components/BreakMonths'
-import { MemberList } from '../components/MemberList'
 import { PaymentList } from '../components/PaymentList'
 import { PriceHistory } from '../components/PriceHistory'
 import { RecurringSection } from '../components/RecurringSection'
 import { SubscriptionSettings } from '../components/SubscriptionSettings'
-import { DETAIL_SECTIONS, type SectionDescriptor } from '../components/sections'
+import { DETAIL_SECTIONS, PARTICIPANTS, type SectionDescriptor } from '../components/sections'
 import { ConfirmStrip } from '../components/ui/ConfirmStrip'
 import { DisclosurePanel } from '../components/ui/DisclosurePanel'
 import { CONNECTION_FAILURE } from '../components/ui/FormAlert'
@@ -148,6 +149,24 @@ export function SubscriptionDetail({
   const actions = headerActions(state.status)
   // The lock is read off the loaded lists, which is why Edit waits for the first load to settle.
   const locked = state.status === 'ready' ? currencyLocked(state.data) : false
+
+  // The domain's own state, assembled once from the six collections this screen
+  // already holds, so every strip and every cell answers from one shape rather
+  // than each rebuilding it. A re-render that changes no record costs nothing.
+  const calendarState = useMemo(
+    () =>
+      state.status === 'ready'
+        ? buildSubscriptionState({
+            subscription,
+            members: state.data.members,
+            prices: state.data.prices,
+            breakMonths: state.data.breakMonths,
+            payments: state.data.payments,
+            schedules: state.data.schedules,
+          })
+        : null,
+    [state, subscription],
+  )
 
   function closePanel() {
     setPanelOpen(false)
@@ -332,9 +351,13 @@ export function SubscriptionDetail({
 
           <SectionIndex sections={DETAIL_SECTIONS} ready={false} />
 
-          {DETAIL_SECTIONS.map((section) => (
-            <SkeletonSection key={section.id} section={section} />
-          ))}
+          {DETAIL_SECTIONS.map((section) =>
+            section.id === PARTICIPANTS.id ? (
+              <SkeletonCalendarSection key={section.id} section={section} />
+            ) : (
+              <SkeletonSection key={section.id} section={section} />
+            ),
+          )}
 
           <p role="status" className="sr-only">
             Loading this subscription
@@ -405,15 +428,20 @@ export function SubscriptionDetail({
 
         <SectionIndex sections={DETAIL_SECTIONS} ready />
 
-        <MemberList
+        {calendarState && (
+        <MemberCalendar
           subscriptionId={subscription.id}
           startMonth={subscription.startMonth}
           members={members}
           summary={summary}
           timeZone={subscription.timeZone}
+          state={calendarState}
+          payments={payments}
+          schedules={schedules}
           onChanged={() => void load()}
           onSignedOut={onSignedOut}
         />
+        )}
 
         <PriceHistory
           subscriptionId={subscription.id}
@@ -462,6 +490,42 @@ export function SubscriptionDetail({
         />
       </main>
     </>
+  )
+}
+
+/**
+ * The Participants section on first load: the same opening as every other
+ * section, then per expected participant a name bar, a cells bar and a
+ * twelve-column row of empty cells (`design-spec.md` §9). The year control and
+ * legend are not drawn, because neither exists until the range is known.
+ */
+function SkeletonCalendarSection({ section }: { section: SectionDescriptor }) {
+  return (
+    <section aria-labelledby={section.id}>
+      <SectionHeader
+        id={section.id}
+        title={section.title}
+        subtitle={section.subtitle}
+        action={
+          <button type="button" className="btn-primary" aria-disabled="true">
+            {section.action}
+          </button>
+        }
+      />
+      <div className="calendar-blocks" aria-hidden="true">
+        {[0, 1].map((position) => (
+          <div key={position} className="calendar-block">
+            <span className="skeleton skeleton-entry-primary" />
+            <span className="skeleton skeleton-entry-secondary" />
+            <div className="skeleton-strip">
+              {Array.from({ length: 12 }, (_, month) => (
+                <span key={month} className="skeleton-strip-cell" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 
