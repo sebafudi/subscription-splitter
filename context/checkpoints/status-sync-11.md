@@ -121,3 +121,15 @@ Updated `context/STATUS.md` (the M06 remaining-work paragraph and item 12), `evi
 ### Next action
 
 Whoever archives `subscription-management-and-date-inputs` and flips roadmap S-08 to `done` writes their own checkpoint; the next status sync reads it before checking M06. Separately, a re-audit of F01 against release 5 is outstanding and unrelated to M06.
+
+## Eighth pass: S-08 close, M06 checked
+
+- **Status:** complete
+
+Verified against `context/checkpoints/m06-archive.md` and the four cited commits directly: the pre-archive check table (every precondition read from the checkpoint's own gate table), the archive's ten renames and closing note, the roadmap flip, and the ledger update to `AGENTS.md`/`README.md`. Searched `GOALS.md`, `evidence/index.md` and `context/STATUS.md` for remaining `context/changes/subscription-management-and-date-inputs/` references: found two live ones in `evidence/index.md` (the M01 and M05 rows) and repointed both to the archive path; GOALS.md and STATUS.md already had none live (their citations use `subscription-splitter@sha` or checkpoint paths, not the change folder).
+
+Checked M06 in `GOALS.md` with the full evidence trail and added the closing "All six M goals are complete" line naming the two deliberately open plan rows and the unverified browsers (Firefox, Edge, mobile, Safari's own 390/light/full keyboard-traversal measurements). Updated `context/STATUS.md`: Current SHA, the roadmap-ledger summary now reads `F-01` to `S-08`, a new "Active change: none" line, the S-08 bullet rewritten as archived/closed, Deployment section's closing sentence, Blockers, item 12 (final, pointing at the submission-package re-audit and the owner/upload gate as the only remaining project work), and the "Next requested change: S-08" section rewritten as "S-08 complete". Appended `evidence/work-log.md`.
+
+### Next action
+
+None on S-08; it is closed. Whoever re-audits F01 against release 5 or handles the owner decisions/upload confirmation continues on the submission-package side, unrelated to this change.
