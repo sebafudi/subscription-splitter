@@ -449,3 +449,7 @@ verbatim: "Could not refresh. The records shown may be out of date. Check your c
 the page." It never says "save": the write may or may not have happened, and the sentence claims
 neither. The initial-load failure keeps its existing wording and its Try again. This is the one
 string §10 did not list; it is the designer's, not an implementer addition.
+
+Reviewer note, accepted as is: the sentence advises a connection check even when the server refused
+the reload. "Reload the page" is the right advice on both paths, the connection is the common cause,
+and a second sentence for the rare path would add a string without adding an action.

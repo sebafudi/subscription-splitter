@@ -73,6 +73,24 @@ verifier found outside the captures, V5: a failed reload after a successful writ
 screen where §9 requires the previous records to stay. Its fix and browser evidence are recorded in
 Pass 3 below.
 
-## Pass 3
+## Pass 3: accepted
 
-Pending: V5 fix evidence.
+V5 fixed at `eba7e43` and `83c010d`; verified by the Phase 5 verifier at `650a14d`
+(`evidence/runs/s09-browser-verification.md`, "Re-run at 650a14d"; capture
+`evidence/screenshots/s09/failed-refresh-after-write.png`): after a landed write and six rejected
+reload requests, all five sections, six person blocks, 72 cells and the open inspector stayed, the
+emptied cell still read "nothing recorded", the header alert carried the §19 sentence character for
+character with one Dismiss, and reloading later showed the write exactly once. The initial-load
+failure keeps "Try again". Independent implementation review: APPROVED, extended to `650a14d`
+(`reviews/impl-review.md`).
+
+**Verdict: accepted.** The implementation at `650a14d` matches `design-spec.md` §§1-19 in every
+inspected respect. The accepted revision is the tree at `650a14d` plus documentation commits; no
+code change is required before release. Certification captures should be retaken against the
+deployed release, not against these local captures.
+
+Limits of this acceptance, carried forward honestly: Chrome only (headless, desktop and a 390px
+frame); Safari, Firefox, mobile browsers and real touch were not driven; reduced motion was
+verified through the existing zero-duration tokens rather than a live emulation; the
+archived-and-settled disclosure, a server-side 500 and the price-delete refusal were not
+re-exercised in this change and are unchanged code.

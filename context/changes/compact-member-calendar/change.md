@@ -1,7 +1,7 @@
 ---
 change_id: compact-member-calendar
 title: Compact member calendars with complete payment details
-status: plan_reviewed
+status: impl_reviewed
 ---
 
 ## Notes
@@ -71,5 +71,16 @@ pending. `orchestrator-prompt.md` is the reusable start/resume instruction. Rese
 and independent plan review are mandatory gates before application code changes.
 
 The plan review's finding F11c (a drift note about this file's status against the Progress rows
-already checked) is recorded here with this move to `plan_reviewed`, as the review's resolution
-left it for this step to close.
+already checked) was recorded here with the earlier move to `plan_reviewed`, as the review's
+resolution left it for that step to close; it is closed.
+
+Phases 1 to 5 are complete. Research, framing, the Fable design specification and the finalized
+plan closed Phase 1 and Phase 2 with the independent plan review SOUND (`reviews/plan-review.md`).
+Phase 3 (the read-only projection and completeness model) and Phase 4 (the compact UI and retained
+actions) are implemented. Phase 5 closes with all four gates green, the compactness and behaviour
+verification recorded in `evidence/runs/s09-compactness.md` and
+`evidence/runs/s09-browser-verification.md`, the independent implementation review APPROVED and
+extended twice to the release candidate `650a14d` (`reviews/impl-review.md`), and Fable's visual
+acceptance recorded as accepted at `650a14d` (`reviews/design-acceptance.md`). Release is pending:
+Phase 6 (hosted checks, deploy, live verification, foundation/status/evidence synchronization and
+archive) has not started.
