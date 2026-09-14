@@ -44,6 +44,7 @@ only.
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
 - `a671ca0` fix(calendar): acceptance corrections for range, completeness and count order
 - `eba7e43` fix(detail): keep records on a failed refresh after a write
+- `8d09f1d` fix(detail): refresh failure sentence
 
 ## Verification
 
@@ -282,10 +283,14 @@ Restoring `fetch` and letting the next refresh run cleared the alert and showed
 `Payments received (33)`, up from 32: the write that had landed appeared once, not twice. The
 fixtures were rebuilt afterwards with `evidence/runs/s09-scripts/calendar-ledger.mjs`.
 
-One wording item for the designer: the sentence a transport failure shows is the shipped
-`CONNECTION_FAILURE`, "Could not save. Check your connection and try again.", which still says
-"save" where only the read failed. A read-specific sentence would be a new string, which §10 reserves
-to the designer, so the shipped one stands until ruled on. A server-worded failure renders verbatim.
+The wording is settled by `design-spec.md` §19: a load that fails after the screen has already shown
+records reads, verbatim, "Could not refresh. The records shown may be out of date. Check your
+connection and reload the page." `loadFailure` returns that sentence for every `keep` outcome,
+whatever the transport said, because the reader's question there is whether what is on screen is
+still true rather than what the server replied. The initial-load failure keeps its existing wording
+and its "Try again", and a 401 and a 409 still reach the sign-out and no-owner paths untouched. The
+string is exported as `REFRESH_FAILURE` beside the helper and pinned by a unit test, which also
+asserts it never says "save".
 
 ## Questions for the designer
 

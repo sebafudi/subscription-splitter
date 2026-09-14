@@ -47,6 +47,32 @@ the failed-refresh alert are taken from the verifier's observed results in
 `evidence/runs/s09-browser-verification.md`; Safari, Firefox and mobile browsers are unverified
 there and remain so here.
 
-## Pass 2
+## Pass 2: corrections verified
 
-Pending: re-capture after the §18 corrections and the verifier's re-run of 5.2.
+Captures retaken at `05ff614` (`evidence/runs/s09-browser-verification.md`, "Re-run at 05ff614").
+
+| # | Capture | Result |
+| --- | --- | --- |
+| A1 | `range-sentence-2019.png` | "Showing Jan to Dec 2019. 2027 holds 1 payment." and nothing else. Matches §18.1 |
+| A2 | `empty-membership-1280-light.png` | Gil's balance slot reads "no membership range" in red at entry weight; the red sentence and hatched strip stay. Matches §18.2 |
+| A3 | `marks-order-ada-march.png`, `empty-membership-1280-light.png` | "2 months have no price, so owed and the balance are incomplete." under the lifetime cells of every participant the fixture leaves unpriced. Matches §18.3; the repetition across all six is a property of the synthetic ledger, not of the design |
+| A4 | `marks-order-ada-march.png` | Ada, March reads disc, "×2", dashed ring. Matches §18.4 |
+
+Also confirmed against the same captures: the inverted selected cell with `--on-ink` marks, the
+struck ring for July, the pause bars for May, the current-month underline under "Sept", dashed
+future cells, the legend, the year cells row with recorded and assumed never combined.
+
+Behaviour verified by the Phase 5 verifier at `05ff614`, taken from its recorded output: V3 a delete
+tints the emptied cell and block; V4 a receipt edited out of the inspected month returns focus to
+the inspector heading; "Show 12 more" then "Show 9 more" then "That is every payment." on a
+33-receipt fixture; compactness identity (72 cells, 1228px person blocks, 1449px Participants) for
+one year versus eight years of history, and the pre-change build's 7158px page against 3028px now.
+
+Appearance and interaction are **accepted**. Final acceptance is held on one behavioural defect the
+verifier found outside the captures, V5: a failed reload after a successful write emptied the whole
+screen where §9 requires the previous records to stay. Its fix and browser evidence are recorded in
+Pass 3 below.
+
+## Pass 3
+
+Pending: V5 fix evidence.

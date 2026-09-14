@@ -106,6 +106,15 @@ export function currencyLockHint(currency: string): string {
  * save (`design-spec.md` §9). Nothing is ever drawn optimistically either way:
  * what stays is the last set the server actually returned.
  */
+
+/**
+ * The one sentence a failed refresh shows (`design-spec.md` §19). It claims
+ * nothing about the write that may or may not have landed, and it never says
+ * "save", because what failed was the read.
+ */
+export const REFRESH_FAILURE =
+  'Could not refresh. The records shown may be out of date. Check your connection and reload the page.'
+
 export type LoadFailure =
   | { kind: 'signed-out' }
   | { kind: 'no-owner'; message: string }
@@ -121,5 +130,7 @@ export function loadFailure(
 
   const message = error.message ?? connectionFailure
   if (error.status === 409) return { kind: 'no-owner', message }
-  return hasRecords ? { kind: 'keep', message } : { kind: 'replace', message }
+  // A refresh failure speaks for itself rather than in the server's words: the
+  // reader's question is whether what is on screen is still true.
+  return hasRecords ? { kind: 'keep', message: REFRESH_FAILURE } : { kind: 'replace', message }
 }

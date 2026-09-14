@@ -6,6 +6,7 @@ import {
   firstMonthFloor,
   headerActions,
   loadFailure,
+  REFRESH_FAILURE,
   storedValues,
   subscriptionChanges,
 } from './subscriptionEdits'
@@ -118,11 +119,15 @@ describe('loadFailure', () => {
   })
 
   it('keeps the records when a refresh fails after a successful load', () => {
-    expect(loadFailure(transport, true, CONNECTION)).toEqual({ kind: 'keep', message: CONNECTION })
-    expect(loadFailure(refused, true, CONNECTION)).toEqual({
-      kind: 'keep',
-      message: 'this subscription is not yours',
-    })
+    expect(loadFailure(transport, true, CONNECTION)).toEqual({ kind: 'keep', message: REFRESH_FAILURE })
+  })
+
+  it('speaks its own sentence on a refresh, never the save sentence or the server words', () => {
+    expect(REFRESH_FAILURE).toBe(
+      'Could not refresh. The records shown may be out of date. Check your connection and reload the page.',
+    )
+    expect(loadFailure(refused, true, CONNECTION)).toEqual({ kind: 'keep', message: REFRESH_FAILURE })
+    expect(REFRESH_FAILURE).not.toContain('save')
   })
 
   it('still reaches the no-owner screen, which is a state rather than a failure', () => {

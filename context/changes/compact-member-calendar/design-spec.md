@@ -441,3 +441,11 @@ Findings from the real captures in `evidence/screenshots/s09/`, each a required 
    the balance are incomplete." The selected-year fragment in the year cells stays as well. The
    count comes from the domain's charge reason, not from a zero amount.
 4. **`×N` sits directly after the recorded disc**, before the assumed ring: "● ×2 ◌", as §5 states.
+
+## 19. Designer ruling on the failed-refresh sentence
+
+When a load fails after the screen has already shown records, the alert in the detail header reads,
+verbatim: "Could not refresh. The records shown may be out of date. Check your connection and reload
+the page." It never says "save": the write may or may not have happened, and the sentence claims
+neither. The initial-load failure keeps its existing wording and its Try again. This is the one
+string §10 did not list; it is the designer's, not an implementer addition.
