@@ -1,0 +1,253 @@
+Live verification transcript, release version a80d2e12-d77e-4b88-b318-aa992eb60d50
+Release commit SHA: 64eb0d3b096eef53a6d264ee483e1d9c7e1dc17a
+Supersedes version 751a8bfd-e62a-4c9a-beb2-1953eb6a7656 (release 5, 91ce0da).
+Target: https://subscription-splitter.sebastianfudalej.workers.dev
+Change S-09 compact-member-calendar: the subscription detail screen replaces the unbounded
+member history with a per-person twelve-month calendar for one selected year and an inspectable
+selected month. Client-only; no migration and no server route change ships in this release.
+
+Session tokens are redacted and response timestamps are elided as '...', following
+evidence/runs/release-5-live-smoke.txt. Every name and amount below is synthetic. Amounts are
+integer minor units. No pre-existing record is modified or deleted: the only record deleted is
+the disposable subscription this transcript creates, under the reviewer account.
+
+=============== 1. Configuration and refusals without a session ===============
+GET /api/auth-config  (no cookie)
+status=200
+body: {"google":true}
+
+  [PASS] GET /api/auth-config answers - 200 {"google":true}
+GET /api/subscriptions/<random uuid>/summary  (no cookie)
+status=401
+body: {"error":"unauthorized"}
+
+  [PASS] Unauthenticated summary read answers 401 - 401 {"error":"unauthorized"}
+GET /api/subscriptions/<random uuid>/payments  (no cookie)
+status=401
+body: {"error":"unauthorized"}
+
+  [PASS] Unauthenticated payments read answers 401 - 401 {"error":"unauthorized"}
+=============== 2. Owner baseline, read and held for the closing comparison ===============
+POST /api/auth/sign-in/email  (owner)
+status=200
+  set-cookie: __Secure-better-auth.session_token=<redacted>; Path=/; HttpOnly; Secure; SameSite=Lax
+
+  [PASS] Owner password sign-in answers 200 - 200
+GET /api/subscriptions  (owner cookie)
+status=200
+  2 subscriptions: ["First deployment artefact (not the demo plan)","Family music plan"]
+  ids held for the closing comparison, not printed.
+
+=============== 3. Reviewer sign-in and the starting count ===============
+POST /api/auth/sign-in/email  (reviewer)
+status=200
+  set-cookie: __Secure-better-auth.session_token=<redacted>; Path=/; HttpOnly; Secure; SameSite=Lax
+
+  [PASS] Reviewer password sign-in answers 200 - 200
+GET /api/subscriptions  (reviewer cookie)
+status=200
+  starting count = 0, names: []
+
+=============== 4. The disposable subscription and the records the calendar reads ===============
+POST /api/subscriptions  (name 'Release 6 disposable', start_month 2026-01)
+status=201
+body: {"id":"f1839744-f8da-4537-9010-33cbe67efcbe","userId":"fw6kxvsNqxvwnD1kDUlDgMhIfply7EeJ","name":"Release 6 disposable","currency":"PLN","locale":"pl-PL","timeZone":"Europe/Warsaw","startMonth":"2026-01","createdAt":"..."}
+
+  [PASS] Create disposable subscription answers 201 - 201
+POST /api/subscriptions/<id>/members  (participant A, joined 2026-01)
+status=201
+body: {"id":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","name":"Calendar participant A","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-01","leftMonth":null}]}
+
+  [PASS] Add participant A answers 201 - 201
+POST /api/subscriptions/<id>/members  (participant B, joined 2026-03)
+status=201
+body: {"id":"94944add-cff1-4836-8b42-1c29656fbbed","name":"Calendar participant B","isOwner":false,"archived":false,"activeRanges":[{"joinedMonth":"2026-03","leftMonth":null}]}
+
+  [PASS] Add participant B answers 201 - 201
+POST /api/subscriptions/<id>/prices  (effective_from 2026-02, amount 6000)
+status=201
+body: {"id":"ac1410bc-2bc2-4b2f-b074-4cd91aac5e6b","effectiveFrom":"2026-02","amount":6000}
+
+  [PASS] Add one price answers 201 - 201
+POST /api/subscriptions/<id>/break-months  (month 2026-03)
+status=201
+body: {"month":"2026-03"}
+
+  [PASS] Add one skipped month answers 201 - 201
+POST /api/subscriptions/<id>/schedules  (participant A, amount 1500, from 2026-05)
+status=201
+body: {"id":"117a63c3-6620-4704-9b76-d79da8960505","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","amount":1500,"startMonth":"2026-05","endMonth":null,"exceptionMonths":[]}
+
+  [PASS] Add one standing order answers 201 - 201
+POST /api/subscriptions/<id>/payments  (2026-04-05, amount 2000)
+status=201
+body: {"id":"d726a216-2bb5-4f41-ab11-6256990fe886","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","date":"2026-04-05","amount":2000,"note":"Release 6 smoke, first","kind":"manual"}
+
+  [PASS] Add first payment in 2026-04 answers 201 - 201
+POST /api/subscriptions/<id>/payments  (2026-04-20, amount 1000)
+status=201
+body: {"id":"bf71bedf-9e69-47fa-8b5b-81d9f2872b60","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","date":"2026-04-20","amount":1000,"note":"Release 6 smoke, second","kind":"manual"}
+
+  [PASS] Add second payment in the same month answers 201 - 201
+Two receipts in one month is the case the month cell must show as a count rather than two rows,
+and the case the inspector must list separately under Recorded.
+
+=============== 5. The six reads the calendar projects from ===============
+GET /api/subscriptions/<id>/summary   status=200   object
+  [PASS] Calendar read summary answers 200 - 200
+GET /api/subscriptions/<id>/members   status=200   3 rows
+  [PASS] Calendar read members answers 200 - 200
+GET /api/subscriptions/<id>/prices   status=200   1 rows
+  [PASS] Calendar read prices answers 200 - 200
+GET /api/subscriptions/<id>/break-months   status=200   1 rows
+  [PASS] Calendar read break-months answers 200 - 200
+GET /api/subscriptions/<id>/payments   status=200   2 rows
+  [PASS] Calendar read payments answers 200 - 200
+GET /api/subscriptions/<id>/schedules   status=200   1 rows
+  [PASS] Calendar read schedules answers 200 - 200
+
+members = 3, prices = 1, breakMonths = ["2026-03"], payments = 2, schedules = 1
+buildSubscriptionState consumes exactly these six collections; every one answers 200 and no
+calendar route was added by this change, which is what the empty src/server diff already said.
+
+=============== 6. Record, edit and delete one synthetic receipt ===============
+POST /api/subscriptions/<id>/payments  (2026-06-09, amount 750)
+status=201
+body: {"id":"1167ef7b-19af-43da-b64f-f712834ad606","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","date":"2026-06-09","amount":750,"note":"Release 6 smoke, edited away","kind":"manual"}
+
+  [PASS] Record a third synthetic receipt answers 201 - 201
+PATCH /api/subscriptions/<id>/payments/<paymentId>  (move to 2026-07-02, amount 900)
+status=200
+body: {"id":"1167ef7b-19af-43da-b64f-f712834ad606","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","date":"2026-07-02","amount":900,"note":"Release 6 smoke, edited away","kind":"manual"}
+
+  [PASS] Edit the receipt across a month boundary answers 200 - 200 date=2026-07-02 amount=900
+Moving a receipt out of its month is the V4 case: the calendar must target the inspector heading
+rather than lose focus to document.body. The route answers with the new month, which is what the
+client reads to decide that.
+
+DELETE /api/subscriptions/<id>/payments/<paymentId>
+status=204
+body: (empty)
+
+  [PASS] Delete the synthetic receipt answers 204 with an empty body - 204
+GET /api/subscriptions/<id>/payments/<paymentId>  (deleted)
+status=404
+body: {"error":"not found"}
+
+  [PASS] The deleted receipt reads 404 - 404
+  [PASS] The two seeded receipts survive the delete - 200, 2 rows
+
+=============== 7. Mark and unmark a standing-order exception ===============
+PUT /api/subscriptions/<id>/schedules/<scheduleId>/exceptions/2026-06
+status=204
+
+  [PASS] Mark 2026-06 not received answers 2xx - 204
+GET /api/subscriptions/<id>/schedules/<scheduleId>  (after the mark)
+status=200
+body: {"id":"117a63c3-6620-4704-9b76-d79da8960505","memberId":"cc443b11-f7d6-40a0-a60a-91cbed3250b3","amount":1500,"startMonth":"2026-05","endMonth":null,"exceptionMonths":["2026-06"]}
+
+  [PASS] The schedule carries the 2026-06 exception - ["2026-06"]
+DELETE /api/subscriptions/<id>/schedules/<scheduleId>/exceptions/2026-06
+status=204
+body: (empty)
+
+  [PASS] Unmark 2026-06 answers 2xx - 204
+  [PASS] The exception is gone again - []
+The exception round trip is the assumed-receipt half of a month cell: marked, the domain stops
+counting that month; unmarked, it counts again. Neither call touches a manual receipt.
+
+=============== 8. The deployed bundle is this release's ===============
+GET /                               200   assets/index-ByHeNjZo.css, assets/index-DlWpQE-s.js
+  [PASS] The root serves the CSS asset this release built - assets/index-ByHeNjZo.css
+  [PASS] The root serves the JS asset this release built - assets/index-DlWpQE-s.js
+GET /assets/index-DlWpQE-s.js       200   307704 bytes
+  occurrences of 'calendar-cell-'      9
+  [PASS] The served bundle carries 'calendar-cell-' - 9
+  occurrences of ' more'      1
+  [PASS] The served bundle carries ' more' - 1
+  occurrences of 'That is every payment.'      1
+  [PASS] The served bundle carries 'That is every payment.' - 1
+  occurrences of 'calendar-blocks'      3
+  [PASS] The served bundle carries 'calendar-blocks' - 3
+  occurrences of 'year-select'      2
+  [PASS] The served bundle carries 'year-select' - 2
+  occurrences of 'marked as not received'      1
+  [PASS] The served bundle carries 'marked as not received' - 1
+  occurrences of 'that month had no price'      1
+  [PASS] The served bundle carries 'that month had no price' - 1
+
+These are the calendar's own strings: the per-cell id prefix the MonthStrip mints, the bounded
+payments disclosure's two sentences, the container the compactness measurement names, the year
+control's select id and one exclusion phrase. Release 5's bundle carries none of them.
+
+=============== 9. Browser pass against the deployed release ===============
+Chrome 152 signed in as the reviewer on the live URL, opened this disposable's detail screen,
+opened and closed the kwiecien 2026 inspector at 1280 and at 390 CSS pixels, and signed out.
+Read off the live DOM, light theme emulated in both frames:
+
+  1280 CSS px   gridcells 24   .calendar-blocks scrollHeight 394 closed, 876 with the inspector open   no horizontal overflow
+   390 CSS px   gridcells 24   .calendar-blocks scrollHeight 649 closed, 1195 with the inspector open   no horizontal overflow
+  the opened cell's id            calendar-cell-<memberId>-2026-04
+  focus after Close               returns to that same cell, not to document.body
+
+Twenty-four gridcells is two participants times twelve months, and it does not move between the
+two frames or between open and closed, which is the compactness identity: the section grows with
+people, not with history. The owner has no person block, which is the design ruling that the
+owner share stays in the summary above the sections.
+
+Captures, all from this release and this deployment:
+  evidence/screenshots/s09-live/s09-live-01-detail-desktop-light.png
+  evidence/screenshots/s09-live/s09-live-02-inspector-open-desktop-light.png
+  evidence/screenshots/s09-live/s09-live-03-detail-390-light.png
+  evidence/screenshots/s09-live/s09-live-04-inspector-open-390-light.png
+
+=============== 10. Delete the disposable and prove nothing else went with it ===============
+DELETE /api/subscriptions/<id>
+status=204
+body: (empty)
+
+  [PASS] Delete the disposable answers 204 with an empty body - 204
+GET /api/subscriptions/<id>  (deleted)   status=404
+  [PASS] The deleted subscription reads 404 - 404
+DELETE /api/subscriptions/<nonexistent uuid>   status=404
+  [PASS] Deleting a nonexistent id answers 404 - 404
+
+GET /api/subscriptions  (reviewer)   closing count = 0
+  [PASS] Reviewer subscription count returns to the starting count - 0 to 0, same ids
+GET /api/subscriptions  (owner)      2 subscriptions: ["First deployment artefact (not the demo plan)","Family music plan"]
+  [PASS] Owner subscription count and ids unchanged across the pass - 2 to 2, same ids
+The owner session was held open from the start of the pass to here for exactly this comparison.
+No read of the owner's records went past the list call: nothing of the owner's was written.
+
+=============== 11. Close both sessions ===============
+POST /api/auth/sign-out  (reviewer)   status=200
+  [PASS] reviewer sign-out answers 200 - 200
+GET /api/subscriptions replaying the signed-out reviewer cookie   status=401
+  [PASS] Replaying the signed-out reviewer cookie answers 401 - 401
+POST /api/auth/sign-out  (owner)   status=200
+  [PASS] owner sign-out answers 200 - 200
+GET /api/subscriptions replaying the signed-out owner cookie   status=401
+  [PASS] Replaying the signed-out owner cookie answers 401 - 401
+
+Sign-out is sent with an empty JSON body and therefore a content-type, which is the correction
+release 5 recorded after its own script sent it bodiless and the auth library answered 415.
+
+=============== Result: 9 pass, 0 fail ===============
+
+=============== One honest note on method ===============
+Section 8 was run twice. The first run probed the served bundle for two literals the source does not
+contain: 'Show 12 more', which the component builds as 'Show {n} more' around an interpolated count
+so no such literal exists, and 'Not received', where the shipped exclusion phrase is 'marked as not
+received'. Both read as a zero count. The fault was in the probe, not the deployment; the strings
+above are the ones the source actually holds and every one of them is present. Nothing else in the
+pass was re-run for that reason, and the first run wrote nothing: section 8 is read-only.
+
+Section 6 therefore recorded, edited and deleted its synthetic receipt twice, once per run of that
+stage. Both cycles ended with the receipt deleted and the two seeded receipts intact, and the closing
+counts in section 10 are read after all of it.
+
+The browser pass in section 9 signed in once as the reviewer and signed out at the end, so it left no
+open session behind. The two scripted sessions are closed in section 11 and their cookies answer 401
+on replay. The deployment refuses the default Python user agent with a Cloudflare 1010 before the
+request reaches the Worker, which release 5 recorded; every call above sends a real browser user
+agent for that reason.

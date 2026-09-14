@@ -80,3 +80,45 @@ which is the restore point and still exists.
 ## Next action
 
 Live verification on the deployed URL, then the three captures.
+
+## Step 5: live verification
+
+Forty-six checks against `https://subscription-splitter.sebastianfudalej.workers.dev`, all passing.
+Transcript at `evidence/runs/release-6-live-smoke.txt`, written up in `evidence/runs/release-6.md`.
+
+- **Read-only first**: `/api/auth-config` returns exactly `{"google":true}` with no cookie, and both
+  an unauthenticated summary read and an unauthenticated payments read answer 401.
+- **Synthetic only**: a disposable subscription under the reviewer account with two participants, one
+  price, one skipped month, one standing order and two receipts dated in the same month. All six
+  reads the calendar projects from answer 200. A third receipt was recorded, edited across a month
+  boundary and deleted; a standing-order exception was marked and unmarked; the disposable was then
+  deleted.
+- **Nothing pre-existing touched**: reviewer 0 rows to 0 rows with the same ids, owner 2 rows to 2
+  rows with the same ids and names, the owner session held open across the pass for that comparison.
+  Both sessions signed out, both cookies answer 401 on replay.
+- **The served asset is this release's**: the root serves `assets/index-ByHeNjZo.css` and
+  `assets/index-DlWpQE-s.js`, the two names the clean-clone build emitted, and that bundle carries
+  seven calendar strings. Release 5's bundle, still served at its old name, carries none of them.
+- **Browser, Chrome 152, light emulated**: 24 gridcells at both 1280 and 390 CSS pixels, unchanged
+  when the inspector opens, no horizontal overflow at either width; the opened cell's id is
+  `calendar-cell-<memberId>-2026-04`; focus returns to that cell when the inspector closes.
+
+Four captures in `evidence/screenshots/s09-live/`: `s09-live-01-detail-desktop-light.png`,
+`s09-live-02-inspector-open-desktop-light.png`, `s09-live-03-detail-390-light.png`,
+`s09-live-04-inspector-open-390-light.png`.
+
+## Step 6: rollback
+
+Not needed and not exercised. Live verification passed, so `751a8bfd-e62a-4c9a-beb2-1953eb6a7656`
+stays recorded as the restore point rather than being restored.
+
+## Blockers
+
+None.
+
+## Next action
+
+Steps 6.3 and 6.4 belong to other owners: the sole status writer synchronizes the foundation
+documents, goals and evidence index, and the archive pass closes the change. The six affected
+certification capture slots are listed in `evidence/runs/release-6.md`. Nothing has been uploaded to
+the course.
