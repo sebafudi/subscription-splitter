@@ -64,6 +64,9 @@
   --red: #b3261e;
   --red-tint: #f5e1df;
   --on-ink: #f7f9f4;
+  /* The calendar's off-plan hatch. Distinct from --rule because the dark --rule
+     disappears against --paper; this token stays visible in both themes. */
+  --hatch: #c5d0c0;
 
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5l4-4' fill='none' stroke='%234A5750' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
@@ -129,6 +132,7 @@
     --red: #f28b82;
     --red-tint: #3a1f1d;
     --on-ink: #0f1512;
+    --hatch: #6f7b73;
 
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5l4-4' fill='none' stroke='%23A7B3AB' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
@@ -702,8 +706,13 @@ label {
   }
 }
 
-/* Disclosure panel */
+/* Disclosure panel. Also the motion the month inspector reproduces in its own
+   markup (it does not render inside a DisclosurePanel), so a change here moves
+   the inspector too. */
 .disclosure {
+  /* No-op outside a grid parent; spans the full width where a person block
+     nests the month inspector's disclosure inside its .entry grid. */
+  grid-column: 1 / -1;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows var(--motion-disclosure-close) var(--motion-disclosure-ease);
@@ -719,6 +728,8 @@ label {
   min-height: 0;
 }
 
+/* Also the frame the month inspector's own markup reproduces, at its own
+   padding and margin (see .calendar-inspector). */
 .panel {
   background: var(--paper);
   border: 1px solid var(--border);
@@ -1030,49 +1041,242 @@ main section {
   margin-top: var(--s-1);
 }
 
-/* Standing order month tiles. Each state is distinguishable with colour removed:
-   a solid border and a green rule, a dashed border, or a solid border and a red rule. */
-.tiles {
-  grid-column: 1 / -1;
-  list-style: none;
-  margin: var(--s-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
+/*
+ * Member calendar. One year control above the participant list, one strip and
+ * optional inspector per person block, both rendered as `LedgerEntry` children
+ * (see .entry, .entry-cells above) rather than a container of their own.
+ * Class names below match `YearControl.tsx`, `MonthStrip.tsx` and
+ * `MonthInspector.tsx` exactly.
+ */
+.calendar-blocks,
+.calendar-blocks-archived {
+  margin-top: var(--s-4);
 }
 
-.tile {
-  width: 156px;
-  padding: var(--s-3);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--paper);
+.calendar-year-control {
+  margin: var(--s-5) 0 var(--s-3);
+}
+
+.calendar-year-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.calendar-year-range {
+  margin-left: var(--s-2);
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
   gap: var(--s-1);
 }
 
-.tile-month {
-  font-weight: 600;
+.calendar-legend-hatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 3px, var(--hatch) 3px 4px),
+    var(--paper);
 }
 
-.tile-counted {
-  border-left: 3px solid var(--green);
+/* The strip: `.calendar-strip` is the role="grid" wrapper and `.calendar-row`
+   the single role="row" that actually lays the twelve cells out; the two
+   visual rows below 640px are `.calendar-row`'s own wrap, not a second ARIA
+   row. */
+.calendar-strip {
+  grid-column: 1 / -1;
+  margin-top: var(--s-2);
 }
 
-.tile-excluded {
+.calendar-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--s-1);
+}
+
+.calendar-cell {
+  min-width: 44px;
+  height: 44px;
+  padding: var(--s-1);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-cell:hover {
+  border-color: var(--border);
+}
+
+.calendar-cell-month {
+  position: relative;
+}
+
+.calendar-cell-current .calendar-cell-month::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: currentColor;
+}
+
+.calendar-cell-selected {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: var(--ink);
+}
+
+.calendar-cell-selected .mark-recorded,
+.calendar-cell-selected .mark-assumed,
+.calendar-cell-selected .mark-excepted,
+.calendar-cell-selected .mark-paused,
+.calendar-cell-selected .mark-unpriced {
+  color: var(--on-ink);
+}
+
+.calendar-cell-offplan {
+  background:
+    repeating-linear-gradient(135deg, transparent 0 3px, var(--hatch) 3px 4px),
+    var(--paper);
+}
+
+.calendar-cell-future {
   border-style: dashed;
 }
 
-.tile-not-received {
-  border-left: 3px solid var(--red);
+.calendar-cell-future .calendar-cell-month {
+  color: var(--ink-faint);
 }
 
-.tile-reason-red {
+/* The just-changed cell, alongside its block's own .entry-highlight. */
+.calendar-cell-highlight {
+  animation: entry-highlight var(--motion-highlight) linear 200ms both;
+}
+
+.calendar-cell-marks {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 12px;
+}
+
+.mark {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.mark-recorded {
+  color: var(--ink);
+}
+
+.mark-assumed {
+  color: var(--ink-soft);
+}
+
+.mark-excepted {
   color: var(--red);
 }
+
+.mark-paused {
+  color: var(--ink-faint);
+}
+
+.mark-unpriced {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* The month inspector. `.calendar-inspector` sits alongside `.panel` on the
+   same element (see the comment above .panel) and overrides only its padding
+   and top margin, per design-spec.md §6. */
+.calendar-inspector {
+  padding: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+/* The record button follows the inspector's Recorded/Assumed groups directly,
+   with no wrapper of its own. */
+.calendar-inspector > .btn-primary {
+  margin-top: var(--s-4);
+}
+
+.calendar-inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.calendar-red {
+  color: var(--red);
+}
+
+.calendar-group-heading {
+  font-weight: 600;
+  margin: var(--s-4) 0 var(--s-2);
+}
+
+.calendar-assumed-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-4);
+  margin-top: var(--s-1);
+}
+
+.calendar-assumed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  margin-top: var(--s-2);
+}
+
+/* Calendar skeleton: per expected participant, a name bar, a cells bar and a
+   twelve-column row of static cells. Never a shimmer, never announced. */
+.skeleton-calendar-name {
+  width: 45%;
+  height: 17px;
+}
+
+.skeleton-calendar-line {
+  width: 30%;
+  height: 13px;
+}
+
+.skeleton-calendar-strip {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--s-1);
+  margin-top: var(--s-2);
+}
+
+.skeleton-calendar-cell {
+  height: 44px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+
+
 
 /* The participant form's active-month ranges */
 .ranges {
@@ -1264,13 +1468,17 @@ main section {
     align-items: flex-start;
   }
 
-  .tiles {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .calendar-row {
+    grid-template-columns: repeat(6, 1fr);
   }
 
-  .tile {
-    width: auto;
+  .calendar-cell {
+    height: 48px;
+  }
+
+  .calendar-year-range {
+    flex-basis: 100%;
+    margin-left: 0;
   }
 
   .login {
@@ -1289,7 +1497,8 @@ main section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .entry-highlight {
+  .entry-highlight,
+  .calendar-cell-highlight {
     animation: none;
     background-color: var(--green-tint);
   }
