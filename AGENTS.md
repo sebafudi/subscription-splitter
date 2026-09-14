@@ -5,14 +5,13 @@ and reports what each owes. TypeScript throughout: a Hono API and a React client
 Worker over D1. Four ledger slices shipped the product behaviour: sessions over two seeded accounts,
 subscriptions, participants with inclusive active ranges, effective-dated prices, break months,
 payments, standing orders with per-month exceptions, and the summary that derives every balance from
-them. The roadmap ledger `F-01` through `S-08` is archived under `context/archive/`, `S-07`
-`google-sign-in` having added Google sign-in beside the password login and `S-08`
+them. The roadmap ledger `F-01` through `S-09` is archived under `context/archive/`, `S-07`
+`google-sign-in` having added Google sign-in beside the password login, `S-08`
 `subscription-management-and-date-inputs` having added editing and deleting the subscription itself
-and native browser calendar controls in place of the plain-text month and date fields. `S-09`
-`compact-member-calendar` is the active change: a compact per-person calendar or graph view of
-monthly balances, payments and standing orders in place of the unbounded per-person history list.
-It is released as release 6 (`64eb0d3`, Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`);
-only the foundation/status/evidence synchronization and the archive step remain.
+and native browser calendar controls in place of the plain-text month and date fields, and `S-09`
+`compact-member-calendar` having replaced the unbounded per-person history list with a compact
+per-person calendar and month inspector, released as release 6 (`64eb0d3`, Cloudflare version
+`a80d2e12-d77e-4b88-b318-aa992eb60d50`). No roadmap item is open.
 
 ## Hard rules
 
