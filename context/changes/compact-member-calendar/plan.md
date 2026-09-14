@@ -886,7 +886,7 @@ new token, and all five design findings carry a designer ruling in `design-spec.
 #### Automated
 
 - [x] 5.1 Pass typecheck, relevant tests and production build — 29ee6f0
-- [ ] 5.2 Verify compactness, responsive layouts and accessibility in the browser
+- [x] 5.2 Verify compactness, responsive layouts and accessibility in the browser — 650a14d
 - [ ] 5.3 Complete independent implementation review and resolve blocking findings
 - [ ] 5.4 Obtain Fable visual acceptance against the real implementation
 
