@@ -894,7 +894,7 @@ new token, and all five design findings carry a designer ruling in `design-spec.
 
 #### Automated
 
-- [ ] 6.1 Verify hosted checks and deploy the accepted revision
-- [ ] 6.2 Verify the live release and record the Worker version and rollback reference
+- [x] 6.1 Verify hosted checks and deploy the accepted revision — 64eb0d3
+- [x] 6.2 Verify the live release and record the Worker version and rollback reference — 64eb0d3
 - [ ] 6.3 Synchronize foundation documents, goals and evidence
 - [ ] 6.4 Archive the accepted change and record the final handoff
