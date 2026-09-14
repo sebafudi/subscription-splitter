@@ -62,7 +62,7 @@ no file against it is not defended, whatever this plan says about it.
 
 | # | Where the protection lives | Layer |
 |---|---|---|
-| 1 | `src/domain/calc.test.ts` and `src/domain/money.test.ts` carry the month-balancing table as hand-computed literals, including two remainder rows, and pin the rounding rule against truncation at the helper and again through `computeSummary`. `src/domain/prices.test.ts`, `src/domain/members.test.ts` and `src/domain/month-status.test.ts` cover the effective-dated lookup, the active-range semantics and the one rule that decides a member month. `tests/integration/summary.test.ts` holds the US-01 worked example to the minor unit through the API. | unit, plus one integration case |
+| 1 | `src/domain/calc.test.ts` and `src/domain/money.test.ts` carry the month-balancing table as hand-computed literals, including two remainder rows, and pin the rounding rule against truncation at the helper and again through `computeSummary`. `src/domain/prices.test.ts`, `src/domain/members.test.ts` and `src/domain/month-status.test.ts` cover the effective-dated lookup, the active-range semantics and the one rule that decides a member month. `tests/integration/summary.test.ts` holds the US-01 worked example to the minor unit through the API. `src/client/calendar/projection.test.ts` adds a second, independent proof for the client-only compact-calendar change (S-09): seven invariants reconcile the projection's own per-person sums against `computeSummary`, `balanceForMember` and `recurringReceived` on one synthetic six-person eight-year ledger carrying every named edge case, plus a never-summed proof that no exported field ever equals manual plus assumed receipts. | unit, plus one integration case |
 | 2 | `tests/integration/subscriptions.test.ts`, `members.test.ts`, `prices.test.ts`, `payments.test.ts` and `recurring.test.ts` each carry the four cross-account cases and the wrong-parent case inside one account, for every verb the resource offers. The subscription resource now offers GET, POST, PATCH and DELETE, and the settings patch and the whole-ledger delete are covered by that rule like every verb before them: an unauthenticated patch or delete is 401 and a foreign one is 404, with nothing removed anywhere. `tests/integration/router-isolation.test.ts` asks each router on its own, which is what proves a module's own session middleware rather than a sibling's. | integration |
 | 3 | The local half: create-then-refetch with every field re-read, atomic range replacement, the earliest-price-delete recompute and the exception drop, across `tests/integration/members.test.ts`, `prices.test.ts`, `payments.test.ts` and `recurring.test.ts`; `tests/integration/member-removal.test.ts` pins the dependents refusal at the repository rather than at the route; the whole-ledger delete is pinned three ways, by asserting zero rows in all eight tables after a subscription carrying every child kind is removed, by asserting that another account's subscription and the same account's second subscription both survive it, and by a batch carrying one statement that collides with a live row of a subscription it does not touch, which must leave every row standing; the first-month write is pinned the same way, as one batch whose bounds travel in its own `where` clause, so a refused edit changes nothing and a lost race answers the ordinary refusal rather than a partial write; and all six migrations apply in order to a clean database on every integration run through `tests/integration/apply-migrations.ts`. The remote half is not defended by a test and cannot be: "a migration leaves the remote database behind the code" is a fact about one live database, so it is answered by the release slice's own migration and live pass under change `verification-and-release`, and re-answered whenever that database is migrated again. The reload half is answered by that slice's cold re-read in a session carrying no cookie from the walkthrough. | integration, plus a live pass for the remote and reload halves |
 | 4 | `src/domain/recurring.test.ts` tests each of the six conditions as a pair against one state, so exactly one condition moves between the halves, with the not-yet-elapsed bound asserted twice. `tests/integration/recurring.test.ts` proves the same rule against stored exceptions, and `tests/integration/summary.test.ts` asserts the two expressions of the rule agree as sets of months rather than as totals (decision D-008). | unit for the rule, integration for the stored half |
@@ -82,6 +82,7 @@ risk is defended at the first moment it can be.
 | 2 | Money calculation coverage | Prove risks #1 and #5 against the calculation module, as part of roadmap S-02 | #1, #5 | unit | complete | `context/archive/members-and-price-history/` |
 | 3 | Persistence and recurring rules | Prove risks #3 and #4 through real write, edit, delete and re-read paths, as part of roadmap S-03 | #3, #4 | unit + integration | complete | `context/archive/payments-and-recurring/` |
 | 4 | Smoke flow and gates | One browser walkthrough of sign-in to balance against the deployed instance, and the gates wired in CI, as part of roadmap S-04 | cross-cutting | manual browser walkthrough + gates | complete | `context/archive/verification-and-release/` |
+| 5 | Compact member calendar projection and verification | Prove risk #1 continues to hold through a read-only projection layer built independently of `computeSummary` and reconciled against it, then prove the compact UI's own properties (compactness, keyboard, responsive, completeness signalling) in the browser, as part of roadmap S-09 | #1 | unit + manual browser | complete | `context/changes/compact-member-calendar/` |
 
 The gates half of phase 4 landed early, with S-01: `.github/workflows/ci.yml` has run typecheck, the
 unit suite, the integration suite and the build on every push and pull request since. The walkthrough
@@ -206,6 +207,20 @@ three times; copy that shape.
 ### 6.5 Per-rollout-phase notes
 
 (Optional. After each phase lands, a short note here captures anything surprising the phase taught.)
+
+**Phase 5, compact member calendar projection and verification.** A client-only UI change still
+needs an accounting-safety proof, and the cheapest one is not more cases on `computeSummary` but a
+second, independently written module that answers the same question and is checked to agree with
+it: `src/client/calendar/projection.ts` never imports `calc.ts`, and its own per-person sums are
+reconciled against `computeSummary`, `balanceForMember` and `recurringReceived` by seven invariants
+plus a never-summed proof, rather than trusted because it reads the same fixtures. Compactness is a
+property no unit test can see, so it is measured live: `.calendar-blocks` and `Participants`
+`scrollHeight` are asserted equal between a one-year and an eight-year synthetic fixture, and any
+remaining whole-page difference is attributed to a named cause (a second skipped month, a second
+standing order) rather than to months elapsed. Verification for this phase is recorded in
+`evidence/runs/s09-compactness.md` and `s09-browser-verification.md`, real Chrome only:
+Safari, Firefox, the mobile browsers and real touch input are not driven and are recorded as
+unverified, and reduced motion is verified through zero-duration tokens rather than live emulation.
 
 **Phase 3, persistence and recurring rules.** Six conditions decide whether a month of a standing
 order counted, and the cheapest way to test them is as pairs against one state: the same

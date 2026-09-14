@@ -250,9 +250,41 @@ of the organizer's.
 - FR-023: Organizer can see this month's per-person share and what has been collected against what is expected this month. Priority: must-have
 - FR-024: Organizer can see the total currently owed to them and their own net cost since the plan started. Priority: must-have
 - FR-025: Organizer can see the payment history for one participant. Priority: must-have
+  > Shipped: as a bounded disclosure rather than an always-open list. `PaymentList` renders a
+  > "Show payments" disclosure, collapsed on every load, that reveals at most twelve entries plus a
+  > "Show N more" link naming exactly how many further entries remain; entry shape, edit, delete and
+  > the refusal messages are unchanged. This is the S-09 `compact-member-calendar` change.
 - FR-026: Organizer can tell which receipts were recorded by hand and which are assumed from a standing order. Priority: must-have
   > Socratic: Counter-argument considered: "the distinction confuses the reader". Resolved: kept; presenting assumed money
   > as confirmed money is the one way this product could mislead its user.
+  > Shipped: the two kinds keep separate marks in the same month cell and are never added into one
+  > figure anywhere in the calendar or its inspector; a cell with both a manual receipt and an
+  > assumed one shows both marks side by side, and the accounting layer this reads from
+  > (`src/client/calendar/projection.ts`) is reconciled against `computeSummary`,
+  > `balanceForMember` and `recurringReceived` with a dedicated proof that no exported field ever
+  > equals manual plus assumed.
+- FR-030: Organizer reads each participant's monthly history as a compact year calendar rather than
+  an unbounded per-month list, with a month inspector for full detail. Priority: must-have
+  > Socratic: Counter-argument considered: "a calendar hides detail a list would show". Resolved: kept, because
+  > every field and action the list offered is reachable from a cell or its inspector, matched row by row
+  > in `research.md` §3's sixty-seven-row preservation matrix; nothing that could be seen or done before is
+  > gone, only relocated.
+  > Shipped: one row per participant, twelve month cells for the selected year, stepped by a shared year
+  > control (`YearControl.tsx`); selecting a cell opens `MonthInspector.tsx` in place, itemising every
+  > manual receipt and every assumed receipt separately for that month with their own Edit and Delete.
+  > Standing orders keep their schedule rows, totals and forms and drop the per-month tile list the
+  > month vocabulary now lives in the calendar instead (`RecurringSection.tsx`). Seven cell states are
+  > distinguished by text or symbol as well as colour: a month with no receipt, a skipped month, a
+  > month outside the participant's active range, an excepted standing order, a future month, a month
+  > missing a price, and a month carrying one or more receipts; a missing price or membership range is
+  > never shown as settled, and an elapsed unpriced month is called out in its own red sentence rather
+  > than folded into the balance. The grid is one `role="grid"` row of twelve keyboard-navigable cells
+  > per person (arrow keys, Home, End, roving tabindex), and the selected year and open inspector are
+  > retained in `sessionStorage` per subscription across a reload. Collapsed height grows with the
+  > number of participants, not with the number of months or payments elapsed, measured and held equal
+  > between a one-year and an eight-year synthetic fixture in `evidence/runs/s09-compactness.md`. This
+  > is the S-09 `compact-member-calendar` change, released as release 6 (`64eb0d3`); the certification
+  > screenshots for the affected slots are tracked separately.
 
 ### Entering months and dates
 

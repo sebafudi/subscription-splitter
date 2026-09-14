@@ -94,3 +94,13 @@ frame); Safari, Firefox, mobile browsers and real touch were not driven; reduced
 verified through the existing zero-duration tokens rather than a live emulation; the
 archived-and-settled disclosure, a server-side 500 and the price-delete refusal were not
 re-exercised in this change and are unchanged code.
+
+## Pass 4: live release
+
+Release 6 (commit `64eb0d3`, Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`) inspected
+through `evidence/screenshots/s09-live/s09-live-02-inspector-open-desktop-light.png` on a
+disposable `pl-PL`/`PLN` plan: locale short month labels in the cells (`sty` to `gru`), the long
+form in the inspector heading, charge sentence and record action ("kwiecień 2026"), locale currency
+("120,00 zł"), the inverted selected cell with disc and "×2", dashed future months, the pause bars,
+the `?` mark and the red lifetime and year fragments, the hatch on months before the range, and the
+range sentence without a future-year fragment. The deployed revision renders the accepted design.

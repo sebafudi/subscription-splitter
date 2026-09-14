@@ -11,6 +11,8 @@ them. The roadmap ledger `F-01` through `S-08` is archived under `context/archiv
 and native browser calendar controls in place of the plain-text month and date fields. `S-09`
 `compact-member-calendar` is the active change: a compact per-person calendar or graph view of
 monthly balances, payments and standing orders in place of the unbounded per-person history list.
+It is released as release 6 (`64eb0d3`, Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`);
+only the foundation/status/evidence synchronization and the archive step remain.
 
 ## Hard rules
 
