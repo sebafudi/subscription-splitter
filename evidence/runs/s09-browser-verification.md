@@ -419,3 +419,213 @@ write. Every other §3 to §9 behaviour this step exercised matched the specific
 | `evidence/screenshots/s09/unpriced-2019-light.png` | the `?` mark and the red months-without-a-price fragment |
 | `evidence/screenshots/s09/empty-membership-1280-light.png` | the empty-membership sentence and hatched strip |
 | `evidence/screenshots/s09/failed-write-offline-alert.png` | the failed write, with every previous record still on screen |
+| `evidence/screenshots/s09/failed-refresh-after-write.png` | the failed refresh after a successful write, with the screen emptied (defect V5) |
+| `evidence/screenshots/s09/range-sentence-2019.png` | the year control at 2019 with one future-year fragment, per §18.1 |
+| `evidence/screenshots/s09/marks-order-ada-march.png` | the mark row reading disc, count, ring, per §18.4 |
+
+Every capture above was retaken at `05ff614`.
+
+---
+
+# Re-run at 05ff614
+
+Re-verified after `4753a52` (V3 and V4 fixed, the Phase 5 acceptance clause amended) and `a671ca0`
+(the designer's §18 corrections). The dev server was restarted at this commit, the browser profile was
+fresh, and both fixtures were rebuilt. The fixture pair was corrected first: see the Re-run section of
+`evidence/runs/s09-compactness.md` for why SHORT now starts in November 2025.
+
+## Gates at 05ff614
+
+| Gate | Exit | What it reported |
+| --- | --- | --- |
+| `npm run typecheck` | 0 | three projects, no output |
+| `npm run test:unit` | 0 | `Test Files  26 passed (26)`, `Tests  354 passed (354)` |
+| `npm run test:integration` | 0 | `Test Files  13 passed (13)`, `Tests  131 passed (131)` |
+| `npm run build` | 0 | `675 modules transformed` worker, `69 modules transformed` client |
+
+```
+dist/client/assets/index-ByHeNjZo.css                                  20.10 kB │ gzip:  4.69 kB
+dist/client/assets/index-DGCB6uJ3.js                                  307.18 kB │ gzip: 91.02 kB
+dist/subscription_splitter/index.js                                             882.53 kB │ gzip: 210.20 kB
+```
+
+Three unit tests were added since the previous run, 351 to 354. The stylesheet hash is unchanged, so
+the §18 corrections landed without a CSS change.
+
+## The four defects, re-checked
+
+| Defect | Result |
+| --- | --- |
+| **V1** whole-page height against the acceptance clause | **Resolved by the amended clause, and now met on corrected fixtures.** Every calendar-owned figure is identical and the whole 183 pixel residual decomposes into the Skipped months and Standing orders sections. Full table in `s09-compactness.md`. |
+| **V2** "Show N more" | **Resolved by §17.2**, and both branches of the rule are now exercised. |
+| **V3** no tint after a receipt delete | **Fixed.** |
+| **V4** focus lost to `document.body` on a cross-month receipt edit | **Fixed.** |
+
+### V4, both branches
+
+Ada's March 2026 receipt re-dated to `2027-09-09` through the inspector's edit form:
+
+| Check | Observed |
+| --- | --- |
+| `document.activeElement` | `H3#inspector-heading-<member>-2026-03`, matching the inspector heading node |
+| Was it `document.body` | `false` |
+| Inspector | stayed on `Ada, March 2026` |
+| Recorded heading | `Recorded (2)` to `Recorded (1)` |
+| March cell accessible name | `March 2026, 1 payment recorded, £25.00 in total, £4.00 assumed from a standing order, charged £2.00` |
+| Range sentence | `Showing Jan to Dec 2026. 2027 holds 2 payments.` |
+
+The stayed-in-month branch still behaves: re-dating a receipt from `2026-03-03` to `2026-03-11` left
+focus on `inspector-payment-edit-<id>`, that entry's own Edit button.
+
+### V3, sampled across the delete
+
+Sampling `.entry-highlight` and `.calendar-cell-highlight` every forty milliseconds while deleting a
+receipt from the March inspector:
+
+| Sample | Status | Tinted blocks | Tinted cells |
+| --- | --- | --- | --- |
+| 1 | empty | 0 | 0 |
+| 2 | empty | 1 | 1, `2026-03` |
+| 3 | `Payment deleted` | 1 | 1, `2026-03` |
+
+The tinted cell is the month that lost the record. Focus went to the inspector heading and the
+inspector stayed open reading `Recorded` with `Nothing recorded for March 2026.`
+
+### V2, both branches of the §17.2 rule
+
+The rule is "Show N more where N is the smaller of 12 and the number of entries not yet shown".
+Exercised on a LONG fixture grown to 33 payments:
+
+| Step | Entries listed | Control reads |
+| --- | --- | --- |
+| Closed on load | 12 in the DOM | `Show payments` |
+| Opened | 12 | `Show 12 more` |
+| After one press | 24 | `Show 9 more` |
+| After the second | 33 | `That is every payment.` |
+
+At 19 payments the sequence was 12 then `Show 7 more` then 19. Both `min` branches hold and the label
+never promises more than it reveals. The closed section holds 12 entries in the DOM whether the
+filtered count is 5, 19 or 33, and stays 114 pixels tall in every case.
+
+## The designer's §18 corrections
+
+| Ruling | Observed |
+| --- | --- |
+| **§18.1** future-year fragments only for years after the current year | At 2019 the sentence reads `Showing Jan to Dec 2019. 2027 holds 1 payment.` One fragment, for 2027. No fragment for 2020 through 2026, which hold payments but are not after the current year. At 2026 it reads `Showing Jan to Dec 2026. 2027 holds 1 payment.` |
+| **§18.2** no "settled" for a participant with no membership range | Gil's balance slot reads `no membership range` on an element classed `calendar-red t-entry`, computed `color: rgb(179, 38, 30)` and `font-weight: 600`. The word "settled" is gone. The red sentence under the lifetime cells stays. |
+| **§18.3** lifetime completeness sentence | `2 months have no price, so owed and the balance are incomplete.` sits under the lifetime cells for each of the five participants whose charged window reaches an unpriced month, and Esi, who joined after it, has none. The selected-year fragment `, 2 months without a price` still follows the Charged figure. |
+| **§18.4** `×N` directly after the recorded disc | The mark row's children are, in order, `svg.mark mark-recorded`, `span.calendar-cell-count t-small tnum` reading `×2`, then `svg.mark mark-assumed`. |
+
+Captures: `range-sentence-2019.png`, `marks-order-ada-march.png`, `empty-membership-1280-light.png`,
+`unpriced-2019-light.png`.
+
+## How the empty-membership participant was produced
+
+The members route refuses a participant with no active range, so the state is unreachable through the
+API and the plan's Phase 5 records it as a unit-test case only. To render it in the browser,
+`evidence/runs/s09-scripts/empty-ranges.mjs` signs in as the disposable account and creates a
+participant named Gil normally, through `POST /api/subscriptions/<id>/members` with one range of
+`2026-01` onwards. The script prints the new member id, and then a single
+
+```
+npx wrangler d1 execute subscription-splitter-db --local \
+  --command "DELETE FROM active_ranges WHERE member_id = '<id>';"
+```
+
+removes that member's rows from the `active_ranges` table in the local disposable database. Nothing
+remote is touched and no route is bypassed for any other record. On the next load the projection sees
+a member with an empty `activeRanges` array, which is the case the unit tests cover and which §4,
+§9 and §18.2 describe.
+
+With `a671ca0` Gil's block renders: header `Gil`, the tag `not active this month`, the balance slot
+`no membership range` in red, lifetime cells all `£0.00`, no year-cells row, the red sentence
+`No membership range recorded, so nothing was charged. Recorded payments still show.`, and twelve
+cells all classed `calendar-cell-offplan` at 2019.
+
+## Keyboard, re-checked
+
+`MonthStrip.tsx` and `PersonBlock.tsx` both changed since the previous pass, so the traversal was
+re-run with real key presses from the first block's Edit button.
+
+| Key | Resulting focus |
+| --- | --- |
+| Tab | Archive |
+| Tab | Delete |
+| Tab | the strip, on Cleo's September cell, the current month |
+| Home | Cleo, January |
+| ArrowLeft | Cleo, December, wrapping |
+| ArrowRight | Cleo, January, wrapping |
+| End | Cleo, December |
+| ArrowDown | Fin, December |
+| ArrowUp | Cleo, December |
+| Enter | Cleo, December, inspector `Cleo, December 2026` |
+| Escape | Cleo, December, inspector closed |
+
+Exactly one cell per strip carried `tabIndex` 0 afterwards, seven strips for seven participants.
+
+## A failed refresh, isolated from a failed write
+
+The previous pass could only fail both together by taking the network offline. This run separates
+them: `window.fetch` was wrapped in the page so that the first non-GET passes through to the server
+untouched and every subsequent GET to `/api/subscriptions/...` rejects with a `TypeError`. The write
+therefore lands and only the reload that follows it fails. The client cannot tell this apart from a
+server that dies between the two, because it sees a rejected fetch either way.
+
+A payment of £9.99 was recorded for Bo from the June 2026 inspector.
+
+| Check | Observed |
+| --- | --- |
+| Requests, in order | `POST .../payments`, then GETs for summary, members, prices, break-months, payments, schedules |
+| The POST | reached the server and succeeded |
+| The six GETs | all rejected |
+| Participants section after | **gone**; `document.getElementById('participants')` is `null` |
+| Rendered cells after | **0** |
+| Person blocks after | **0** |
+| What the screen shows | the header, the edit panel, and one page-level alert |
+| The alert | `Could not save. Check your connection and try again.` with a `Try again` action |
+| After pressing Try again with fetch restored | `Payments received (19)`, up from 18, and Bo's June cell reads `June 2026, 1 payment recorded, £9.99 in total, charged £2.40` |
+
+So the write did land while the screen said it had not. This is defect **V5** below. Capture:
+`evidence/screenshots/s09/failed-refresh-after-write.png`.
+
+A failed **write**, by contrast, still behaves as §9 says. With the network offline, pressing Unskip
+left `Skipped months (2)` with both `May 2021` and `May 2026` listed, seven person blocks and 84 cells
+untouched, and the section alert reading `Could not save. Check your connection and try again.`
+Capture: `evidence/screenshots/s09/failed-write-offline-alert.png`.
+
+## Other flows, re-checked at this commit
+
+| Flow | Result |
+| --- | --- |
+| Delete a participant, refused | question `Delete Ada? Their payments stay recorded.`, focus on `Keep`, then the server's own sentence `this member has records attached and is archived rather than deleted` in the section alert and focus back on `participant-delete-<id>` |
+| Delete a receipt, confirm step | question `Delete the £25.00 payment from Ada?`, focus on `Keep` |
+| Inspector on a month with two same-day receipts | heading `Ada, March 2026`, `Charged £2.00 for March 2026.`, `Recorded (2)` with two `£25.00` entries dated `3 Mar 2026`, `Assumed`, and `Record a payment for March 2026` |
+| Reduced motion | `matchMedia('(prefers-reduced-motion: reduce)').matches` `true`, all five motion tokens `0ms`, the inspector wrapper's `transitionDuration` `0s`, the inspector opens with focus staying on the cell, and the V3 delete tint appears with `animationName` `none` and a static `rgb(28, 58, 43)` ground |
+| 390 layout | `window.innerWidth` 390, six columns per visual row, cells 56.33 by 48, one ARIA row per participant, `#year-select` 44 tall, no horizontal overflow |
+
+## Defect found by this re-run
+
+5. **A failed refresh after a successful write empties the screen and blames the save.** §9 requires
+   that on a failed save or refresh "the previous records stay on screen". They do not: `load()` in
+   `SubscriptionDetail.tsx` sets `status: 'error'`, which replaces the whole ready state, so the
+   Participants, Price history, Skipped months, Payments and Standing orders sections all disappear.
+   The alert then reads `CONNECTION_FAILURE`, defined in `ui/FormAlert.tsx` as "Could not save. Check
+   your connection and try again.", although the save succeeded and only the read failed. A user who
+   believes that message may record the same payment twice. Reproduction is in the section above; the
+   `Try again` action recovers correctly and reveals the payment that was already there.
+
+   This is not introduced by the calendar. The same `status: 'error'` branch exists at `91ce0da`, and
+   `load()`'s own comment says a reload "keeps the figures already on screen rather than collapsing
+   the layout back to the loading state", which guards the loading state but not the error state. It
+   is reported here because §9 is a Phase 5 criterion and this is the first pass that isolated the
+   case.
+
+## Still not verified
+
+- Safari, Firefox and any mobile browser. Only Chrome 152 was driven.
+- Real touch input; the 390 pass uses Chrome's touch emulation.
+- A server-side 500. Server-worded refusals were exercised only through the designed 409 on a
+  participant delete.
+- The archived-and-settled disclosure holding full person blocks.
+- The price-delete 409 naming the months it would unprice.
+- Visual acceptance, which is step 5.4 and the designer's.

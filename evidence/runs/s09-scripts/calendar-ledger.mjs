@@ -2,9 +2,11 @@
  * Builds the two synthetic calendar fixtures through the app's own HTTP routes.
  * Synthetic names and amounts only; never a remote D1 and never a real ledger.
  *
- * SHORT and LONG hold byte-identical records inside the selected year 2026, so
- * the Phase 5 compactness identity is a property of the fixtures by
- * construction; LONG adds 2019-2025 history that SHORT does not have.
+ * SHORT and LONG hold byte-identical records inside the selected year 2026 and
+ * the same lifetime completeness state (each starts two months before its first
+ * price entry), so the Phase 5 compactness identity is a property of the
+ * fixtures by construction and the only variable left is depth of history:
+ * LONG carries 2019-2025, SHORT only November and December 2025.
  */
 import { readFileSync } from 'node:fs'
 import { parseDevVars } from '../../../scripts/seed-local.mjs'
@@ -62,19 +64,19 @@ async function buildShort() {
   const sub = await call('/api/subscriptions', {
     method: 'POST',
     body: JSON.stringify({
-      name: 'S09 SHORT one year', currency: 'GBP', locale: 'en-GB',
-      time_zone: 'Europe/London', start_month: '2026-01', owner_name: 'Owner',
+      name: 'S09 SHORT recent history', currency: 'GBP', locale: 'en-GB',
+      time_zone: 'Europe/London', start_month: '2025-11', owner_name: 'Owner',
     }),
   })
   const id = sub.id
   await call(`/api/subscriptions/${id}/prices`, { method: 'POST', body: JSON.stringify({ effective_from: '2026-01', amount: 1200 }) })
   const people = {
-    Ada: await member(id, 'Ada', [{ joined_month: '2026-01', left_month: null }]),
-    Bo: await member(id, 'Bo', [{ joined_month: '2026-01', left_month: null }]),
-    Cleo: await member(id, 'Cleo', [{ joined_month: '2026-01', left_month: '2026-04' }, { joined_month: '2026-09', left_month: null }]),
-    Dev: await member(id, 'Dev', [{ joined_month: '2026-01', left_month: null }]),
+    Ada: await member(id, 'Ada', [{ joined_month: '2025-11', left_month: null }]),
+    Bo: await member(id, 'Bo', [{ joined_month: '2025-11', left_month: null }]),
+    Cleo: await member(id, 'Cleo', [{ joined_month: '2025-11', left_month: '2026-04' }, { joined_month: '2026-09', left_month: null }]),
+    Dev: await member(id, 'Dev', [{ joined_month: '2025-11', left_month: null }]),
     Esi: await member(id, 'Esi', [{ joined_month: '2026-06', left_month: null }]),
-    Fin: await member(id, 'Fin', [{ joined_month: '2026-01', left_month: '2026-03' }]),
+    Fin: await member(id, 'Fin', [{ joined_month: '2025-11', left_month: '2026-03' }]),
   }
   const ada = await schedule(id, people.Ada.id, 400, '2026-01', null)
   await sharedYear(id, people, ada.id)

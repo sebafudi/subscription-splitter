@@ -139,3 +139,129 @@ function in `evidence/runs/s09-browser-verification.md` under Method.
   was the SHORT against LONG comparison on the current tree. The figures above establish that the
   section no longer grows with history; they do not quantify the reduction against `MemberList`.
 - Any width other than 1280. The 390 layout is measured in `s09-browser-verification.md`, not here.
+
+---
+
+# Re-run at 05ff614
+
+Re-measured after `4753a52` (defect fixes and the amended acceptance clause) and `a671ca0` (the
+designer's §18 corrections). The fixture was corrected first; see below.
+
+## The fixture defect this re-run found
+
+`design-spec.md` §18.3 adds a lifetime completeness sentence, "N month(s) have no price, so owed and
+the balance are incomplete.", under the lifetime cells of any participant with an unpriced elapsed
+month. On the first re-measurement the two fixtures were no longer identical:
+
+| Figure | SHORT as first built | LONG |
+| --- | --- | --- |
+| `.calendar-blocks *` | 418 | 423 |
+| `.calendar-blocks` `scrollHeight` | 1114 | 1228 |
+| Lifetime completeness sentences | 0 | 5 |
+
+The five extra elements and 114 extra pixels are exactly the five sentences, one for each participant
+whose charged window reaches LONG's two unpriced months. LONG's first price is effective from March
+2019 and its plan starts in January 2019; SHORT's first price covered its whole plan from the start,
+so SHORT had no unpriced month anywhere and no sentence.
+
+That is a defect in the fixture, not in the implementation. The pair exists to isolate one variable,
+depth of history, and it was silently differing in a second, lifetime price coverage. The difference
+was invisible until §18.3 gave it a rendering.
+
+**The correction**: `evidence/runs/s09-scripts/calendar-ledger.mjs` now starts SHORT at `2025-11` with
+its first price effective from `2026-01`, so SHORT carries exactly two unpriced months, November and
+December 2025, matching LONG's January and February 2019. Both fixtures now have the same lifetime
+completeness state and the same 2026 records, and differ only in how much history sits before the
+selected year. SHORT is renamed `S09 SHORT recent history`, because it now spans fourteen months
+rather than one year.
+
+## The seven figures, corrected fixtures
+
+| Figure | SHORT | LONG | Difference |
+| --- | --- | --- | --- |
+| `[role="gridcell"]` | 72 | 72 | 0 |
+| `.calendar-cell` | 72 | 72 | 0 |
+| `.calendar-blocks *` | 423 | 423 | 0 |
+| `.calendar-blocks` `scrollHeight` | 1228 | 1228 | 0 |
+| `#year-select option` | 3 | 9 | 6 |
+| `.entry-list > li` | 8 | 17 | 9 |
+| `main.page *` | 774 | 866 | 92 |
+| `main.page` `scrollHeight` | 2845 | 3028 | 183 |
+
+Person blocks: 6 on both. Lifetime completeness sentences: 5 on both. Standing-order month tiles: 0 on
+both.
+
+## Section heights, corrected fixtures
+
+| Section | SHORT | LONG | Difference |
+| --- | --- | --- | --- |
+| Participants | 1449 | 1449 | 0 |
+| Price history | 150 | 150 | 0 |
+| Skipped months | 173 | 253 | 80 |
+| Payments received, closed | 114 | 114 | 0 |
+| Standing orders | 214 | 317 | 103 |
+
+Participants element counts are 486 and 492, a difference of 6, which is exactly the six extra
+`option` elements. The Payments section is closed on load on both and holds 5 and 12 entries in the
+DOM against filtered counts of 5 and 19.
+
+## The amended acceptance clause, clause by clause
+
+| Clause | Result |
+| --- | --- |
+| The gridcell count is identical | **Met.** 72 and 72. |
+| The person-blocks element count is identical | **Met.** 423 and 423. |
+| `.calendar-blocks` `scrollHeight` differs by under five per cent | **Met.** 1228 and 1228, 0.00 per cent. |
+| The Participants section's element count differs by no more than the extra `option`s plus the range sentence's fragments | **Met exactly.** 492 minus 486 is 6, against 6 extra `option`s. Both render one future-year fragment. |
+| The Participants section's own `scrollHeight` is identical | **Met.** 1449 and 1449. |
+| Every pixel of the whole-page difference is attributable to a section bounded by the count of skipped months, standing orders or price entries, plus the option count and the range sentence | **Met.** The 183 pixel difference is 80 for the second skipped month and 103 for the second standing order. Participants, Price history and Payments received are pixel-identical. Page height minus those two sections is 2662 on both. |
+| No part of the difference is attributable to months elapsed or receipts | **Met.** LONG carries seven more years and fourteen more receipts and draws not one extra pixel for either. |
+
+## The pre-change comparison
+
+The release-5 commit `91ce0da` was checked out into a temporary `git worktree` under the scratchpad,
+served by its own `npm run dev` on the same port against a copy of the same local D1, so both builds
+rendered the same two fixtures. `package.json`, `package-lock.json`, `vite.config.ts` and every file
+under `migrations/` are identical between `91ce0da` and `05ff614`, so the worktree needed no install
+and no migration. Its `node_modules` is a directory of symlinks into the main checkout with
+`@fontsource` copied in, because a symlinked font package falls outside Vite's serving allow list and
+the webfont would otherwise have failed to load and changed every text metric. With the copy,
+`document.fonts.check('600 16px "IBM Plex Sans"')` reads `true` on both builds. The worktree was
+removed afterwards.
+
+### The LONG fixture, before and after
+
+| Figure | `91ce0da` before | `05ff614` after | Change |
+| --- | --- | --- | --- |
+| `main.page` `scrollHeight` | 7158 | 3028 | −4130, −57.7 per cent |
+| `document.body` `scrollHeight` | 7214 | 3084 | −4130 |
+| `main.page *` | 1035 | 866 | −169 |
+| Participants section | 687 | 1449 | +762 |
+| Participants elements | 134 | 492 | +358 |
+| Price history | 150 | 150 | 0 |
+| Skipped months | 253 | 253 | 0 |
+| Payments received | 2059 | 114 | −1945 |
+| Payment rows rendered | 19 | 12 | −7 |
+| Standing orders | 3266 | 317 | −2949 |
+| Standing-order month tiles (`.tile`) | 93 | 0 | −93 |
+
+The 93 tiles are one per elapsed month per schedule: 60 months for the arrangement that ran from
+January 2019 to December 2023, plus 33 for the one running since January 2024.
+
+### Growth with history, before and after
+
+This is the measurement the change exists to make. Both builds, both fixtures, same selected year.
+
+| Build | SHORT | LONG | Growth |
+| --- | --- | --- | --- |
+| `91ce0da` `main.page` `scrollHeight` | 2960 | 7158 | +4198, +141.8 per cent |
+| `05ff614` `main.page` `scrollHeight` | 2845 | 3028 | +183, +6.4 per cent |
+| `91ce0da` `.tile` count | 9 | 93 | +84 |
+| `05ff614` `.tile` count | 0 | 0 | 0 |
+| `91ce0da` payment rows | 5 | 19 | +14 |
+| `05ff614` payment rows | 5 | 12 | +7, capped at 12 |
+
+Before the change, adding seven years of history to the same six participants made the page 2.4 times
+taller. After it, the same seven years add 183 pixels, all of them the one extra skipped month and the
+one extra standing order the fixtures deliberately differ by. The reduction is now a measurement
+rather than a claim.

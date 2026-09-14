@@ -127,3 +127,89 @@ captures it needs are listed at the end of `evidence/runs/s09-browser-verificati
 defects above want a ruling before Phase 6 closes, and defect 4 wants a fix in `MonthInspector.tsx`
 plus a re-run of the focus checks in `evidence/runs/s09-browser-verification.md` before row 5.2 can be
 ticked.
+
+---
+
+# Re-run at 05ff614
+
+Identity: Opus, phase 5 step 5.2 re-verification.
+
+Status: complete. Gates green, all four earlier defects closed, the pre-change comparison taken, the
+failed refresh isolated. **Progress row 5.2 stays unticked**, on one criterion: the failed refresh does
+not behave as `design-spec.md` §9 says. Everything else the row asks for is now met.
+
+## Actions
+
+1. Read the amended Phase 5 acceptance clause in `plan.md` and `design-spec.md` §§17 and 18.
+2. Ran the four gates at `05ff614`.
+3. Found and corrected a fixture defect: §18.3's lifetime completeness sentence exposed that SHORT and
+   LONG differed in lifetime price coverage as well as in depth of history. SHORT now starts in
+   November 2025 with its first price from January 2026, so both fixtures carry exactly two unpriced
+   months and differ only in history. Re-measured.
+4. Built `91ce0da` in a temporary `git worktree` under the scratchpad, served it against a copy of the
+   same local D1 with the webfont available, measured both fixtures, and removed the worktree.
+5. Re-checked V1 to V4, the four §18 corrections, the keyboard traversal, the refused participant
+   delete, the bounded payments section on both branches of §17.2, reduced motion and the 390 layout.
+6. Isolated a failed refresh from a failed write by wrapping `window.fetch` so the write passes and
+   the reload GETs reject.
+7. Retook every designer capture at `05ff614` and added three: `range-sentence-2019.png`,
+   `marks-order-ada-march.png`, `failed-refresh-after-write.png`.
+
+## Changed paths
+
+Changed: `evidence/runs/s09-browser-verification.md`, `evidence/runs/s09-compactness.md`,
+`evidence/runs/s09-scripts/calendar-ledger.mjs`, twelve files under `evidence/screenshots/s09/`, and
+this checkpoint. No source, test or migration file was written.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | exit 0 |
+| `npm run test:unit` | exit 0, 26 files, 354 tests |
+| `npm run test:integration` | exit 0, 13 files, 131 tests |
+| `npm run build` | exit 0, `index-DGCB6uJ3.js` 307.18 kB, `index-ByHeNjZo.css` 20.10 kB |
+
+Compactness on the corrected fixtures: gridcells 72 and 72, `.calendar-blocks *` 423 and 423,
+`.calendar-blocks` `scrollHeight` 1228 and 1228, Participants `scrollHeight` 1449 and 1449,
+Participants elements 486 and 492 against 6 extra `option`s, payments closed 114 and 114. The 183
+pixel whole-page difference is 80 for the second skipped month and 103 for the second standing order.
+
+Pre-change comparison on LONG: `main.page` `scrollHeight` 7158 at `91ce0da` against 3028 at
+`05ff614`, a 57.7 per cent reduction; 93 standing-order month tiles against 0; 19 payment rows against
+12. Growth from SHORT to LONG was 4198 pixels before and is 183 pixels now.
+
+## Defects
+
+V1 resolved by the amended clause and met on corrected fixtures. V2 resolved by §17.2 and both
+branches exercised. V3 and V4 fixed and confirmed fixed. One new finding:
+
+V5. A failed refresh after a successful write empties the detail screen and shows "Could not save"
+although the save landed. `load()` sets `status: 'error'`, replacing the ready state, so every section
+disappears where §9 requires the previous records to stay. Not introduced by the calendar: the same
+branch exists at `91ce0da`. Reproduction and evidence are in
+`evidence/runs/s09-browser-verification.md`.
+
+## Progress row 5.2
+
+Met now: the seven figures on both fixtures **and** on the pre-change build; every acceptance clause of
+the amended wording; every key and its resulting focus; the 390 and desktop layouts; light and dark;
+reduced motion; a failed write; a delete refusal; a payment moved into another year.
+
+Not met: "a failed write, a failed refresh, a delete refusal and a payment moved into another year each
+behave as the specification says." The failed refresh does not. V5 needs a fix or a designer ruling
+amending §9 before the row can be ticked.
+
+## State left behind
+
+The disposable account and its two subscriptions are in the local D1. The LONG fixture was grown to 33
+payments to exercise the upper branch of §17.2 and carries the `Gil` participant whose
+`active_ranges` rows were deleted; re-running `evidence/runs/s09-scripts/calendar-ledger.mjs` rebuilds
+both fixtures from scratch. The temporary worktree was removed and `git worktree list` shows only the
+main checkout. Nothing remote was touched.
+
+## Exact next action
+
+V5 wants a ruling: either keep the ready state on a failed reload and word the alert for a read
+failure, or amend §9. Once that lands, re-run the failed-refresh case and tick row 5.2. Step 5.4 is
+the designer's, and every capture it needs is retaken at `05ff614`.
