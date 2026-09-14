@@ -41,7 +41,7 @@ only.
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
 - `d5952a9` fix(calendar): resolve implementation review findings
 - `1cef767` fix(calendar): strip name carries the year
-- `6e018e6` fix(calendar): delete tint, cross-month edit focus, compactness clause
+- `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
 
 ## Verification
 
