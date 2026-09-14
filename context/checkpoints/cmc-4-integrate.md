@@ -39,7 +39,7 @@ only.
 - `7ada1c7` feat(calendar): render the calendar in place of the member list
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
-- `9035356` fix(calendar): resolve implementation review findings
+- `d5952a9` fix(calendar): resolve implementation review findings
 
 ## Verification
 
