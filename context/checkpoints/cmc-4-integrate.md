@@ -40,7 +40,7 @@ only.
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
 - `d5952a9` fix(calendar): resolve implementation review findings
-- `5261e06` fix(calendar): strip name carries the year
+- `1cef767` fix(calendar): strip name carries the year
 
 ## Verification
 
