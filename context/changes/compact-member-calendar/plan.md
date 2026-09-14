@@ -849,7 +849,7 @@ new token, and all five design findings carry a designer ruling in `design-spec.
 
 - [x] 2.1 Complete the Fable design specification and design-completeness checklist — cbf54df
 - [x] 2.2 Finalize component contracts and implementation plan from the approved design — cbf54df
-- [x] 2.3 Complete independent plan review and resolve blocking findings
+- [x] 2.3 Complete independent plan review and resolve blocking findings — 9a1277e
 
 ### Phase 3: Projection and completeness model
 
