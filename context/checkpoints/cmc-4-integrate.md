@@ -43,7 +43,7 @@ only.
 - `1cef767` fix(calendar): strip name carries the year
 - `4753a52` fix(calendar): delete tint, cross-month edit focus, compactness clause
 - `a671ca0` fix(calendar): acceptance corrections for range, completeness and count order
-- `696ee46` fix(detail): keep records on a failed refresh after a write
+- `eba7e43` fix(detail): keep records on a failed refresh after a write
 
 ## Verification
 
