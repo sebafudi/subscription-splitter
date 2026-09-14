@@ -50,15 +50,16 @@ not run, so `change.md` stands at `planned` and not `plan_reviewed`.
 
 ## Commit shas
 
-- `SHA_CONTENT` `docs(plan): research, design spec and finalized plan for s-09` - the whole change
+- `cbf54df` `docs(plan): research, design spec and finalized plan for s-09` - the whole change
   folder (`change.md`, `plan.md`, `research.md`, `frame.md`, `design-inputs.md`, `design-spec.md`,
   `orchestrator-prompt.md`, `mockup/compact-calendar.html` and the four captures), plus
   `context/checkpoints/cmc-1.2-research.md` and this checkpoint.
-- `SHA_PROGRESS` `docs(plan): record progress shas` - appends the step shas to Progress 1.2, 1.3,
+- `docs(plan): record progress shas`, the immediately following commit, whose own sha a
+  commit cannot carry; it is reported in the return summary. - appends the step shas to Progress 1.2, 1.3,
   2.1 and 2.2. No amend was used.
 
 Progress state after both commits: 1.1 done with `7a44970`, and 1.2, 1.3, 2.1 and 2.2 done with
-`SHA_CONTENT`. Every later step is pending.
+`cbf54df`. Every later step is pending.
 
 ## Verification
 

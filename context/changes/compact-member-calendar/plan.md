@@ -618,15 +618,15 @@ destructive out-of-scope actions or explicitly gated course transmission.
 #### Automated
 
 - [x] 1.1 Reconcile checkout and active work with resumable checkpoints — 7a44970
-- [x] 1.2 Complete research and frame with the full detail and action preservation matrix
-- [x] 1.3 Register the roadmap change and synchronize active-work pointers
+- [x] 1.2 Complete research and frame with the full detail and action preservation matrix — cbf54df
+- [x] 1.3 Register the roadmap change and synchronize active-work pointers — cbf54df
 
 ### Phase 2: Fable design and independent plan review
 
 #### Automated
 
-- [x] 2.1 Complete the Fable design specification and design-completeness checklist
-- [x] 2.2 Finalize component contracts and implementation plan from the approved design
+- [x] 2.1 Complete the Fable design specification and design-completeness checklist — cbf54df
+- [x] 2.2 Finalize component contracts and implementation plan from the approved design — cbf54df
 - [ ] 2.3 Complete independent plan review and resolve blocking findings
 
 ### Phase 3: Projection and completeness model
