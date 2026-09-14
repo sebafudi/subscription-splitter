@@ -63,7 +63,7 @@ that matches a hand calculation, and nothing else in the product matters if that
 | S-05 | ai-review-pipeline | (supporting) get an automated review comment on a pull request | F-01 | MS-01 | done |
 
 | S-06 | visual-redesign | use a polished responsive interface designed completely by Fable 5.1 | S-04 | Explicit user request; visual-redesign-brief.md | done |
-| S-09 | compact-member-calendar | read a compact per-person calendar of monthly balances, payments and standing orders without an unbounded list | S-08 | FR-015 to FR-026, US-02 | in-progress |
+| S-09 | compact-member-calendar | read a compact per-person calendar of monthly balances, payments and standing orders without an unbounded list | S-08 | FR-015 to FR-026, US-02 | done |
 
 ## S-06: Visual redesign
 
@@ -273,6 +273,7 @@ not recreate them.
 - **S-06: The organizer uses a polished, responsive interface across every shipped screen, designed end to end by Fable 5.1, with the certified ledger behaviour preserved exactly.** - Archived to `context/archive/visual-redesign/`, shipped as release `c842f64` on Cloudflare version `84a95549-cd34-4065-a202-cf5f1385e9f9`. Lesson: a scroll-spy that names its own threshold drifts from the anchor it is meant to follow, because the section index tracked its current item at 100px while a click scrolled the heading to 116px and so marked the section before the one just clicked; reading the heading's own `scroll-margin-top` and watching the line one pixel below it is the only offset that cannot disagree with where a click lands.
 - **S-07: Google sign-in works on the deployed app while password login and private-account isolation remain intact.** - Archived to `context/archive/google-sign-in/`, shipped as release `bad3f28` on Cloudflare version `1d0f71c1-6832-4bc1-aace-5feef621e715`, with the callback fix decided in `D-014` and the consent roundtrip completed by the owner and recorded in `evidence/runs/release-4.md`. Lesson: a platform's static-asset layer can answer a request before the application code runs, so a route every `fetch` reaches can still be unreachable as a top-level browser navigation; when something works locally, passes the whole suite and fails only on the deployment, the asset layer intercepting navigations is the natural first candidate rather than the last, because `Sec-Fetch-Mode: navigate` is the single header that separates the two shapes and the Workers test pool runs no asset layer at all, so no test there can fail on it.
 - **S-08: edit/delete the subscription itself and use real browser calendar controls throughout.** - Archived to `context/archive/subscription-management-and-date-inputs/`, shipped as release `91ce0da` on Cloudflare version `751a8bfd-e62a-4c9a-beb2-1953eb6a7656`, with the five certification captures it alters retaken in `evidence/runs/release-5-captures.md`. Lesson: a comment that describes a rule holding across files other than its own goes stale in silence, because the change that falsifies it need never open the file the comment sits in; `format.ts` claimed that every input and hint keeps the ISO form, and the phase that replaced those inputs was scoped to `src/server/`, so no diff, no test and no typecheck could contradict it, and only reading the module against the shipped client did.
+- **S-09: a compact per-person calendar or graph view of monthly balances, payments and standing orders replaces the unbounded per-person history list, with every existing detail and management action still reachable.** - Archived to `context/archive/compact-member-calendar/`, shipped as release `64eb0d3` on Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`, with seven of the ten certification captures it alters retaken in `context/checkpoints/release-6-captures.md`. Lesson: a whole-page percentage bound measures the wrong thing when only part of a page is meant to stay flat; the first compactness pass compared total `scrollHeight` between a one-year and an eight-year fixture and missed that a legitimately taller standing-orders section, not the calendar, explained the gap, so the acceptance clause was rewritten to require exact identity on the bounded section (`.calendar-blocks`, the gridcell count) and only a stated, attributable bound on the page around it.
 
 ## S-07: Google sign-in
 
@@ -294,10 +295,10 @@ not recreate them.
 
 ## S-09: Compact member calendars
 
-- **Change ID:** `compact-member-calendar` (`context/changes/compact-member-calendar/`)
-- **Status:** in-progress
+- **Change ID:** `compact-member-calendar` (`context/archive/compact-member-calendar/`)
+- **Status:** done
 - **Prerequisites:** S-08
-- **Source:** explicit user request; `context/changes/compact-member-calendar/change.md`.
+- **Source:** explicit user request; `context/archive/compact-member-calendar/change.md`.
 - **Outcome:** a compact per-person calendar or graph view of monthly balances, payments and standing orders replaces the unbounded per-person history list, with every existing detail and management action still reachable.
 - **Done when:** course change flow, Fable design specification and acceptance, independent plan and implementation reviews, browser/accessibility verification, deployment and refreshed release evidence complete.
-- **Release:** deployed as release 6, release commit `64eb0d3b096eef53a6d264ee483e1d9c7e1dc17a` (`64eb0d3`), Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`, superseding release 5's `751a8bfd-e62a-4c9a-beb2-1953eb6a7656` (the recorded rollback reference), hosted CI run `34881238556` green at that SHA. Forty-six of forty-six live checks pass with no defect found (`evidence/runs/release-6.md`). Archive (phase 6.4) is pending; the item stays `in-progress` until then.
+- **Release:** deployed as release 6, release commit `64eb0d3b096eef53a6d264ee483e1d9c7e1dc17a` (`64eb0d3`), Cloudflare version `a80d2e12-d77e-4b88-b318-aa992eb60d50`, superseding release 5's `751a8bfd-e62a-4c9a-beb2-1953eb6a7656` (the recorded rollback reference), hosted CI run `34881238556` green at that SHA. Forty-six of forty-six live checks pass with no defect found (`evidence/runs/release-6.md`). Archived to `context/archive/compact-member-calendar/`.
