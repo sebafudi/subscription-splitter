@@ -1,7 +1,7 @@
 ---
 change_id: compact-member-calendar
 title: Compact member calendars with complete payment details
-status: planned
+status: plan_reviewed
 ---
 
 ## Notes
@@ -65,7 +65,11 @@ Acceptance targets for planning:
 No live ledger mutation is part of this UI change. Never upload anything to the 10x course without
 explicit confirmation. Omit authored dates, timestamps and duration estimates from change artifacts.
 
-The end-to-end execution plan is `plan.md`; Phases 1 and 2.1 to 2.2 are done and every later
-execution step remains pending.
-`orchestrator-prompt.md` is the reusable start/resume instruction. Research, Fable design and
-independent plan review are mandatory gates before application code changes.
+The end-to-end execution plan is `plan.md`; Phases 1 and 2 are done, with the independent plan
+review closing SOUND after its findings were resolved, and every later execution step remains
+pending. `orchestrator-prompt.md` is the reusable start/resume instruction. Research, Fable design
+and independent plan review are mandatory gates before application code changes.
+
+The plan review's finding F11c (a drift note about this file's status against the Progress rows
+already checked) is recorded here with this move to `plan_reviewed`, as the review's resolution
+left it for this step to close.

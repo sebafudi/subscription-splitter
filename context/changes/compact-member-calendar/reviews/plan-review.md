@@ -6,15 +6,18 @@
 - **Repository state**: the working tree as handed over, with `plan.md`, `design-spec.md` including its
   §13 rulings, `research.md` and `frame.md` on disk and no application code of this change written.
   `src/client/calendar/` does not exist, which is correct for a plan at step 2.3.
-- **Verdict**: REVISE
+- **Verdict**: REVISE on the first pass; **SOUND** after re-verification of the resolved plan at
+  commit `923de31`, recorded in `## Re-verification` at the end of this file
 - **Findings**: 4 critical, 6 warnings, 1 observation, plus 5 design findings returned to the designer
 - **Reviewer**: independent Opus; did not write the research, the frame, the design specification or
   the plan
 
 Date and effort fields the report schema lists are omitted, matching this repository's convention of
 recording progress by change id and commit. This review writes nothing outside this file, its
-checkpoint at `context/checkpoints/cmc-2.3-plan-review.md`, and leaves `change.md` untouched at
-`planned`, because the verdict is REVISE and the skill moves the status only on a resolved report.
+checkpoint at `context/checkpoints/cmc-2.3-plan-review.md`. It leaves `change.md` untouched: the
+first pass could not move it because the verdict was REVISE, and the re-verification pass records
+that it may now move to `plan_reviewed`, which is the status writer's action rather than this
+reviewer's.
 
 ## Verdicts
 
@@ -525,3 +528,123 @@ the edited `plan.md`:
     plans exactly one new token, `--hatch`.
 13. Design findings 1 to 5 have a designer ruling recorded, or an explicit note that the
     implementation may proceed without one and why.
+
+## Re-verification
+
+Run by the same independent reviewer against `plan.md` at commit `923de31`, with `design-spec.md`
+§13 and the new §14 as the standing design authority and `context/checkpoints/cmc-2.3-resolve.md` as
+the resolver's record. Every item below was checked against the plan's actual text and, where it
+makes a claim about the code, against the cited source read back from the file.
+
+- **Verdict: SOUND.** All four critical findings are genuinely closed, all six warnings and the
+  observation carry a disposition that holds, and all five designer rulings are applied rather than
+  reinterpreted. Nothing blocks Phase 3.
+
+### Item-by-item result
+
+1. **No heading count — PASS.** `plan.md:269` renders `SectionHeader` with `subtitle`, `StatusLine`
+   and the primary only, and `:273-276` states the omission with §13.1, `MemberList.tsx:29-33` and
+   `SectionHeader.tsx:11-15` as the reason. `grep -n "\`count\`"` over the plan returns only that
+   deliberate-omission paragraph and the resolution row. (F1 closed)
+2. **No owner block anywhere — PASS.** `plan.md:278-282` renders the person-blocks container with no
+   owner step and states the withdrawal with §13.2 and `calc.ts:88`; the `PersonBlock` contract at
+   `:313-316` says every block is a participant's, `personYear` is never null for a rendered block,
+   and no owner sentence, owner figure or `summary.ownerShareThisMonth` appears. `grep -i` for
+   "owner block", "ownerShareThisMonth" and "owner sentence" returns only withdrawal statements. The
+   67-row destination table was re-counted: rows 1 to 67 each appear exactly once, 67 distinct, and
+   row 67 keeps the owner's share in `SubscriptionDetail`, which is where the shipped code puts it.
+   (F2 closed)
+3. **Inspector is new markup with a focusable heading — PASS.** `plan.md:378-391` states that the
+   inspector reproduces `.disclosure` / `.disclosure-inner` / `.panel` and `data-open` for the
+   motion, runs no focus-on-open effect, renders its own `h3` with an id and `tabIndex={-1}`, handles
+   Escape itself, and carries `inert` on the closed wrapper. `DisclosurePanel.tsx` appears in neither
+   planned-files table; `plan.md:113-116` says no shared UI primitive is modified and names that file;
+   a Phase 4 criterion pins it with an empty `git diff --stat`. The CSS the plan relies on was read
+   back: the `.disclosure` rules and their `data-open` branch are at `index.css:705-719`, the motion
+   tokens at `:109-111`, the reduced-motion zeroing at `:504-505`. The inner-panel Escape claim still
+   holds at `DisclosurePanel.tsx:39-42` and `ConfirmStrip.tsx:38-41`. §6 and §14.1 now say the same
+   thing from the design side. (F3 closed, Fix A, matching designer ruling §14.1)
+4. **Cell ids and per-strip active-cell state across all fourteen rules — PASS.**
+   `plan.md:330-335` defines `calendar-cell-<memberId>-<month>`, owned by `MonthStrip`, reached
+   through the shipped `setFocusTarget` → `getElementById` pattern and tested for before falling back
+   to the heading. `:336-347` defines `activeMonth`, lifted to `PersonBlock`, initialised to the
+   derived value the specification states and **updated on every cell focus and on every Left, Right,
+   Home and End key**, with `tabIndex={0}` on that cell alone; the tab-away-and-back property is
+   stated explicitly. Up and Down set the receiving block's `activeMonth` before focusing its cell,
+   so tab stop and focus agree. The callback is one name and one `MonthStr` payload across
+   `MonthStrip`, `PersonBlock` and `MemberCalendar`. The focus table at `:453-468` now carries a
+   Target column and fourteen rows, each resolving to a named id or a named piece of state, closed by
+   an explicit id-owner list. (F4 closed)
+5. **F5 one `highlightedId`, two tints — PASS.** `plan.md:290-297` states the resolution against the
+   reloaded records, tinting block and cell from one confirmation, with no second status hook and no
+   new status string; `PersonBlock:320-322` takes `highlighted` and never reads the hook; matrix row
+   21 matches. Verified against `useSectionStatus.ts:5-10`, `:36-43` and the call sites at
+   `PaymentList.tsx:202`, `:234`.
+6. **F6 projection contract — PASS.** The cost-control paragraph at `plan.md:219-225` now says
+   `scheduleMonthStatuses` runs once per schedule per projection with no cross-call index and no
+   cache, states the cost in enumerations, and keeps only the existing memoization on records plus
+   year. Invariant 6 at `:235-247` is four named assertions plus a sweep over every numeric field,
+   which is runnable rather than a property of the type.
+7. **F7 compactness measurement — PASS.** Seven figures are listed at `plan.md:645-651`, including
+   `.calendar-blocks` scrollHeight and element count and `#year-select option` count. The identity is
+   now on the person blocks, the section's own count is an explicit bound of extra options plus
+   range-sentence fragments, and the page `scrollHeight` clause reads consistently with it. Applies
+   §14.4 rather than re-deciding it. `YearControl` gives the select the `year-select` id at `:301`.
+8. **F8 two leaf contracts — PASS.** `RecurringSection.tsx`'s change line at `plan.md:107` now
+   deletes `REASON_PHRASE` and imports `exclusionPhrase`, with a one-definition grep as a Phase 4
+   criterion; `cellText.ts` records that the duplication exists only between Phase 3 and step 4.1.
+   `selection.ts` gains an injectable storage argument and `:441-448` assigns restore, reject and
+   default to `resolveSelection`, the guards and one injected round trip to the read and write
+   functions, and states that no test touches a global. Consistent with `vitest.unit.config.ts:6`.
+9. **F9 superseded assumptions — PASS.** The Overview at `plan.md:10-14` and the execution rules at
+   `:769-772` name §13 and §14 as the standing authority and the 2.2 assumptions as superseded,
+   naming the two that were overruled. The `MonthStrip` `role="row"` sentence at `:328-329` cites
+   §13.4 instead of an open question. No sentence in the plan now defers to a checkpoint assumption.
+10. **F10 verification headings and uncovered rows — PASS.** Phases 1 and 3 to 6 head their criteria
+    `#### Automated verification:` / `#### Manual verification:`, matching the house precedent.
+    Every Progress row now has at least one criterion naming it, including 4.3, 5.2, 5.3, 5.4 and
+    6.1 to 6.4; Phase 6's follow `evidence/runs/release-5.md`, and the rollback reference is
+    unchanged and still exact.
+11. **`## Progress` contract — PASS.** One `## Progress` heading, last, after `## References`. Zero
+    checkboxes before it. Nineteen rows, five ticked, indices and titles unchanged and none
+    reticked. Six `### Phase N` subsections matching the six `## Phase N` headings word for word and
+    in order, `#### Automated` the only heading inside.
+12. **Date-free, no dependency, no server change, one token — PASS.** No calendar date or timestamp;
+    the only new date-shaped string is the illustrative `MonthStr` `2026-03` in the cell id scheme.
+    The only em dashes are the Progress commit-sha separators the format reference mandates. No
+    dependency is added and both candidate dependencies stay excluded. `src/server` appears nowhere
+    as a changed path. Exactly one new token, `--hatch`.
+13. **Design findings ruled — PASS.** All five carry a designer ruling in `design-spec.md` §14, and
+    each is applied rather than re-decided: §14.1 in the `MonthInspector` panel paragraph, §14.2 in
+    the `MonthStrip` per-cell bullet and matrix row 31, §14.3 by the deletion of `MonthCell.priced`,
+    §14.4 in the Phase 5 acceptance, §14.5 in `cellText.ts`. The specification itself was amended in
+    §5, §6 and §8 to match, so plan and specification no longer disagree.
+
+### The `priced` flag, checked specifically
+
+`MonthCell.priced` is gone from the projection interface. Completeness is
+`chargeStatus.reason === 'unpriced'` in all three places that render it: the `?` mark, the
+inspector's charge sentence and `PersonYear.unpricedMonths` (`plan.md:163-169`, `:185`, `:213-216`),
+with a Phase 3 grep criterion pinning that no flag returns. The plan's justification was checked
+against the domain and holds: `chargedMonthStatus` asks the price question only after every wider
+condition (`month-status.ts:73-76`), and `priceForMonth` short-circuits a break month before
+consulting the history (`prices.ts:11`), so `unpriced` can never be the reason for a month a wider
+condition already excluded. A zero price cannot exist to blur the two, because the create schema
+requires a positive amount (`src/server/validation/prices.ts:20-24`). Nothing is read as settled from
+an amount.
+
+### Two notes, neither a required change
+
+- The `MemberCalendar` tint bullet describes resolving "the payment or schedule it names". A
+  participant-level confirmation sets `highlightedId` to a member id instead (`MemberList.tsx:99`,
+  `:303`), which names neither. Matrix row 21's wording, "resolves the one `highlightedId` to the
+  owning member and the owning month", already covers that case, so the rule is stated correctly in
+  the plan; the component bullet is simply the narrower of the two phrasings.
+- `plan.md:381` cites `index.css:706-717` for the `.disclosure` rules; the block with its comment
+  runs `:704-719`. A two-line drift in a citation, not a substantive error.
+
+### Verdict after resolution
+
+**SOUND.** `change.md` may move to `plan_reviewed` and Progress row 2.3 may be ticked with its sha.
+Phase 3 may begin with the Opus projection work in `src/client/calendar/projection.ts` and
+`cellText.ts`.
