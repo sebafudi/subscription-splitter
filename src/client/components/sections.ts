@@ -19,6 +19,8 @@ export type SectionDescriptor = {
 export const PARTICIPANTS: SectionDescriptor = {
   id: 'participants',
   title: 'Participants',
+  subtitle:
+    'One row per person for the selected year. Select a month to see what was recorded, what is assumed and what was charged.',
   action: 'Add participant',
 }
 
@@ -45,7 +47,8 @@ export const PAYMENTS_RECEIVED: SectionDescriptor = {
 export const STANDING_ORDERS: SectionDescriptor = {
   id: 'standing-orders',
   title: 'Standing orders',
-  subtitle: 'Money assumed received each month, without further entry. Nothing here is a recorded receipt.',
+  subtitle:
+    "Money assumed received each month, without further entry. Nothing here is a recorded receipt. Each month's assumed receipt shows in the participant's calendar.",
   action: 'Add a standing order',
 }
 

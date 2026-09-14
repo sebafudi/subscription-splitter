@@ -17,6 +17,7 @@ import { useSectionStatus } from './ui/useSectionStatus'
 const ADD_PANEL_ID = 'payment-add-panel'
 const ADD_BUTTON_ID = 'payment-add-button'
 const REFUSAL_ID = 'payment-refusal'
+const PAGE_SIZE = 12
 
 type Props = {
   subscriptionId: string
@@ -60,6 +61,10 @@ export function PaymentList({
   const [editAlert, setEditAlert] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [focusTarget, setFocusTarget] = useState<string | null>(null)
+  // Closed on every load (design-spec.md §7): the list is bounded and revealed
+  // on demand rather than rendered in full behind an already-open disclosure.
+  const [paymentsOpen, setPaymentsOpen] = useState(false)
+  const [shown, setShown] = useState(PAGE_SIZE)
   const status = useSectionStatus()
 
   // The filter is the server's own, so one participant's history is the answer
@@ -89,7 +94,15 @@ export function PaymentList({
     setFocusTarget(null)
   }, [focusTarget])
 
+  // A changed filter is a different list; the bounded page starts over rather
+  // than keeping a count that referred to the previous participant's payments.
+  useEffect(() => {
+    setShown(PAGE_SIZE)
+  }, [filterMemberId])
+
   const visible = filtered ?? payments
+  const page = visible.slice(0, shown)
+  const exhausted = shown >= visible.length
   const participants = members.filter((member) => !member.isOwner)
   const nameOf = (memberId: string) => members.find((member) => member.id === memberId)?.name ?? 'Unknown participant'
   const money = (minor: number) => formatMoney(minor, locale, currency)
@@ -210,95 +223,124 @@ export function PaymentList({
       {visible.length === 0 ? (
         <p className="section-empty t-body soft">No payments recorded yet.</p>
       ) : (
-        <ul className="entry-list">
-          {visible.map((payment) =>
-            editingId === payment.id ? (
-              <li key={payment.id}>
-                <DisclosurePanel
-                  id={`payment-edit-panel-${payment.id}`}
-                  open
-                  title="Edit payment"
-                  onCancel={() => closeEdit(payment.id)}
-                  invalid={editAlert !== null}
-                >
-                  <PaymentForm
-                    subscriptionId={subscriptionId}
-                    members={members}
-                    startMonth={startMonth}
-                    editing={payment}
-                    alert={editAlert}
-                    onAlert={setEditAlert}
-                    onSaved={(saved) => {
-                      closeEdit(saved.id)
-                      setSectionError(null)
-                      status.confirm('Changes saved', saved.id)
-                      onChanged()
-                    }}
-                    onCancel={() => closeEdit(payment.id)}
-                    onSignedOut={onSignedOut}
-                  />
-                </DisclosurePanel>
-              </li>
-            ) : (
-              <li key={payment.id}>
-                <LedgerEntry
-                  highlighted={status.highlightedId === payment.id}
-                  primary={
-                    <>
-                      <Money value={money(payment.amount)} /> from {nameOf(payment.memberId)}
-                    </>
-                  }
-                  secondary={
-                    <>
-                      {KIND_LABEL[payment.kind]}
-                      {payment.note && `, ${payment.note}`}
-                    </>
-                  }
-                  figure={<span className="t-small soft tnum">{formatDate(payment.date, locale)}</span>}
-                  confirm={
-                    pendingDelete === payment.id ? (
-                      <ConfirmStrip
-                        question={`Delete the ${money(payment.amount)} payment from ${nameOf(payment.memberId)}?`}
-                        onConfirm={() => void confirmDelete(payment)}
-                        onKeep={() => {
-                          setPendingDelete(null)
-                          setFocusTarget(`payment-delete-${payment.id}`)
+        <>
+          <button
+            type="button"
+            className="btn-link t-small payments-toggle"
+            aria-expanded={paymentsOpen}
+            onClick={() => {
+              const next = !paymentsOpen
+              setPaymentsOpen(next)
+              if (!next) setShown(PAGE_SIZE)
+            }}
+          >
+            {paymentsOpen ? 'Hide payments' : 'Show payments'}
+          </button>
+          <div className="disclosure" data-open={paymentsOpen}>
+            <div className="disclosure-inner" inert={!paymentsOpen}>
+              <ul className="entry-list">
+                {page.map((payment) =>
+                editingId === payment.id ? (
+                  <li key={payment.id}>
+                    <DisclosurePanel
+                      id={`payment-edit-panel-${payment.id}`}
+                      open
+                      title="Edit payment"
+                      onCancel={() => closeEdit(payment.id)}
+                      invalid={editAlert !== null}
+                    >
+                      <PaymentForm
+                        subscriptionId={subscriptionId}
+                        members={members}
+                        startMonth={startMonth}
+                        editing={payment}
+                        alert={editAlert}
+                        onAlert={setEditAlert}
+                        onSaved={(saved) => {
+                          closeEdit(saved.id)
+                          setSectionError(null)
+                          status.confirm('Changes saved', saved.id)
+                          onChanged()
                         }}
+                        onCancel={() => closeEdit(payment.id)}
+                        onSignedOut={onSignedOut}
                       />
-                    ) : undefined
-                  }
-                  actions={
-                    <>
-                      <button
-                        type="button"
-                        className="btn-link t-small"
-                        id={`payment-edit-${payment.id}`}
-                        onClick={() => {
-                          status.clear()
-                          setEditAlert(null)
-                          setEditingId(payment.id)
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-link t-small"
-                        id={`payment-delete-${payment.id}`}
-                        onClick={() => {
-                          status.clear()
-                          setPendingDelete(payment.id)
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  }
-                />
-              </li>
-            ),
-          )}
-        </ul>
+                    </DisclosurePanel>
+                  </li>
+                ) : (
+                  <li key={payment.id}>
+                    <LedgerEntry
+                      highlighted={status.highlightedId === payment.id}
+                      primary={
+                        <>
+                          <Money value={money(payment.amount)} /> from {nameOf(payment.memberId)}
+                        </>
+                      }
+                      secondary={
+                        <>
+                          {KIND_LABEL[payment.kind]}
+                          {payment.note && `, ${payment.note}`}
+                        </>
+                      }
+                      figure={<span className="t-small soft tnum">{formatDate(payment.date, locale)}</span>}
+                      confirm={
+                        pendingDelete === payment.id ? (
+                          <ConfirmStrip
+                            question={`Delete the ${money(payment.amount)} payment from ${nameOf(payment.memberId)}?`}
+                            onConfirm={() => void confirmDelete(payment)}
+                            onKeep={() => {
+                              setPendingDelete(null)
+                              setFocusTarget(`payment-delete-${payment.id}`)
+                            }}
+                          />
+                        ) : undefined
+                      }
+                      actions={
+                        <>
+                          <button
+                            type="button"
+                            className="btn-link t-small"
+                            id={`payment-edit-${payment.id}`}
+                            onClick={() => {
+                              status.clear()
+                              setEditAlert(null)
+                              setEditingId(payment.id)
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-link t-small"
+                            id={`payment-delete-${payment.id}`}
+                            onClick={() => {
+                              status.clear()
+                              setPendingDelete(payment.id)
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      }
+                    />
+                  </li>
+                ),
+                )}
+              </ul>
+              {exhausted ? (
+                <p className="t-small soft">That is every payment.</p>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-link t-small"
+                  onClick={() => setShown((count) => Math.min(count + PAGE_SIZE, visible.length))}
+                >
+                  Show {Math.min(PAGE_SIZE, visible.length - shown)} more
+                </button>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </section>
   )
