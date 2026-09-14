@@ -61,20 +61,20 @@ describe('cellAccessibleName', () => {
     )
 
     expect(name).toBe(
-      'Mar 2026, 2 payments recorded, £43.00 in total, £12.00 assumed from a standing order, charged £15.00',
+      'March 2026, 2 payments recorded, £43.00 in total, £12.00 assumed from a standing order, charged £15.00',
     )
   })
 
   it('says nothing recorded when the month holds no receipt', () => {
     expect(cellAccessibleName(cell(), ALICE, LOCALE, CURRENCY)).toBe(
-      'Mar 2026, nothing recorded, charged £15.00',
+      'March 2026, nothing recorded, charged £15.00',
     )
   })
 
   it('speaks of one payment in the singular', () => {
     const name = cellAccessibleName(cell({ manualReceipts: [receipt('one', 2500)] }), ALICE, LOCALE, CURRENCY)
 
-    expect(name).toBe('Mar 2026, 1 payment recorded, £25.00 in total, charged £15.00')
+    expect(name).toBe('March 2026, 1 payment recorded, £25.00 in total, charged £15.00')
   })
 
   it('never combines a recorded receipt with an assumed one into a single figure', () => {
@@ -95,7 +95,7 @@ describe('cellAccessibleName', () => {
 
   it('replaces the charge with the reason when the month was paused', () => {
     expect(cellAccessibleName(excluded('break-month'), ALICE, LOCALE, CURRENCY)).toBe(
-      'Mar 2026, nothing recorded, the plan was paused that month',
+      'March 2026, nothing recorded, the plan was paused that month',
     )
   })
 
@@ -107,7 +107,7 @@ describe('cellAccessibleName', () => {
       CURRENCY,
     )
 
-    expect(name).toBe('Mar 2026, 1 payment recorded, £25.00 in total, that month had no price')
+    expect(name).toBe('March 2026, 1 payment recorded, £25.00 in total, that month had no price')
   })
 
   it('keeps a receipt audible on a month the participant was not on the plan for', () => {
@@ -119,13 +119,13 @@ describe('cellAccessibleName', () => {
     )
 
     expect(name).toBe(
-      'Mar 2026, 1 payment recorded, £30.00 in total, the participant was not on the plan that month',
+      'March 2026, 1 payment recorded, £30.00 in total, the participant was not on the plan that month',
     )
   })
 
   it('says a future month has not arrived yet', () => {
     expect(cellAccessibleName(excluded('not-yet-elapsed', { month: '2026-11' }), ALICE, LOCALE, CURRENCY)).toBe(
-      'Nov 2026, nothing recorded, that month has not arrived yet',
+      'November 2026, nothing recorded, that month has not arrived yet',
     )
   })
 
@@ -140,7 +140,7 @@ describe('cellAccessibleName', () => {
       CURRENCY,
     )
 
-    expect(name).toBe('Mar 2026, nothing recorded, marked as not received, charged £15.00')
+    expect(name).toBe('March 2026, nothing recorded, marked as not received, charged £15.00')
   })
 
   it('does not repeat an exclusion the charge already names', () => {
@@ -154,21 +154,21 @@ describe('cellAccessibleName', () => {
       CURRENCY,
     )
 
-    expect(name).toBe('Mar 2026, nothing recorded, the plan was paused that month')
+    expect(name).toBe('March 2026, nothing recorded, the plan was paused that month')
   })
 })
 
 describe('chargeSentence', () => {
   it('names the charge and the month when the month counts', () => {
     expect(chargeSentence(cell(), LOCALE, CURRENCY)).toEqual({
-      text: 'Charged £15.00 for Mar 2026.',
+      text: 'Charged £15.00 for March 2026.',
       tone: 'body',
     })
   })
 
   it('says the charge is unknown, in red, when the month had no price', () => {
     expect(chargeSentence(excluded('unpriced'), LOCALE, CURRENCY)).toEqual({
-      text: 'No price recorded for Mar 2026, so the charge is unknown.',
+      text: 'No price recorded for March 2026, so the charge is unknown.',
       tone: 'red',
     })
   })

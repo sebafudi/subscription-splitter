@@ -20,6 +20,13 @@ type Props = {
   /** The subscription's first month; no payment may be dated before it begins. */
   startMonth: string
   editing: Payment | null
+  /**
+   * What an empty form starts from when it is opened for one participant and
+   * one month, as the month inspector opens it. Ignored while editing, and the
+   * organizer may change either before saving.
+   */
+  presetMemberId?: string
+  presetDate?: string
   /** The panel's own error line, owned by the section so the panel can take its red left rule. */
   alert: string | null
   onAlert: (message: string | null) => void
@@ -42,6 +49,8 @@ export function PaymentForm({
   members,
   startMonth,
   editing,
+  presetMemberId,
+  presetDate,
   alert,
   onAlert,
   onSaved,
@@ -49,7 +58,7 @@ export function PaymentForm({
   onSignedOut,
 }: Props) {
   const participants = members.filter((member) => !member.isOwner)
-  const [memberId, setMemberId] = useState(editing?.memberId ?? '')
+  const [memberId, setMemberId] = useState(editing?.memberId ?? presetMemberId ?? '')
 
   // The participants arrive after this form first renders, so an initial value
   // taken from an empty list would stick and the select would show a name while
@@ -59,7 +68,7 @@ export function PaymentForm({
   const selectedMemberId = participants.some((member) => member.id === memberId)
     ? memberId
     : (participants[0]?.id ?? '')
-  const [date, setDate] = useState(editing?.date ?? '')
+  const [date, setDate] = useState(editing?.date ?? presetDate ?? '')
   const [amount, setAmount] = useState(editing ? toMajor(editing.amount) : '')
   const [note, setNote] = useState(editing?.note ?? '')
   const [kind, setKind] = useState<PaymentKind>(editing?.kind ?? 'manual')

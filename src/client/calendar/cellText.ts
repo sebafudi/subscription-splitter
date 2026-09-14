@@ -1,14 +1,14 @@
 /**
  * Every sentence a calendar cell and its inspector speak, built from the
  * projection alone. Pure: no React, no storage, no clock. Amounts go through
- * `formatMoney` and months through `formatMonth`, both in the plan's own
+ * `formatMoney` and months through `formatLongMonth`, both in the plan's own
  * locale, so nothing here formats a value itself.
  */
 
 import { formatMoney } from '../../domain/money'
 import type { MonthExclusion } from '../../domain/month-status'
 import type { Member } from '../../domain/types'
-import { formatMonth } from '../format'
+import { formatLongMonth } from '../format'
 import type { MonthCell } from './projection'
 
 /**
@@ -71,7 +71,7 @@ export function cellAccessibleName(
   locale: string,
   currency: string,
 ): string {
-  const parts = [formatMonth(cell.month, locale), recordedPhrase(cell, locale, currency)]
+  const parts = [formatLongMonth(cell.month, locale), recordedPhrase(cell, locale, currency)]
 
   const assumed = assumedPhrase(cell, locale, currency)
   if (assumed !== null) parts.push(assumed)
@@ -94,7 +94,7 @@ export function chargeSentence(
   locale: string,
   currency: string,
 ): { text: string; tone: 'body' | 'red' } {
-  const month = formatMonth(cell.month, locale)
+  const month = formatLongMonth(cell.month, locale)
   const reason = cell.chargeStatus.reason
 
   if (reason === null) {
