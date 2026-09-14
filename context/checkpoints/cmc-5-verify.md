@@ -213,3 +213,70 @@ main checkout. Nothing remote was touched.
 V5 wants a ruling: either keep the ready state on a failed reload and word the alert for a read
 failure, or amend §9. Once that lands, re-run the failed-refresh case and tick row 5.2. Step 5.4 is
 the designer's, and every capture it needs is retaken at `05ff614`.
+
+---
+
+# Re-run at 650a14d
+
+Identity: Opus, phase 5 step 5.2 failed-refresh re-check.
+
+Status: complete. Gates green, V5 closed, every step 5.2 criterion met. **Progress row 5.2 is ticked.**
+
+## Actions
+
+1. Ran the four gates at `650a14d`.
+2. Restarted the dev server at this commit, rebuilt both fixtures, used a fresh browser profile.
+3. Re-ran the isolated failed-refresh check with the same `window.fetch` wrap, this time with an
+   inspector open, and confirmed the records, cells, sections and inspector all stay and the alert
+   carries the §19 sentence character for character with a `Dismiss` action.
+4. Confirmed the write landed exactly once by restoring fetch and reloading.
+5. Confirmed the initial-load failure still shows its existing wording and `Try again`, and that
+   `Try again` recovers.
+6. Re-measured both fixtures to confirm the compactness clauses still hold at this commit.
+7. Appended "Re-run at 650a14d" to `evidence/runs/s09-browser-verification.md` and ticked row 5.2.
+
+## Changed paths
+
+Changed: `evidence/runs/s09-browser-verification.md`,
+`evidence/screenshots/s09/failed-refresh-after-write.png`, `context/changes/compact-member-calendar/plan.md`
+(the row 5.2 tick), and this checkpoint. No source, test or migration file was written.
+
+## Verification
+
+| Gate | Result |
+| --- | --- |
+| `npm run typecheck` | exit 0 |
+| `npm run test:unit` | exit 0, 26 files, 359 tests |
+| `npm run test:integration` | exit 0, 13 files, 131 tests |
+| `npm run build` | exit 0, `index-DlWpQE-s.js` 307.70 kB, `index-ByHeNjZo.css` 20.10 kB |
+
+V5: after a successful write whose reload was blocked, the page kept all five sections, 6 person
+blocks, 72 cells and the open `Bo, June 2026` inspector, and the detail header alert read
+`Could not refresh. The records shown may be out of date. Check your connection and reload the page.`
+with `Dismiss`. No "Could not save" and no "Try again" anywhere. Restoring fetch and reloading showed
+`Payments received (20)` and one £9.99 receipt in Bo's June cell. The initial-load failure still reads
+`Could not save. Check your connection and try again.` with `Try again`, which §19 retains.
+
+Compactness at this commit is identical to `05ff614`: 72 and 72 gridcells, 423 and 423 block elements,
+1228 and 1228 block pixels, 1449 and 1449 Participants pixels, 486 and 492 Participants elements
+against 6 extra options, 114 and 114 payments closed.
+
+## Defects
+
+None open. V1 resolved by the amended clause, V2 by §17.2, V3 and V4 fixed at `4753a52`, V5 fixed at
+`eba7e43` and `83c010d`.
+
+## Cleanup
+
+The dev server is stopped, the headless Chrome instances are stopped, the temporary `91ce0da` worktree
+and its copied D1 were removed in the previous run and `git worktree list` shows only the main
+checkout. The main checkout is clean apart from two files owned by the implementation reviewer. The
+disposable account and its two fixtures remain in the local D1 and can be rebuilt or deleted at will;
+nothing remote was touched at any point.
+
+## Exact next action
+
+Step 5.3 is the implementation review, already in the tree. Step 5.4 is the designer's visual
+acceptance; every capture it needs is at `evidence/screenshots/s09/`, retaken at `05ff614` with
+`failed-refresh-after-write.png` retaken at `650a14d`. Phase 5 has nothing else outstanding from this
+step.

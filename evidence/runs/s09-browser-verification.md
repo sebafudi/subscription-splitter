@@ -629,3 +629,139 @@ Capture: `evidence/screenshots/s09/failed-write-offline-alert.png`.
 - The archived-and-settled disclosure holding full person blocks.
 - The price-delete 409 naming the months it would unprice.
 - Visual acceptance, which is step 5.4 and the designer's.
+
+---
+
+# Re-run at 650a14d
+
+Re-checked after `eba7e43` (records kept on a failed refresh once the screen has already loaded) and
+`83c010d` (the designer's sentence, `design-spec.md` §19). Only `SubscriptionDetail.tsx` and a new pure
+`subscriptionEdits.ts` with its test changed between `05ff614` and this commit; no calendar component
+was touched, and the compactness figures below confirm the rendered DOM is unchanged.
+
+## Gates at 650a14d
+
+| Gate | Exit | What it reported |
+| --- | --- | --- |
+| `npm run typecheck` | 0 | three projects, no output |
+| `npm run test:unit` | 0 | `Test Files  26 passed (26)`, `Tests  359 passed (359)` |
+| `npm run test:integration` | 0 | `Test Files  13 passed (13)`, `Tests  131 passed (131)` |
+| `npm run build` | 0 | `675 modules transformed` worker, `69 modules transformed` client |
+
+```
+dist/client/assets/index-ByHeNjZo.css                                  20.10 kB │ gzip:  4.69 kB
+dist/client/assets/index-DlWpQE-s.js                                  307.70 kB │ gzip: 91.22 kB
+dist/subscription_splitter/index.js                                             882.53 kB │ gzip: 210.20 kB
+```
+
+Five unit tests were added since the previous run, 354 to 359. The stylesheet hash is unchanged again.
+
+## V5 re-checked, with the same fetch wrap
+
+`window.fetch` was wrapped in the page so the first non-GET passes through to the server untouched and
+every subsequent GET to `/api/subscriptions/...` rejects with a `TypeError`. An inspector was left open
+on `Bo, June 2026` and a payment of £9.99 recorded for Bo from inside it.
+
+| Check | Before the write | After the blocked refresh |
+| --- | --- | --- |
+| Participants section present | yes | **yes** |
+| Person blocks | 6 | **6** |
+| Rendered cells | 72 | **72** |
+| Open inspector | `Bo, June 2026` | **`Bo, June 2026`, still open** |
+| Sections on the page | five | **five**: Participants, Price history (1), Skipped months (2), Payments received (19), Standing orders (2) |
+| Bo's June cell | `June 2026, nothing recorded, charged £2.40` | unchanged, so nothing was optimistically drawn |
+
+Requests, in order: `POST .../payments`, then the six GETs for summary, members, prices, break-months,
+payments and schedules, all six rejected.
+
+The alert:
+
+| Check | Observed |
+| --- | --- |
+| Text, with the action's label removed | `Could not refresh. The records shown may be out of date. Check your connection and reload the page.` |
+| Matches `design-spec.md` §19 character for character | `true`, 99 characters against 99 |
+| Action | one button, `Dismiss` |
+| Where it sits | inside the detail `header` |
+| `Try again` anywhere on the page | `false` |
+| `Could not save` anywhere on the page | `false` |
+
+Capture: `evidence/screenshots/s09/failed-refresh-after-write.png`.
+
+With `window.fetch` restored and the page reloaded, `Payments received` read `(20)`, up from 19, and
+Bo's June cell read `June 2026, 1 payment recorded, £9.99 in total, charged £2.40`. The write is
+present exactly once; the alert is gone; the inspector was restored from `sessionStorage`.
+
+### The initial-load failure is unchanged
+
+Driven separately, by injecting the same rejection as a navigation init script so that the very first
+load of the detail screen fails and no records have ever been shown:
+
+| Check | Observed |
+| --- | --- |
+| Alert text, action removed | `Could not save. Check your connection and try again.` |
+| Action | `Try again` |
+| Participants section | absent |
+| Rendered cells | 0 |
+| Sections on the page | none |
+
+That is §19's rule that "the initial-load failure keeps its existing wording and its Try again". The
+word "save" in that sentence is retained deliberately by the ruling, not an oversight. Pressing
+`Try again` with the network restored brought back the Participants section, 6 blocks, 72 cells and
+`Payments received (20)`, with no alert.
+
+So the two paths are now distinct: a refresh that fails behind an already-loaded screen keeps every
+record and says so without claiming anything about the save, and a first load that fails still offers
+`Try again`. **V5 is closed.**
+
+## Compactness unchanged at this commit
+
+Both fixtures rebuilt and re-measured at 1280 by 900, year 2026, no inspector open:
+
+| Figure | SHORT | LONG |
+| --- | --- | --- |
+| `[role="gridcell"]` | 72 | 72 |
+| `.calendar-blocks *` | 423 | 423 |
+| `.calendar-blocks` `scrollHeight` | 1228 | 1228 |
+| Participants `scrollHeight` | 1449 | 1449 |
+| Participants elements | 486 | 492 |
+| `#year-select option` | 3 | 9 |
+| Payments received, closed | 114 | 114 |
+| Payment rows in the DOM, closed | 5 | 12 |
+| Standing orders | 214 | 317 |
+| Skipped months | 173 | 253 |
+| `.tile, .month-tile` | 0 | 0 |
+| `main.page` `scrollHeight` | 2845 | 3028 |
+
+Identical to the figures taken at `05ff614`, so every clause of the amended acceptance wording still
+holds and the 183 pixel whole-page difference is still 80 for the second skipped month plus 103 for
+the second standing order.
+
+A calendar spot check at this commit: Ada's March cell reads
+`March 2026, 2 payments recorded, £50.00 in total, £4.00 assumed from a standing order, charged £2.00`
+with the mark row in the order disc, `×2`, ring; clicking it opens `Ada, March 2026` with
+`Recorded (2)` and `Record a payment for March 2026`, focus staying on the cell with
+`aria-selected="true"`; and the range sentence reads `Showing Jan to Dec 2026. 2027 holds 1 payment.`
+
+## Step 5.2, criterion by criterion
+
+| Criterion | Result |
+| --- | --- |
+| The seven compactness figures recorded for both fixtures | Met, above and in `s09-compactness.md`. |
+| The same figures on the pre-change build | Met at `91ce0da`; see the Re-run at 05ff614 section of `s09-compactness.md`. |
+| Every acceptance clause holds on those numbers | Met, all seven clauses of the amended wording. |
+| Every key pressed and the resulting `document.activeElement` recorded for the fourteen focus rules | Met at `05ff614`; no calendar component has changed since. |
+| The 390 and desktop layouts captured | Met. |
+| Light and dark captured | Met. |
+| Reduced motion captured | Met, under `--force-prefers-reduced-motion`. |
+| A failed write behaves as the specification says | Met. |
+| A failed refresh behaves as the specification says | **Met at this commit**, per §9 and §19. |
+| A delete refusal behaves as the specification says | Met. |
+| A payment moved into another year behaves as the specification says | Met. |
+
+No criterion of step 5.2 is open. Progress row 5.2 is ticked at this commit.
+
+## Still not verified
+
+Unchanged from the previous run: Safari, Firefox and any mobile browser; real touch input; a
+server-side 500; the archived-and-settled disclosure holding full person blocks; the price-delete 409.
+Visual acceptance remains step 5.4 and the designer's.
