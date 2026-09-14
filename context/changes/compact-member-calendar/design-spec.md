@@ -415,3 +415,7 @@ Answers to the five design findings in `reviews/plan-review.md`, folded into §5
    more" is amended to this rule; the shipped "Show N more" stands.
 3. The record action reads "Record a payment for March 2026" in the long month form, like the
    inspector heading and sentences (§15). §6's ASCII sketch and copy are read in the long form.
+4. The year `select` is labelled "Year" through a visually hidden label; it has no visible label
+   because the selected year is its own visible text.
+5. The strip (`role="grid"`) accessible name is "`<Name>`, `<year>` month by month", for example
+   "Alice, 2026 month by month", so a screen-reader user hears which year the twelve cells belong to.

@@ -196,6 +196,7 @@ export function PersonBlock({
             memberId={row.memberId}
             member={member}
             cells={personYear.cells}
+            year={year}
             locale={locale}
             currency={currency}
             currentMonth={currentMonth}

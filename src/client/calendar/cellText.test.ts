@@ -194,7 +194,7 @@ describe('chargeSentence', () => {
 })
 
 describe('stripAccessibleName', () => {
-  it('names the person whose strip it is', () => {
-    expect(stripAccessibleName(ALICE)).toBe('Alice, month by month')
+  it('names the person whose strip it is and the year it holds', () => {
+    expect(stripAccessibleName(ALICE, 2026)).toBe('Alice, 2026 month by month')
   })
 })

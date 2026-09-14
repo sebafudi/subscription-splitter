@@ -10,6 +10,8 @@ type Props = {
   memberId: string
   member: Member
   cells: MonthCell[]
+  /** The year the twelve cells hold, which the strip's accessible name carries. */
+  year: number
   locale: string
   currency: string
   currentMonth: MonthStr
@@ -72,6 +74,7 @@ export function MonthStrip({
   memberId,
   member,
   cells,
+  year,
   locale,
   currency,
   currentMonth,
@@ -108,7 +111,7 @@ export function MonthStrip({
   }
 
   return (
-    <div className="calendar-strip" role="grid" aria-label={stripAccessibleName(member)}>
+    <div className="calendar-strip" role="grid" aria-label={stripAccessibleName(member, year)}>
       <div className="calendar-row" role="row">
         {cells.map((cell) => {
           const selected = cell.month === selectedMonth

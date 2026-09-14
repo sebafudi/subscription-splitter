@@ -40,6 +40,7 @@ only.
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
 - `d5952a9` fix(calendar): resolve implementation review findings
+- `5261e06` fix(calendar): strip name carries the year
 
 ## Verification
 
@@ -197,7 +198,7 @@ findings are answered by the designer in `design-spec.md` §17 and are applied h
 | F6 unscoped static inspector ids | **Fixed** | `inspector-record`, `inspector-record-panel`, `inspector-schedule-edit` and `inspector-schedule-delete` all carry the member id and month, so a closing inspector never shares an id with the one opening. |
 | F7 dead `closeTarget` export | **Fixed** | Deleted. The rule lives once, in `MemberCalendar.closeInspector`. |
 | F8 unused `CellMark.title` | **Fixed** | The prop is removed. This is the one edit made to a file the leaf worker owned; that worker had finished and the prop had no reader. |
-| F9 undeclared accessible names | **Partly fixed** | The strip's name moved into `cellText.stripAccessibleName` with a unit test, so it is a declared string like every other. The year select's `sr-only` "Year" label stays in `YearControl.tsx` and is referred to the designer for §3, since recording it is a specification edit rather than a code one. |
+| F9 undeclared accessible names | **Fixed** | The strip's name moved into `cellText.stripAccessibleName` with a unit test, so it is a declared string like every other. The designer then declared both strings: §17.4 records the year select's visually hidden "Year" label, and §17.5 rules the strip's name to be "`<Name>`, `<year>` month by month", which the helper, its test and the strip now render. |
 | F10 vertical movement past a stripless block | **Fixed** | `leaveVertically` walks on until it finds a block that has the cell. Verified in the browser: Down from the first block skipped a block whose edit panel was open and landed on the third block's same month. |
 | F11 unreachable fallback phrase | **Fixed** | The reason is read once into a local and the sentence renders only when it is non-null, so no phrase is invented for a state the projection rules out. |
 
@@ -215,9 +216,8 @@ Both are answered in `design-spec.md` §16 and applied:
 
 §17 answers the three design findings the implementation review raised, and all three are applied.
 
-One item is still with the designer: the year select's `sr-only` "Year" label (review finding F9),
-which §3 does not declare. It is correct practice and stays in the code; recording it in §3 is the
-designer's edit.
+Nothing is outstanding with the designer. §17.4 and §17.5 close the last item, the two accessible
+names review finding F9 raised, and both are applied.
 
 ## Unresolved issues
 

@@ -35,11 +35,12 @@ export function exclusionPhrase(reason: MonthExclusion): string {
 }
 
 /**
- * The strip's own accessible name. A grid needs one, and the person's name is
- * the only thing that tells two strips apart when a reader moves between them.
+ * The strip's own accessible name. A grid needs one; the person's name tells
+ * two strips apart, and the year says which twelve months these cells are,
+ * since the year lives on a control above the strips rather than in a cell.
  */
-export function stripAccessibleName(member: Member): string {
-  return `${member.name}, month by month`
+export function stripAccessibleName(member: Member, year: number): string {
+  return `${member.name}, ${year} month by month`
 }
 
 function recordedPhrase(cell: MonthCell, locale: string, currency: string): string {
