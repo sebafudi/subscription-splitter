@@ -26,6 +26,7 @@ type Props = {
   onSelectMonth: (month: MonthStr) => void
   onActiveMonthChange: (month: MonthStr) => void
   onLeaveVertically: (direction: 'up' | 'down', month: MonthStr) => void
+  onCloseInspector: () => void
   onEdit: () => void
   onArchiveToggle: () => void
   /** Opens the confirm strip. */
@@ -87,6 +88,7 @@ export function PersonBlock({
   onSelectMonth,
   onActiveMonthChange,
   onLeaveVertically,
+  onCloseInspector,
   onEdit,
   onArchiveToggle,
   onRequestDelete,
@@ -196,6 +198,7 @@ export function PersonBlock({
             onSelect={onSelectMonth}
             onActiveMonthChange={onActiveMonthChange}
             onLeaveVertically={onLeaveVertically}
+            onCloseInspector={onCloseInspector}
           />
         )}
 

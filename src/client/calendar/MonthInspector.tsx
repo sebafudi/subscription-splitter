@@ -110,11 +110,23 @@ export function MonthInspector({
   const [recordKey, setRecordKey] = useState(0)
   const [focusTarget, setFocusTarget] = useState<string | null>(null)
 
+  /**
+   * Focuses an element id once the control holding it exists. A target created
+   * by the reload after a mutation is not in the tree when the target is set,
+   * so the effect re-runs on the reprojected cell and gives up after a second
+   * rather than holding a target that will never arrive.
+   */
   useEffect(() => {
     if (!focusTarget) return
-    document.getElementById(focusTarget)?.focus()
-    setFocusTarget(null)
-  }, [focusTarget])
+    const element = document.getElementById(focusTarget)
+    if (element) {
+      element.focus()
+      setFocusTarget(null)
+      return
+    }
+    const timer = setTimeout(() => setFocusTarget(null), 1000)
+    return () => clearTimeout(timer)
+  }, [focusTarget, cell])
 
   const headingId = inspectorHeadingId(member.id, cell.month)
   const longMonth = formatLongMonth(cell.month, locale)

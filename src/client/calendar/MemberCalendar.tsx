@@ -187,6 +187,16 @@ export function MemberCalendar({
     setFocusTarget(`participant-edit-${memberId}`)
   }
 
+  /**
+   * Changing the year re-renders every strip in place and keeps the open
+   * inspector on the same person and the same calendar month, which is the one
+   * thing that moves with the year (`design-spec.md` §3).
+   */
+  function selectYear(next: number) {
+    setYear(next)
+    setOpenInspector((open) => (open === null ? null : { ...open, month: monthOf(next, indexOf(open.month)) }))
+  }
+
   function openMonth(memberId: string, month: MonthStr) {
     status.clear()
     setActiveMonth(memberId, month)
@@ -300,6 +310,7 @@ export function MemberCalendar({
         onSelectMonth={(month) => openMonth(row.memberId, month)}
         onActiveMonthChange={(month) => setActiveMonth(row.memberId, month)}
         onLeaveVertically={(direction, month) => leaveVertically(row.memberId, direction, month)}
+        onCloseInspector={closeInspector}
         onEdit={() => {
           status.clear()
           setEditAlert(null)
@@ -325,6 +336,9 @@ export function MemberCalendar({
       >
         {member && cell && (
           <MonthInspector
+            // Remounts when the selected month changes, so a form opened for
+            // one month never carries its presets into the next.
+            key={`${row.memberId}-${cell.month}`}
             subscriptionId={subscriptionId}
             member={member}
             cell={cell}
@@ -410,7 +424,7 @@ export function MemberCalendar({
             range={range}
             locale={summary.locale}
             futureYears={futureYearPayments(state, year)}
-            onSelectYear={setYear}
+            onSelectYear={selectYear}
           />
           <div className="calendar-blocks">{listed.map(blockFor)}</div>
         </>

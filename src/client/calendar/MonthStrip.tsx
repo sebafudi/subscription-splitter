@@ -22,6 +22,8 @@ type Props = {
   onSelect: (month: MonthStr) => void
   onActiveMonthChange: (month: MonthStr) => void
   onLeaveVertically: (direction: 'up' | 'down', month: MonthStr) => void
+  /** Escape on a cell closes this person's open inspector, which the cell is outside of. */
+  onCloseInspector: () => void
 }
 
 /** The id `MemberCalendar` and `MonthInspector` both return focus to. */
@@ -79,8 +81,16 @@ export function MonthStrip({
   onSelect,
   onActiveMonthChange,
   onLeaveVertically,
+  onCloseInspector,
 }: Props) {
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, month: MonthStr) {
+    // Enter leaves focus on the cell, so Escape has to be answered here too:
+    // the cell sits outside the panel that handles it for everything within.
+    if (event.key === 'Escape' && selectedMonth !== null) {
+      event.preventDefault()
+      onCloseInspector()
+      return
+    }
     const action = stripKeyAction(event.key, month)
     if (!action) return
     event.preventDefault()

@@ -515,11 +515,11 @@ function SkeletonCalendarSection({ section }: { section: SectionDescriptor }) {
       <div className="calendar-blocks" aria-hidden="true">
         {[0, 1].map((position) => (
           <div key={position} className="calendar-block">
-            <span className="skeleton skeleton-entry-primary" />
-            <span className="skeleton skeleton-entry-secondary" />
-            <div className="skeleton-strip">
+            <span className="skeleton skeleton-calendar-name" />
+            <span className="skeleton skeleton-calendar-line" />
+            <div className="skeleton-calendar-strip">
               {Array.from({ length: 12 }, (_, month) => (
-                <span key={month} className="skeleton-strip-cell" />
+                <span key={month} className="skeleton-calendar-cell" />
               ))}
             </div>
           </div>
