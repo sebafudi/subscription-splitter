@@ -2,7 +2,7 @@ import type { KeyboardEvent } from 'react'
 import type { Member, MonthStr } from '../../domain/types'
 import { formatMonthName } from '../format'
 import { CellMark, type CellMarkName } from './CellMark'
-import { cellAccessibleName } from './cellText'
+import { cellAccessibleName, stripAccessibleName } from './cellText'
 import { stripKeyAction } from './interaction'
 import type { MonthCell } from './projection'
 
@@ -108,7 +108,7 @@ export function MonthStrip({
   }
 
   return (
-    <div className="calendar-strip" role="grid" aria-label={`${member.name}, month by month`}>
+    <div className="calendar-strip" role="grid" aria-label={stripAccessibleName(member)}>
       <div className="calendar-row" role="row">
         {cells.map((cell) => {
           const selected = cell.month === selectedMonth

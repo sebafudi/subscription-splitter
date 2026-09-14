@@ -2,8 +2,6 @@ export type CellMarkName = 'recorded' | 'assumed' | 'excepted' | 'paused' | 'unp
 
 type Props = {
   name: CellMarkName
-  /** Unused: the sentence, not the glyph, carries the meaning (design-spec.md §5). */
-  title?: string
 }
 
 /**

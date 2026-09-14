@@ -211,13 +211,25 @@ export function MemberCalendar({
     setFocusTarget(document.getElementById(target) ? target : PARTICIPANTS.id)
   }
 
-  /** Up and Down carry the same month into the adjacent block's strip. */
+  /**
+   * Up and Down carry the same month into the next person block **that has a
+   * strip**, walking past any block that has none, which is what a block whose
+   * edit panel is open is while the panel stands.
+   */
   function leaveVertically(memberId: string, direction: 'up' | 'down', month: MonthStr) {
-    const position = listed.findIndex((entry) => entry.row.memberId === memberId)
-    const next = listed[direction === 'up' ? position - 1 : position + 1]
-    if (!next) return
-    setActiveMonth(next.row.memberId, month)
-    document.getElementById(cellId(next.row.memberId, month))?.focus()
+    const step = direction === 'up' ? -1 : 1
+    let position = listed.findIndex((entry) => entry.row.memberId === memberId) + step
+
+    while (position >= 0 && position < listed.length) {
+      const candidate = listed[position].row.memberId
+      const target = document.getElementById(cellId(candidate, month))
+      if (target) {
+        setActiveMonth(candidate, month)
+        target.focus()
+        return
+      }
+      position += step
+    }
   }
 
   /** Every action outside a panel lands its refusal in the section alert. */

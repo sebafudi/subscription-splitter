@@ -20,7 +20,6 @@ import { Money } from '../components/ui/Money'
 import { SectionAlert } from '../components/ui/SectionAlert'
 import { formatDate, formatLongMonth, formatMonth } from '../format'
 import { chargeSentence, exclusionPhrase } from './cellText'
-import { cellId } from './MonthStrip'
 import type { MonthCell } from './projection'
 
 const KIND_LABEL: Record<Payment['kind'], string> = {
@@ -51,6 +50,26 @@ type Props = {
 
 export function inspectorHeadingId(memberId: string, month: MonthStr): string {
   return `inspector-heading-${memberId}-${month}`
+}
+
+/**
+ * Every id inside the inspector is scoped: to the person and the month for the
+ * inspector's own controls, because a closing inspector stays mounted for the
+ * length of its motion and would otherwise share its ids with the one opening;
+ * and by an `inspector-` prefix for a receipt's Edit and Delete, because the
+ * payments section renders its own pair for the same receipt and the two must
+ * never answer each other's `getElementById`.
+ */
+function scopedId(part: string, memberId: string, month: MonthStr): string {
+  return `inspector-${part}-${memberId}-${month}`
+}
+
+function paymentEditId(paymentId: string): string {
+  return `inspector-payment-edit-${paymentId}`
+}
+
+function paymentDeleteId(paymentId: string): string {
+  return `inspector-payment-delete-${paymentId}`
 }
 
 /**
@@ -110,11 +129,15 @@ export function MonthInspector({
   const [recordKey, setRecordKey] = useState(0)
   const [focusTarget, setFocusTarget] = useState<string | null>(null)
 
+  const headingId = inspectorHeadingId(member.id, cell.month)
+
   /**
-   * Focuses an element id once the control holding it exists. A target created
-   * by the reload after a mutation is not in the tree when the target is set,
-   * so the effect re-runs on the reprojected cell and gives up after a second
-   * rather than holding a target that will never arrive.
+   * Focuses an element id once the control holding it exists. A control the
+   * close or the reload is about to render is not in the tree when the target
+   * is set, so the effect re-runs on the reprojected cell and, when the target
+   * never arrives, falls back to the heading. That fallback is the
+   * entry-left-the-month case `design-spec.md` §8 reserves the heading for, and
+   * it is decided here rather than guessed at click time.
    */
   useEffect(() => {
     if (!focusTarget) return
@@ -124,15 +147,20 @@ export function MonthInspector({
       setFocusTarget(null)
       return
     }
-    const timer = setTimeout(() => setFocusTarget(null), 1000)
+    const timer = setTimeout(() => {
+      document.getElementById(headingId)?.focus()
+      setFocusTarget(null)
+    }, 1000)
     return () => clearTimeout(timer)
-  }, [focusTarget, cell])
-
-  const headingId = inspectorHeadingId(member.id, cell.month)
+  }, [focusTarget, headingId, cell])
   const longMonth = formatLongMonth(cell.month, locale)
   const money = (minor: number) => formatMoney(minor, locale, currency)
   const charge = chargeSentence(cell, locale, currency)
   const recordedCount = cell.manualReceipts.length
+  const recordButtonId = scopedId('record', member.id, cell.month)
+  const recordPanelId = scopedId('record-panel', member.id, cell.month)
+  const scheduleEditId = scopedId('schedule-edit', member.id, cell.month)
+  const scheduleDeleteId = scopedId('schedule-delete', member.id, cell.month)
 
   /**
    * Escape anywhere inside closes the inspector. An open form or confirm strip
@@ -147,22 +175,20 @@ export function MonthInspector({
   function closePaymentEdit(paymentId: string) {
     setEditingPaymentId(null)
     setEditAlert(null)
-    setFocusTarget(
-      document.getElementById(`payment-edit-${paymentId}`) ? `payment-edit-${paymentId}` : headingId,
-    )
+    setFocusTarget(paymentEditId(paymentId))
   }
 
   function closeRecord() {
     setRecordOpen(false)
     setRecordAlert(null)
     setRecordKey((key) => key + 1)
-    setFocusTarget('inspector-record')
+    setFocusTarget(recordButtonId)
   }
 
   function closeScheduleEdit() {
     setScheduleEditing(false)
     setScheduleAlert(null)
-    setFocusTarget('inspector-schedule-edit')
+    setFocusTarget(scheduleEditId)
   }
 
   /** Every action outside a panel lands its refusal in the inspector's own alert. */
@@ -200,7 +226,7 @@ export function MonthInspector({
         return
       }
       setAlert(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
-      setFocusTarget(`payment-delete-${payment.id}`)
+      setFocusTarget(paymentDeleteId(payment.id))
     }
   }
 
@@ -218,7 +244,7 @@ export function MonthInspector({
         return
       }
       setAlert(err instanceof ApiError ? err.message : CONNECTION_FAILURE)
-      setFocusTarget('inspector-schedule-delete')
+      setFocusTarget(scheduleDeleteId)
     }
   }
 
@@ -272,7 +298,7 @@ export function MonthInspector({
                 onConfirm={() => void confirmPaymentDelete(payment)}
                 onKeep={() => {
                   setPendingDeletePaymentId(null)
-                  setFocusTarget(`payment-delete-${payment.id}`)
+                  setFocusTarget(paymentDeleteId(payment.id))
                 }}
               />
             ) : undefined
@@ -282,7 +308,7 @@ export function MonthInspector({
               <button
                 type="button"
                 className="btn-link t-small"
-                id={`payment-edit-${payment.id}`}
+                id={paymentEditId(payment.id)}
                 onClick={() => {
                   onClearStatus()
                   setEditAlert(null)
@@ -294,7 +320,7 @@ export function MonthInspector({
               <button
                 type="button"
                 className="btn-link t-small"
-                id={`payment-delete-${payment.id}`}
+                id={paymentDeleteId(payment.id)}
                 onClick={() => {
                   onClearStatus()
                   setPendingDeletePaymentId(payment.id)
@@ -315,7 +341,8 @@ export function MonthInspector({
     }
 
     const counted = cell.assumed !== null
-    const excepted = cell.assumedStatus?.reason === 'excepted'
+    const assumedReason = cell.assumedStatus?.reason ?? null
+    const excepted = assumedReason === 'excepted'
     const window = schedule.endMonth
       ? `until ${formatMonth(schedule.endMonth, locale)}`
       : `from ${formatMonth(schedule.startMonth, locale)}, still running`
@@ -332,10 +359,8 @@ export function MonthInspector({
           {!counted && excepted && (
             <span className="calendar-red">Marked as not received for {longMonth}.</span>
           )}
-          {!counted && !excepted && (
-            <span className="soft">
-              Not assumed: {exclusionPhrase(cell.assumedStatus?.reason ?? 'outside-active-range')}.
-            </span>
+          {!counted && !excepted && assumedReason !== null && (
+            <span className="soft">Not assumed: {exclusionPhrase(assumedReason)}.</span>
           )}
           {(counted || excepted) && (
             <button
@@ -390,7 +415,7 @@ export function MonthInspector({
             onConfirm={() => void confirmScheduleDelete(schedule.id)}
             onKeep={() => {
               setSchedulePendingDelete(false)
-              setFocusTarget('inspector-schedule-delete')
+              setFocusTarget(scheduleDeleteId)
             }}
           />
         ) : (
@@ -398,7 +423,7 @@ export function MonthInspector({
             <button
               type="button"
               className="btn-link t-small"
-              id="inspector-schedule-edit"
+              id={scheduleEditId}
               onClick={() => {
                 onClearStatus()
                 setScheduleAlert(null)
@@ -410,7 +435,7 @@ export function MonthInspector({
             <button
               type="button"
               className="btn-link t-small"
-              id="inspector-schedule-delete"
+              id={scheduleDeleteId}
               onClick={() => {
                 onClearStatus()
                 setSchedulePendingDelete(true)
@@ -455,23 +480,23 @@ export function MonthInspector({
         <button
           type="button"
           className="btn-primary"
-          id="inspector-record"
+          id={recordButtonId}
           aria-expanded={recordOpen}
-          aria-controls="inspector-record-panel"
+          aria-controls={recordPanelId}
           onClick={() => {
             onClearStatus()
             setRecordAlert(null)
             setRecordOpen(true)
           }}
         >
-          Record a payment for {formatMonth(cell.month, locale)}
+          Record a payment for {longMonth}
         </button>
       )}
 
       <DisclosurePanel
-        id="inspector-record-panel"
+        id={recordPanelId}
         open={recordOpen}
-        title={`Record a payment for ${formatMonth(cell.month, locale)}`}
+        title={`Record a payment for ${longMonth}`}
         onCancel={closeRecord}
         invalid={recordAlert !== null}
       >
@@ -492,7 +517,7 @@ export function MonthInspector({
             setAlert(null)
             onConfirm('Payment recorded', saved.id)
             onChanged()
-            setFocusTarget(`payment-edit-${saved.id}`)
+            setFocusTarget(paymentEditId(saved.id))
           }}
           onCancel={closeRecord}
           onSignedOut={onSignedOut}
@@ -500,9 +525,4 @@ export function MonthInspector({
       </DisclosurePanel>
     </div>
   )
-}
-
-/** Where focus returns when the inspector closes: its own cell, else the section heading. */
-export function closeTarget(memberId: string, month: MonthStr, fallback: string): string {
-  return document.getElementById(cellId(memberId, month)) ? cellId(memberId, month) : fallback
 }

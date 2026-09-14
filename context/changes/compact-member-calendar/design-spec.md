@@ -405,3 +405,13 @@ Answers to the five design findings in `reviews/plan-review.md`, folded into §5
 2. Assumed group for a month excluded by a wider condition: one sentence in sentence case,
    "Not assumed: the plan was paused that month." (the exclusion phrase after "Not assumed: "),
    mirroring the charge sentence's "Not charged: " form. No toggle is offered.
+
+## 17. Designer rulings on the implementation review
+
+1. Year buttons: the visible content is the glyph (`‹` / `›`) only; "Previous year" / "Next year"
+   are the `aria-label`. §3's phrase "visible text" is withdrawn.
+2. Bounded payments: the link reads "Show N more" where N is the smaller of 12 and the number of
+   entries not yet shown, so the label never promises more than it reveals. §7's fixed "Show 12
+   more" is amended to this rule; the shipped "Show N more" stands.
+3. The record action reads "Record a payment for March 2026" in the long month form, like the
+   inspector heading and sentences (§15). §6's ASCII sketch and copy are read in the long form.

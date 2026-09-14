@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { MonthExclusion } from '../../domain/month-status'
 import type { Member, Payment } from '../../domain/types'
-import { cellAccessibleName, chargeSentence, exclusionPhrase } from './cellText'
+import { cellAccessibleName, chargeSentence, exclusionPhrase, stripAccessibleName } from './cellText'
 import type { MonthCell } from './projection'
 
 const LOCALE = 'en-GB'
@@ -190,5 +190,11 @@ describe('chargeSentence', () => {
       text: 'Not charged: that month has not arrived yet.',
       tone: 'body',
     })
+  })
+})
+
+describe('stripAccessibleName', () => {
+  it('names the person whose strip it is', () => {
+    expect(stripAccessibleName(ALICE)).toBe('Alice, month by month')
   })
 })

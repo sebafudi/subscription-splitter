@@ -39,6 +39,7 @@ only.
 - `7ada1c7` feat(calendar): render the calendar in place of the member list
 - `7ca2844` fix(calendar): close on escape, follow the year and clear form presets
 - `a87d728` fix(calendar): zero-receipt heading and not-assumed sentence
+- `9035356` fix(calendar): resolve implementation review findings
 
 ## Verification
 
@@ -181,6 +182,28 @@ inherit from `.entry` and `.entry-cells`.
    collapses with something inside it. Opening and closing both animate because the `.disclosure`
    wrapper is always mounted in the person block.
 
+## Implementation review dispositions
+
+`reviews/impl-review.md` is REVISE with 0 critical, 5 warnings and 6 observations. The three design
+findings are answered by the designer in `design-spec.md` §17 and are applied here, not re-decided.
+
+| Finding | Disposition | What changed |
+| --- | --- | --- |
+| F1 duplicate receipt ids | **Fixed** | The inspector's receipt controls are `inspector-payment-edit-<id>` and `inspector-payment-delete-<id>`, so `PaymentList`'s own focus restoration can no longer resolve into an open inspector. |
+| F2 close-edit focus | **Fixed** | `closePaymentEdit` sets the entry's Edit id unconditionally. The focus effect retries on the reprojected cell and, when the target never arrives, falls back to the heading, which is exactly §8's entry-left-the-month case. |
+| F3 record button month form | **Fixed** (§17.3) | The button and its panel title both read the long form, "Record a payment for March 2026". |
+| F4 action row after the strip | **Fixed** | `PersonBlock` renders the action row and the confirm strip as its own children between the year cells and the strip, keeping the shipped `.entry-actions` and `.entry-confirm` classes. `ui/LedgerEntry.tsx` is not modified, so no other section is touched. Verified in the browser: block DOM order is primary, figure, lifetime cells, year cells, actions, strip, inspector, and the tab order is Edit, Archive, Delete, one strip stop, then the inspector's controls. |
+| F5 "Show N more" | **No code change** (§17.2) | The designer amended §7 to the smaller of twelve and the number not yet shown, which is what ships. |
+| F6 unscoped static inspector ids | **Fixed** | `inspector-record`, `inspector-record-panel`, `inspector-schedule-edit` and `inspector-schedule-delete` all carry the member id and month, so a closing inspector never shares an id with the one opening. |
+| F7 dead `closeTarget` export | **Fixed** | Deleted. The rule lives once, in `MemberCalendar.closeInspector`. |
+| F8 unused `CellMark.title` | **Fixed** | The prop is removed. This is the one edit made to a file the leaf worker owned; that worker had finished and the prop had no reader. |
+| F9 undeclared accessible names | **Partly fixed** | The strip's name moved into `cellText.stripAccessibleName` with a unit test, so it is a declared string like every other. The year select's `sr-only` "Year" label stays in `YearControl.tsx` and is referred to the designer for §3, since recording it is a specification edit rather than a code one. |
+| F10 vertical movement past a stripless block | **Fixed** | `leaveVertically` walks on until it finds a block that has the cell. Verified in the browser: Down from the first block skipped a block whose edit panel was open and landed on the third block's same month. |
+| F11 unreachable fallback phrase | **Fixed** | The reason is read once into a local and the sentence renders only when it is non-null, so no phrase is invented for a state the projection rules out. |
+
+Gates after the fixes: `npm run typecheck` exit 0; `npm run test:unit` 26 files and 351 tests passed;
+`npm run build` exit 0, `index-DAE3nnSA.js` 306.61 kB and `index-ByHeNjZo.css` 20.10 kB.
+
 ## Questions for the designer
 
 Both are answered in `design-spec.md` §16 and applied:
@@ -190,7 +213,11 @@ Both are answered in `design-spec.md` §16 and applied:
 2. A month excluded by a wider condition reads "Not assumed: `<exclusion phrase>`." in the Assumed
    group, mirroring the charge sentence's "Not charged: " form, with no toggle.
 
-Nothing is outstanding with the designer.
+§17 answers the three design findings the implementation review raised, and all three are applied.
+
+One item is still with the designer: the year select's `sr-only` "Year" label (review finding F9),
+which §3 does not declare. It is correct practice and stays in the code; recording it in §3 is the
+designer's edit.
 
 ## Unresolved issues
 

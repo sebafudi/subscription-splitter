@@ -68,6 +68,13 @@ function useClosing(children: ReactNode): ReactNode {
  * Every block is a participant's; the owner has no block, and their share stays
  * in the summary above the sections.
  *
+ * The action row is rendered as the block's own child rather than through
+ * `LedgerEntry`'s `actions` slot, which the row draws after its children: the
+ * actions have to precede the strip and the inspector in the DOM, because that
+ * is the order `design-spec.md` §4 draws and §8 tabs through. It keeps the
+ * shipped `.entry-actions` and `.entry-confirm` classes, so the shared row
+ * component is not modified and no other section is touched.
+ *
  * The block never reads the section's status hook. `highlighted` is the
  * section's own resolution of its one confirmation, so the tint on the block
  * and the tint on the changed cell come from the same answer.
@@ -116,37 +123,6 @@ export function PersonBlock({
             value={money(row.balance < 0 ? -row.balance : row.balance)}
           />
         }
-        confirm={
-          pendingDelete ? (
-            <ConfirmStrip
-              question={`Delete ${row.name}? Their payments stay recorded.`}
-              onConfirm={onConfirmDelete}
-              onKeep={onCancelDelete}
-            />
-          ) : undefined
-        }
-        actions={
-          <>
-            {member && (
-              <button type="button" className="btn-link t-small" id={`participant-edit-${member.id}`} onClick={onEdit}>
-                Edit
-              </button>
-            )}
-            {member && (
-              <button type="button" className="btn-link t-small" onClick={onArchiveToggle}>
-                {member.archived ? 'Unarchive' : 'Archive'}
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn-link t-small"
-              id={`participant-delete-${row.memberId}`}
-              onClick={onRequestDelete}
-            >
-              Delete
-            </button>
-          </>
-        }
       >
         <div className="entry-cells t-small tnum">
           <span>
@@ -183,6 +159,37 @@ export function PersonBlock({
               No membership range recorded, so nothing was charged. Recorded payments still show.
             </p>
           ))}
+
+        {pendingDelete ? (
+          <div className="entry-confirm">
+            <ConfirmStrip
+              question={`Delete ${row.name}? Their payments stay recorded.`}
+              onConfirm={onConfirmDelete}
+              onKeep={onCancelDelete}
+            />
+          </div>
+        ) : (
+          <div className="entry-actions">
+            {member && (
+              <button type="button" className="btn-link t-small" id={`participant-edit-${member.id}`} onClick={onEdit}>
+                Edit
+              </button>
+            )}
+            {member && (
+              <button type="button" className="btn-link t-small" onClick={onArchiveToggle}>
+                {member.archived ? 'Unarchive' : 'Archive'}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-link t-small"
+              id={`participant-delete-${row.memberId}`}
+              onClick={onRequestDelete}
+            >
+              Delete
+            </button>
+          </div>
+        )}
 
         {member && personYear !== null && (
           <MonthStrip

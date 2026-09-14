@@ -34,6 +34,14 @@ export function exclusionPhrase(reason: MonthExclusion): string {
   return REASON_PHRASE[reason]
 }
 
+/**
+ * The strip's own accessible name. A grid needs one, and the person's name is
+ * the only thing that tells two strips apart when a reader moves between them.
+ */
+export function stripAccessibleName(member: Member): string {
+  return `${member.name}, month by month`
+}
+
 function recordedPhrase(cell: MonthCell, locale: string, currency: string): string {
   const count = cell.manualReceipts.length
   if (count === 0) return 'nothing recorded'
